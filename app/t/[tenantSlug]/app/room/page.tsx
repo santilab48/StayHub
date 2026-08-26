@@ -1,42 +1,45 @@
 import TenantShell from '../../../../../components/TenantShell'
+import RoomNav from '../../../../../components/RoomNav'
 import { tenantRoutes } from '../../../../../lib/routes'
 
-const Info=({label,value}:{label:string,value:string})=><div className="infoRow"><span className="muted">{label}</span><strong>{value}</strong></div>
+const Info=({label,value,owner=false}:{label:string,value:string,owner?:boolean})=><div className="infoRow"><span><span className="muted">{label}</span>{owner&&<small className="muted" style={{display:'block'}}>ข้อมูลยืนยันโดยเจ้าของ</small>}</span><strong>{value}</strong></div>
 
 export default async function Page({params}:{params:Promise<{tenantSlug:string}>}){
   const {tenantSlug}=await params
   const r=tenantRoutes(tenantSlug)
   const roomNav=[
-    ['ภาพรวมห้อง',r.room,'🏠'],
-    ['ข้อมูลผู้เช่า',r.roomProfile,'👤'],
-    ['สัญญาเช่า',r.contract,'✍️'],
-    ['ผู้อยู่อาศัย',r.occupants,'👥'],
-    ['รถที่ลงทะเบียน',r.vehicles,'🚗'],
-    ['เอกสารห้อง',r.documents,'📄']
+    ['ภาพรวมห้อง',r.room,'🏠','ข้อมูลห้อง + ผู้เช่าหลัก'],
+    ['สัญญาเช่า',r.contract,'✍️','อ่าน/เซ็น/ดาวน์โหลดสัญญา'],
+    ['ผู้อยู่อาศัย',r.occupants,'👥','ผู้พักหลักและผู้พักร่วมที่อนุมัติแล้ว'],
+    ['รถที่ลงทะเบียน',r.vehicles,'🚗','รถที่เจ้าของอนุมัติให้ผูกกับห้อง'],
+    ['เอกสารห้อง',r.documents,'📄','เอกสารที่เจ้าของอนุญาตให้ดู']
   ]
   return <TenantShell slug={tenantSlug} title="ห้องของฉัน">
+    <RoomNav slug={tenantSlug}/>
     <section className="roomHero card">
-      <div><span className="eyebrow">MY ROOM</span><h2>ข้อมูลห้องและสัญญาของคุณ</h2><p className="muted">โมดูลนี้เก็บเฉพาะข้อมูลประจำห้องและผู้เช่า ไม่รวมบิล แจ้งซ่อม บริการ หรือข่าวสาร</p></div>
-      <span className="pill">เฉพาะบัญชีของฉัน</span>
+      <div><span className="eyebrow">MY ROOM</span><h2>ข้อมูลประจำห้องของฉัน</h2><p className="muted">หน้านี้อ่านข้อมูลจากหลังบ้านเจ้าของ ไม่สร้างข้อมูลซ้ำกับบิล แจ้งซ่อม บริการ ข่าวสาร หรือ NFC Access</p></div>
+      <span className="pill">เฉพาะห้องของฉัน</span>
     </section>
 
     <div className="metricGrid section">
-      <div className="metric"><span className="muted">ห้อง</span><strong>—</strong><small>อาคาร / ชั้น</small></div>
-      <div className="metric"><span className="muted">ค่าเช่าตามสัญญา</span><strong>—</strong><small>แสดงข้อมูลเท่านั้น</small></div>
-      <div className="metric"><span className="muted">สัญญาสิ้นสุด</span><strong>—</strong><small>พร้อมแจ้งเตือนต่ออายุ</small></div>
-      <div className="metric"><span className="muted">เงินประกัน</span><strong>—</strong><small>ยอดตามสัญญา</small></div>
+      <div className="metric"><span className="muted">ห้อง</span><strong>—</strong><small>เจ้าของกำหนด อาคาร / ชั้น / ห้อง</small></div>
+      <div className="metric"><span className="muted">ค่าเช่าตามสัญญา</span><strong>—</strong><small>อ่านจากสัญญาที่ active</small></div>
+      <div className="metric"><span className="muted">สัญญาสิ้นสุด</span><strong>—</strong><small>อ่านจากสัญญาปัจจุบัน</small></div>
+      <div className="metric"><span className="muted">เงินประกัน</span><strong>—</strong><small>ยอดอ้างอิงจากสัญญา</small></div>
     </div>
 
     <section className="section">
-      <h2>เมนูในห้องของฉัน</h2>
-      <div className="grid roomMenu">{roomNav.map(([title,href,icon])=><a className="card tile" href={href} key={href}><span className="icon">{icon}</span><div><h3>{title}</h3><p className="muted">เปิดดูรายละเอียดเฉพาะส่วนนี้</p></div></a>)}</div>
+      <h2>ไปส่วนไหน</h2>
+      <div className="grid roomMenu">{roomNav.map(([title,href,icon,detail])=><a className="card tile" href={href} key={href}><span className="icon">{icon}</span><div><h3>{title}</h3><p className="muted">{detail}</p></div></a>)}</div>
     </section>
 
     <section className="section splitGrid">
-      <div className="card"><h3>ข้อมูลห้อง</h3><Info label="เลขห้อง" value="—"/><Info label="อาคาร" value="—"/><Info label="ชั้น" value="—"/><Info label="สถานะเข้าพัก" value="—"/></div>
-      <div className="card"><h3>สรุปสัญญาปัจจุบัน</h3><Info label="วันเริ่มสัญญา" value="—"/><Info label="วันสิ้นสุด" value="—"/><Info label="ค่าเช่ารายเดือน" value="—"/><Info label="เงินประกัน" value="—"/></div>
+      <div className="card"><h3>ข้อมูลห้อง</h3><Info label="เลขห้อง" value="—" owner/><Info label="อาคาร" value="—" owner/><Info label="ชั้น" value="—" owner/><Info label="สถานะเข้าพัก" value="—" owner/></div>
+      <div className="card"><h3>ผู้เช่าหลัก</h3><Info label="ชื่อผู้เช่า" value="—" owner/><Info label="เบอร์โทร" value="—" owner/><Info label="ผู้ติดต่อฉุกเฉิน" value="—" owner/><Info label="สถานะสัญญา" value="—" owner/></div>
     </section>
 
-    <section className="section card noticeBox"><strong>การแยกเส้นทาง</strong><p className="muted">การชำระเงินอยู่ที่ “บิล & ชำระ”, งานเสียอยู่ที่ “แจ้งซ่อม”, พัสดุและรถอยู่ที่ “บริการ” และประกาศอยู่ที่ “ข่าวสาร” เพื่อไม่ให้ข้อมูลแต่ละโมดูลทับกัน</p></section>
+    <section className="section card"><h3>สรุปสัญญาปัจจุบัน</h3><div className="splitGrid"><div><Info label="วันเริ่มสัญญา" value="—" owner/><Info label="วันสิ้นสุด" value="—" owner/></div><div><Info label="ค่าเช่ารายเดือน" value="—" owner/><Info label="เงินประกัน" value="—" owner/></div></div></section>
+
+    <section className="section card noticeBox"><strong>แยกจากโมดูลอื่น</strong><p className="muted">บิล/สลิป/ใบเสร็จ → “บิล & ชำระ” · งานเสีย → “แจ้งซ่อม” · พัสดุ/รถรับจ้าง → “บริการ” · ประกาศ → “ข่าวสาร” · กุญแจ NFC/ประตู/ที่จอดรถ → “Access Control” แยกต่างหาก</p></section>
   </TenantShell>
 }
