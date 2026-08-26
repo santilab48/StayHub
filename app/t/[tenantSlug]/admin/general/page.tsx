@@ -1,6 +1,7 @@
 import AdminShell from '../../../../../components/AdminShell'
 import GeneralRoomCountForm from '../../../../../components/GeneralRoomCountForm'
 import ServiceContactSettingsForm from '../../../../../components/ServiceContactSettingsForm'
+import RepairBacklogPanel from '../../../../../components/RepairBacklogPanel'
 import { tenantRoutes } from '../../../../../lib/routes'
 
 export default async function Page({params}:{params:Promise<{tenantSlug:string}>}){
@@ -10,7 +11,7 @@ export default async function Page({params}:{params:Promise<{tenantSlug:string}>
     ['🔐','เจน NFC / Access',r.adminAccess,'ออกสิทธิ์ให้ผู้เช่ารายใหม่ เพิ่มผู้พักร่วม รถ หรือเพิกถอนสิทธิ์'],
     ['🏢','ห้องและข้อมูลต้นทาง',r.adminRooms,'ข้อมูลห้อง ที่อยู่ Wi-Fi การรับมอบ และสถานะย้ายออก'],
     ['📷','มิเตอร์',r.adminMeters,'สแกน/จดมิเตอร์ ตรวจค่า OCR และยืนยันค่าก่อนเข้าบิล'],
-    ['🔧','แจ้งซ่อม',r.adminRepairs,'ดูและจัดการงานซ่อมทั้งหมด'],
+    ['🔧','จัดการงานซ่อมทั้งหมด',r.adminRepairs,'เปิดงาน ดูรายละเอียด นัดหมาย เปลี่ยนสถานะ และปิดงาน'],
     ['📦','พัสดุ',r.adminParcels,'รับพัสดุ ถ่ายรูป และติดตามการรับของ'],
     ['🚕','รถรับจ้าง',r.adminRides,'จัดการผู้ให้บริการและคำขอ'],
     ['📢','ประกาศ',r.adminNews,'ส่งประกาศทั้งหมด/อาคาร/ชั้น/ห้อง'],
@@ -19,6 +20,7 @@ export default async function Page({params}:{params:Promise<{tenantSlug:string}>
   ]
   return <AdminShell slug={tenantSlug} title="ทั่วไป">
     <section className="card"><h2>เครื่องมืออื่นของเจ้าของหอ</h2><p className="muted">รวมงานที่ไม่ควรแย่งพื้นที่จาก 4 แท็บหลัก หากภายหลังมีฟังก์ชันใหม่ที่ไม่เข้าหมวด ให้เข้าที่นี่ก่อน</p></section>
+    <RepairBacklogPanel/>
     <GeneralRoomCountForm/>
     <ServiceContactSettingsForm/>
     <section className="section grid">{items.map(([icon,title,href,detail])=><a className="card tile" href={href} key={title}><span className="icon">{icon}</span><div><h3>{title}</h3><p className="muted">{detail}</p></div></a>)}</section>
