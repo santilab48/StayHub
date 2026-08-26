@@ -8,11 +8,15 @@ export default function TenantRentalSelector(){
   const [base,setBase]=useState(0)
   const [perRoom,setPerRoom]=useState(0)
   const [rooms,setRooms]=useState(0)
+  const [currentRooms,setCurrentRooms]=useState(0)
+  const [months,setMonths]=useState(1)
   const [slip,setSlip]=useState<File|null>(null)
   const [status,setStatus]=useState('กำลังโหลด...')
   const [saving,setSaving]=useState(false)
   const roomAmount=rooms*perRoom
-  const total=base+roomAmount
+  const monthlyTotal=base+roomAmount
+  const total=monthlyTotal*months
+  const requestType=rooms===currentRooms?'renewal':'renewal_and_room_change'
 
   useEffect(()=>{(async()=>{
     const {data:{user}}=await supabase.auth.getUser()
@@ -21,14 +25,15 @@ export default function TenantRentalSelector(){
     if(!profile||!['owner','admin','staff'].includes(profile.role)){setStatus('ไม่มีสิทธิ์');return}
     setTenantId(profile.tenant_id)
     const {data:tenant}=await supabase.from('tenants').select('rental_price_monthly,room_price_monthly,licensed_room_count').eq('id',profile.tenant_id).maybeSingle()
-    setBase(Number(tenant?.rental_price_monthly||0));setPerRoom(Number(tenant?.room_price_monthly||0));setRooms(Number(tenant?.licensed_room_count||0));setStatus('เลือกจำนวนห้องและแนบสลิป')
+    const licensed=Number(tenant?.licensed_room_count||0)
+    setBase(Number(tenant?.rental_price_monthly||0));setPerRoom(Number(tenant?.room_price_monthly||0));setRooms(licensed);setCurrentRooms(licensed);setStatus('ต่ออายุหรือปรับจำนวนห้อง แล้วแนบสลิป')
   })()},[supabase])
 
   const submit=async(e:FormEvent)=>{
     e.preventDefault();if(!tenantId||!slip)return
-    setSaving(true);setStatus('กำลังส่งคำขอและสลิป...')
+    setSaving(true);setStatus('กำลังส่งยอดและสลิป...')
     const {data:{user}}=await supabase.auth.getUser()
-    const {data:req,error}=await supabase.from('tenant_rental_requests').insert({tenant_id:tenantId,requested_by:user?.id||null,base_amount:base,room_unit_price:perRoom,room_count:rooms,room_amount:roomAmount,total_amount:total,status:'pending'}).select('id').single()
+    const {data:req,error}=await supabase.from('tenant_rental_requests').insert({tenant_id:tenantId,requested_by:user?.id||null,base_amount:base,room_unit_price:perRoom,room_count:rooms,room_amount:roomAmount,monthly_amount:monthlyTotal,renewal_months:months,total_amount:total,request_type:requestType,status:'pending'}).select('id').single()
     if(error||!req){setSaving(false);setStatus(`ส่งไม่สำเร็จ: ${error?.message||'สร้างคำขอไม่ได้'}`);return}
     const safeName=slip.name.replace(/[^a-zA-Z0-9._-]/g,'_')
     const path=`${tenantId}/${req.id}/${Date.now()}-${safeName}`
@@ -37,22 +42,24 @@ export default function TenantRentalSelector(){
     const {error:updateError}=await supabase.from('tenant_rental_requests').update({slip_path:path,slip_submitted_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',req.id)
     setSaving(false)
     if(updateError){setStatus(`อัปโหลดสลิปแล้ว แต่บันทึกไม่สำเร็จ: ${updateError.message}`);return}
-    setSlip(null);setStatus('ส่งยอดและสลิปให้ Super Admin ตรวจแล้ว')
+    setSlip(null);setStatus('ส่งยอด + สลิปให้ Super Admin ตรวจแล้ว')
   }
 
   return <form className="section card" onSubmit={submit}>
-    <div className="toolbar"><div><h2>ค่าเช่าระบบ StayHub</h2><p className="muted">ค่าเช่าหลัก + ค่าต่อห้อง ระบบคำนวณให้อัตโนมัติ แล้วแนบสลิปส่งให้ Super Admin ตรวจ</p></div><span className="pill">{status}</span></div>
+    <div className="toolbar"><div><h2>ต่ออายุ + ค่าห้อง</h2><p className="muted">ทำธุรกรรมค่าเช่าระบบจากแท็บทั่วไป ระบบคำนวณยอดแล้วส่งสลิปให้ Super Admin ตรวจ</p></div><span className="pill">{status}</span></div>
     <div className="metricGrid section">
       <div className="metric"><span className="muted">ค่าเช่าหลัก/เดือน</span><strong>{base.toLocaleString()} บาท</strong></div>
       <div className="metric"><span className="muted">ค่าต่อห้อง/เดือน</span><strong>{perRoom.toLocaleString()} บาท</strong></div>
-      <div className="metric"><span className="muted">ค่าห้อง</span><strong>{roomAmount.toLocaleString()} บาท</strong></div>
-      <div className="metric"><span className="muted">ยอดที่ต้องชำระ</span><strong>{total.toLocaleString()} บาท</strong></div>
+      <div className="metric"><span className="muted">รวมต่อเดือน</span><strong>{monthlyTotal.toLocaleString()} บาท</strong></div>
+      <div className="metric"><span className="muted">ยอดชำระทั้งหมด</span><strong>{total.toLocaleString()} บาท</strong></div>
     </div>
     <div className="formGrid">
-      <label>จำนวนห้องที่ต้องการใช้งาน<input type="number" min="0" value={rooms} onChange={e=>setRooms(Math.max(0,Number(e.target.value)))}/></label>
+      <label>จำนวนห้องที่ต้องการใช้<input type="number" min="0" value={rooms} onChange={e=>setRooms(Math.max(0,Number(e.target.value)))}/></label>
+      <label>ต่ออายุกี่เดือน<select value={months} onChange={e=>setMonths(Math.max(1,Number(e.target.value)))}><option value={1}>1 เดือน</option><option value={3}>3 เดือน</option><option value={6}>6 เดือน</option><option value={12}>12 เดือน</option></select></label>
+      <label>ค่าห้องต่อเดือน<input value={`${roomAmount.toLocaleString()} บาท`} readOnly/></label>
       <label>แนบสลิปชำระเงิน<input type="file" accept="image/*,application/pdf" required onChange={e=>setSlip(e.target.files?.[0]||null)}/></label>
     </div>
-    <p className="muted">Super Admin จะตรวจสลิปก่อนอนุมัติจำนวนห้อง หากปฏิเสธสามารถส่งคำขอและสลิปใหม่ได้</p>
-    <div className="section"><button className="btn" disabled={!tenantId||!slip||saving}>{saving?'กำลังส่ง...':'ส่งสลิปให้ Super Admin ตรวจ'}</button></div>
+    <p className="muted">ปัจจุบันเปิดใช้ได้ {currentRooms} ห้อง · หากเปลี่ยนจำนวนห้อง Super Admin จะอัปเดตเพดานหลังตรวจสลิปและรับชำระ</p>
+    <div className="section"><button className="btn" disabled={!tenantId||!slip||saving}>{saving?'กำลังส่ง...':'ส่งยอด + สลิปให้ Super Admin'}</button></div>
   </form>
 }
