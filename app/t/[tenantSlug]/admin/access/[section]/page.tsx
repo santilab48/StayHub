@@ -1,0 +1,10 @@
+const copy:Record<string,{title:string,desc:string,cols:string[]}>= {
+  holders:{title:'ผู้ถือสิทธิ์',desc:'สร้างผู้ถือสิทธิ์ได้โดยไม่บังคับให้แอด LINE OA และภายหลังค่อย link profile ได้',cols:['ชื่อ','ประเภท','ห้อง','สถานะ','Credential']},
+  zones:{title:'พื้นที่เข้าออก',desc:'กำหนดจุดที่ credential แต่ละใบเข้าได้ โดยไม่ใช้ชื่อห้องเป็น global key',cols:['ชื่อพื้นที่','ประเภท','อาคาร','สถานะ','Reader']},
+  readers:{title:'เครื่องอ่าน NFC',desc:'ผูก Reader/Controller กับพื้นที่และ provider จริง',cols:['Reader','พื้นที่','Provider','สถานะ','Last seen']},
+  credentials:{title:'Credentials',desc:'วงจรชีวิต Pending → Provisioning → Active → Revoked/Expired',cols:['ผู้ถือ','ประเภท','Provider','สถานะ','หมดอายุ']},
+  logs:{title:'ประวัติการเข้าออก',desc:'Audit trail ของ Granted / Denied / Revoked / Manual Open',cols:['เวลา','ผู้ถือ','จุดอ่าน','เหตุการณ์','เหตุผล']},
+  products:{title:'สินค้า Access',desc:'เจ้าของกำหนดราคาสำหรับผู้พักเพิ่ม อุปกรณ์เพิ่ม ที่จอดรถ หรือบัตรทดแทนได้',cols:['รายการ','ประเภท','ราคา','รอบเก็บ','สถานะ']},
+  provider:{title:'เชื่อมผู้ให้บริการ NFC',desc:'เลือก adapter ของระบบประตู/ไม้กั้น ห้ามเก็บ private credential secret แบบ plaintext ในฐานหลัก',cols:['Provider','Site','สถานะ','Sync ล่าสุด','การเชื่อมต่อ']}
+}
+export default async function Page({params}:{params:Promise<{tenantSlug:string,section:string}>}){const {tenantSlug,section}=await params;const c=copy[section]??{title:'NFC Access',desc:'',cols:[]};return <main className="wrap"><div className="toolbar"><div><a href={`/t/${tenantSlug}/admin/access`}>← NFC Access Control</a><h1>{c.title}</h1><p className="lead">{c.desc}</p></div>{section==='holders'?<button className="btn">+ เพิ่มผู้ถือสิทธิ์</button>:null}</div><div className="card"><div className="row"><strong>{c.cols.join('  •  ')}</strong><span className="pill">Tenant scoped</span></div><div className="empty"><h3>ยังไม่มีข้อมูล</h3><p className="muted">ข้อมูลจริงจะแสดงหลังเชื่อมผู้ใช้และ provider ของระบบ Access Control</p></div></div></main>}
