@@ -40,8 +40,16 @@ export default async function Page({params}:{params:Promise<{tenantSlug:string}>
 
     <section className="section card"><h3>ที่อยู่จัดส่งพัสดุ</h3><p className="muted">ใช้เป็นที่อยู่มาตรฐานสำหรับส่งของเข้าหอ เจ้าของกำหนดข้อมูลหลักจากหลังบ้าน แล้วระบบประกอบเลขห้องของผู้เช่าให้อัตโนมัติ</p><div className="splitGrid"><div><Info label="ชื่อผู้รับ" value="—"/><Info label="เบอร์โทรผู้รับ" value="—"/></div><div><Info label="อาคาร / เลขห้อง" value="—" owner/><Info label="ที่อยู่หอ / รหัสไปรษณีย์" value="—" owner/></div></div><div className="section"><button className="btn secondary">คัดลอกที่อยู่จัดส่ง</button></div></section>
 
+    <section className="section card">
+      <div className="toolbar"><div><h3>พัสดุที่มาถึงแล้ว</h3><p className="muted">แสดงเฉพาะสรุปพัสดุของห้องนี้ รายละเอียดทั้งหมดเก็บในโมดูลบริการ</p></div><span className="pill warn">รอรับ — ชิ้น</span></div>
+      <div className="infoRow"><span className="muted">พัสดุล่าสุด</span><strong>—</strong></div>
+      <div className="infoRow"><span className="muted">บริษัทขนส่ง</span><strong>—</strong></div>
+      <div className="infoRow"><span className="muted">มาถึงเมื่อ</span><strong>—</strong></div>
+      <div className="section"><a className="btn secondary" href={r.services}>ดูพัสดุทั้งหมด</a></div>
+    </section>
+
     <section className="section card"><h3>สรุปสัญญาปัจจุบัน</h3><div className="splitGrid"><div><Info label="วันเริ่มสัญญา" value="—" owner/><Info label="วันสิ้นสุด" value="—" owner/></div><div><Info label="ค่าเช่ารายเดือน" value="—" owner/><Info label="เงินประกัน" value="—" owner/></div></div></section>
 
-    <section className="section card noticeBox"><strong>แยกจากโมดูลอื่น</strong><p className="muted">ที่อยู่จัดส่งเป็นข้อมูลอ้างอิงของห้องเท่านั้น ส่วนสถานะรับพัสดุ/รูปพัสดุ/การรับของยังอยู่ใน “บริการ” · บิล/สลิป/ใบเสร็จ → “บิล & ชำระ” · งานเสีย → “แจ้งซ่อม” · ประกาศ → “ข่าวสาร” · กุญแจ NFC/ประตู/ที่จอดรถ → “Access Control” แยกต่างหาก</p></section>
+    <section className="section card noticeBox"><strong>แยกจากโมดูลอื่น</strong><p className="muted">ภาพรวมห้องแสดงเฉพาะ “จำนวนพัสดุรอรับ + พัสดุล่าสุด” เพื่อให้เห็นทันที ส่วนรูปพัสดุ ประวัติ การยืนยันรับ และรายการทั้งหมดอยู่ใน “บริการ” · บิล/สลิป/ใบเสร็จ → “บิล & ชำระ” · งานเสีย → “แจ้งซ่อม” · ประกาศ → “ข่าวสาร” · กุญแจ NFC/ประตู/ที่จอดรถ → “Access Control” แยกต่างหาก</p></section>
   </TenantShell>
 }
