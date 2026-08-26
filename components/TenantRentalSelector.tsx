@@ -33,20 +33,29 @@ export default function TenantRentalSelector(){
     e.preventDefault();if(!tenantId||!slip)return
     setSaving(true);setStatus('กำลังส่งยอดและสลิป...')
     const {data:{user}}=await supabase.auth.getUser()
-    const {data:req,error}=await supabase.from('tenant_rental_requests').insert({tenant_id:tenantId,requested_by:user?.id||null,base_amount:base,room_unit_price:perRoom,room_count:rooms,room_amount:roomAmount,monthly_amount:monthlyTotal,renewal_months:months,total_amount:total,request_type:requestType,status:'pending'}).select('id').single()
-    if(error||!req){setSaving(false);setStatus(`ส่งไม่สำเร็จ: ${error?.message||'สร้างคำขอไม่ได้'}`);return}
+    if(!user){setSaving(false);setStatus('ยังไม่ได้เข้าสู่ระบบ');return}
+
+    const requestId=crypto.randomUUID()
     const safeName=slip.name.replace(/[^a-zA-Z0-9._-]/g,'_')
-    const path=`${tenantId}/${req.id}/${Date.now()}-${safeName}`
+    const path=`${tenantId}/${requestId}/${Date.now()}-${safeName}`
     const {error:uploadError}=await supabase.storage.from('stayhub-rental-slips').upload(path,slip,{upsert:false})
-    if(uploadError){setSaving(false);setStatus(`สร้างคำขอแล้ว แต่แนบสลิปไม่สำเร็จ: ${uploadError.message}`);return}
-    const {error:updateError}=await supabase.from('tenant_rental_requests').update({slip_path:path,slip_submitted_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',req.id)
-    setSaving(false)
-    if(updateError){setStatus(`อัปโหลดสลิปแล้ว แต่บันทึกไม่สำเร็จ: ${updateError.message}`);return}
-    setSlip(null);setStatus('ส่งยอด + สลิปให้ Super Admin ตรวจแล้ว')
+    if(uploadError){setSaving(false);setStatus(`แนบสลิปไม่สำเร็จ: ${uploadError.message}`);return}
+
+    const {error}=await supabase.from('tenant_rental_requests').insert({
+      id:requestId,tenant_id:tenantId,requested_by:user.id,
+      base_amount:0,room_unit_price:0,room_count:rooms,room_amount:0,monthly_amount:0,
+      renewal_months:months,total_amount:0,request_type:requestType,status:'pending',
+      slip_path:path,slip_submitted_at:new Date().toISOString()
+    })
+    if(error){
+      await supabase.storage.from('stayhub-rental-slips').remove([path])
+      setSaving(false);setStatus(`ส่งไม่สำเร็จ: ${error.message}`);return
+    }
+    setSaving(false);setSlip(null);setStatus('ส่งยอด + สลิปให้ Super Admin ตรวจแล้ว')
   }
 
   return <form className="section card" onSubmit={submit}>
-    <div className="toolbar"><div><h2>ต่ออายุ + ค่าห้อง</h2><p className="muted">ทำธุรกรรมค่าเช่าระบบจากแท็บทั่วไป ระบบคำนวณยอดแล้วส่งสลิปให้ Super Admin ตรวจ</p></div><span className="pill">{status}</span></div>
+    <div className="toolbar"><div><h2>ต่ออายุ + ค่าห้อง</h2><p className="muted">ยอดที่แสดงเป็นตัวอย่างจากราคาปัจจุบัน และฐานข้อมูลจะคำนวณยอดจริงซ้ำก่อนบันทึกทุกครั้ง</p></div><span className="pill">{status}</span></div>
     <div className="metricGrid section">
       <div className="metric"><span className="muted">ค่าเช่าหลัก/เดือน</span><strong>{base.toLocaleString()} บาท</strong></div>
       <div className="metric"><span className="muted">ค่าต่อห้อง/เดือน</span><strong>{perRoom.toLocaleString()} บาท</strong></div>
@@ -59,7 +68,7 @@ export default function TenantRentalSelector(){
       <label>ค่าห้องต่อเดือน<input value={`${roomAmount.toLocaleString()} บาท`} readOnly/></label>
       <label>แนบสลิปชำระเงิน<input type="file" accept="image/*,application/pdf" required onChange={e=>setSlip(e.target.files?.[0]||null)}/></label>
     </div>
-    <p className="muted">ปัจจุบันเปิดใช้ได้ {currentRooms} ห้อง · หากเปลี่ยนจำนวนห้อง Super Admin จะอัปเดตเพดานหลังตรวจสลิปและรับชำระ</p>
+    <p className="muted">ปัจจุบันเปิดใช้ได้ {currentRooms} ห้อง · การเปลี่ยนจำนวนห้องจะมีผลหลัง Super Admin ตรวจและรับชำระเท่านั้น</p>
     <div className="section"><button className="btn" disabled={!tenantId||!slip||saving}>{saving?'กำลังส่ง...':'ส่งยอด + สลิปให้ Super Admin'}</button></div>
   </form>
 }
