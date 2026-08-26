@@ -1,4 +1,1 @@
-export default async function Blocked({ params }: { params: Promise<{ tenantSlug: string }> }) {
-  const { tenantSlug } = await params
-  return <main className="wrap"><div className="card"><span className="badge warn">ระงับการใช้งาน</span><h1>StayHub ของ {tenantSlug}</h1><p className="muted">ระบบของ OA/หอนี้ถูกระงับชั่วคราวตามสถานะการเช่า ข้อมูลยังถูกเก็บไว้และ OA อื่นไม่ได้รับผลกระทบ</p></div></main>
-}
+export default async function Page({params}:{params:Promise<{tenantSlug:string}>}){const {tenantSlug}=await params;return <main className="wrap"><div className="card empty"><span className="icon">🔒</span><h1>StayHub ถูกระงับชั่วคราว</h1><p className="lead">ระบบของ OA <strong>{tenantSlug}</strong> ยังไม่พร้อมใช้งาน กรุณาติดต่อผู้ดูแลหอ</p><p className="muted">การระงับนี้มีผลเฉพาะ OA นี้ ข้อมูลเดิมยังถูกเก็บไว้และ OA อื่นไม่เกี่ยวข้อง</p></div></main>}
