@@ -1,6 +1,6 @@
-import AdminShell from '../../../../../../../components/AdminShell'
-import FinanceTabs from '../../../../../../../components/FinanceTabs'
-import BillTemplateDesigner from '../../../../../../../components/BillTemplateDesigner'
+import AdminShell from '../../../../../../components/AdminShell'
+import FinanceTabs from '../../../../../../components/FinanceTabs'
+import BillTemplateDesigner from '../../../../../../components/BillTemplateDesigner'
 
 export default async function Page({params}:{params:Promise<{tenantSlug:string}>}){
   const {tenantSlug}=await params
