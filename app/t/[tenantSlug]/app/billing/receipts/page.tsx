@@ -1,0 +1,3 @@
+import TenantShell from '../../../../../../components/TenantShell'
+import BillingNav from '../../../../../../components/BillingNav'
+export default async function Page({params}:{params:Promise<{tenantSlug:string}>}){const {tenantSlug}=await params;return <TenantShell slug={tenantSlug} title="ใบเสร็จ"><BillingNav slug={tenantSlug}/><section className="card"><h2>ใบเสร็จของฉัน</h2><p className="muted">ใบเสร็จจะแสดงหลังเจ้าของอนุมัติการชำระแล้วเท่านั้น</p><div className="row"><span><strong>ยังไม่มีใบเสร็จ</strong><small className="muted" style={{display:'block'}}>เมื่อออกใบเสร็จ ระบบจะแสดงเลขที่ใบเสร็จ วันที่ออก และปุ่มดาวน์โหลด PDF</small></span><button className="btn secondary" disabled>ดาวน์โหลด</button></div></section></TenantShell>}
