@@ -1,4 +1,5 @@
 import AdminShell from '../../../../../components/AdminShell'
+import GeneralRoomCountForm from '../../../../../components/GeneralRoomCountForm'
 import { tenantRoutes } from '../../../../../lib/routes'
 
 export default async function Page({params}:{params:Promise<{tenantSlug:string}>}){
@@ -17,6 +18,7 @@ export default async function Page({params}:{params:Promise<{tenantSlug:string}>
   ]
   return <AdminShell slug={tenantSlug} title="ทั่วไป">
     <section className="card"><h2>เครื่องมืออื่นของเจ้าของหอ</h2><p className="muted">รวมงานที่ไม่ควรแย่งพื้นที่จาก 4 แท็บหลัก หากภายหลังมีฟังก์ชันใหม่ที่ไม่เข้าหมวด ให้เข้าที่นี่ก่อน</p></section>
+    <GeneralRoomCountForm/>
     <section className="section grid">{items.map(([icon,title,href,detail])=><a className="card tile" href={href} key={title}><span className="icon">{icon}</span><div><h3>{title}</h3><p className="muted">{detail}</p></div></a>)}</section>
   </AdminShell>
 }
