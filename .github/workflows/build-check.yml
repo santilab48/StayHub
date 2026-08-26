@@ -1,4 +1,4 @@
-name: StayHub Build Check
+name: StayHub Build & Deploy
 
 on:
   push:
@@ -9,13 +9,16 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       NEXT_PUBLIC_SUPABASE_URL: https://exqsiwvmjyzkkydfdhby.supabase.co
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ssBp33CUhUN0K5JNjy-71g_MXBtoNIx
       NEXT_TELEMETRY_DISABLED: 1
+      VERCEL_ORG_ID: team_im6lPMQPPf2OuqAs2PhhNgMu
+      VERCEL_PROJECT_ID: prj_53TSCPBI8dRI463Lw8YegwuOl1BR
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,3 +33,25 @@ jobs:
 
       - name: Type check and production build
         run: npm run build
+
+      - name: Check Vercel token
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "VERCEL_TOKEN_NOT_CONFIGURED"
+            echo "Add a GitHub Actions repository secret named VERCEL_TOKEN, then rerun this workflow."
+            exit 1
+          fi
+
+      - name: Link Vercel project
+        run: |
+          mkdir -p .vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > .vercel/project.json
+
+      - name: Pull Vercel production environment
+        run: npx --yes vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build with Vercel production environment
+        run: npx --yes vercel@latest build --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy production
+        run: npx --yes vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"
