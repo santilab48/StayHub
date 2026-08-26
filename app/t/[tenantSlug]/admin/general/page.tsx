@@ -3,6 +3,7 @@ import GeneralRoomCountForm from '../../../../../components/GeneralRoomCountForm
 import ServiceContactSettingsForm from '../../../../../components/ServiceContactSettingsForm'
 import RepairBacklogPanel from '../../../../../components/RepairBacklogPanel'
 import GeneralAnnouncementComposer from '../../../../../components/GeneralAnnouncementComposer'
+import TenantRentalSelector from '../../../../../components/TenantRentalSelector'
 import { tenantRoutes } from '../../../../../lib/routes'
 
 export default async function Page({params}:{params:Promise<{tenantSlug:string}>}){
@@ -21,6 +22,7 @@ export default async function Page({params}:{params:Promise<{tenantSlug:string}>
   ]
   return <AdminShell slug={tenantSlug} title="ทั่วไป">
     <section className="card"><h2>เครื่องมืออื่นของเจ้าของหอ</h2><p className="muted">รวมงานที่ไม่ควรแย่งพื้นที่จาก 4 แท็บหลัก หากภายหลังมีฟังก์ชันใหม่ที่ไม่เข้าหมวด ให้เข้าที่นี่ก่อน</p></section>
+    <TenantRentalSelector/>
     <RepairBacklogPanel/>
     <GeneralAnnouncementComposer/>
     <GeneralRoomCountForm/>
