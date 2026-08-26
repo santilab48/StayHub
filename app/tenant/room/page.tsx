@@ -1,0 +1,1 @@
+export default function Page(){return <main className="wrap"><a href="/">← กลับ</a><div className="card" style={{marginTop:18}}><h1>ห้องของฉัน</h1><p className="muted">ข้อมูลห้อง ผู้เช่า สัญญา Paperless เงินประกัน และวันสิ้นสุดสัญญา</p></div></main>}

@@ -1,0 +1,1 @@
+export default function Page(){return <main className="wrap"><a href="/">← กลับ</a><div className="card" style={{marginTop:18}}><h1>บิล & ชำระ</h1><p className="muted">ค่าเช่า ค่าน้ำ ค่าไฟ ค่าใช้จ่ายอื่น สลิป สถานะชำระ และใบเสร็จ</p></div></main>}

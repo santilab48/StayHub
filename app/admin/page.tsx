@@ -1,0 +1,2 @@
+const items=['Dashboard','ห้องพัก','ผู้เช่า','สัญญา Paperless','การเงิน','มิเตอร์ OCR','แจ้งซ่อม','พัสดุ','รถรับจ้าง','ประกาศ','รายงาน','ตั้งค่า']
+export default function Admin(){return <main className="wrap"><a href="/">← Rich Menu</a><h1>⚙️ จัดการหอ</h1><p className="muted">Admin Core — ต้องตรวจสิทธิ์ LINE ก่อนเข้าใช้งานจริง</p><div className="grid">{items.map(x=><div className="card" key={x}><strong>{x}</strong></div>)}</div></main>}

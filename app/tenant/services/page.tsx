@@ -1,0 +1,1 @@
+export default function Page(){return <main className="wrap"><a href="/">← กลับ</a><div className="card" style={{marginTop:18}}><h1>บริการ</h1><p className="muted">พัสดุของฉัน เรียกรถรับจ้าง จองรถล่วงหน้า และทางลัดไป Grab</p></div></main>}
