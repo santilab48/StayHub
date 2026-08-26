@@ -1,5 +1,6 @@
 import TenantShell from '../../../../../components/TenantShell'
 import RoomNav from '../../../../../components/RoomNav'
+import MyRoomNfcCard from '../../../../../components/MyRoomNfcCard'
 import { tenantRoutes } from '../../../../../lib/routes'
 
 const Info=({label,value,owner=false}:{label:string,value:string,owner?:boolean})=><div className="infoRow"><span><span className="muted">{label}</span>{owner&&<small className="muted" style={{display:'block'}}>ข้อมูลยืนยันโดยเจ้าของ</small>}</span><strong>{value}</strong></div>
@@ -12,12 +13,13 @@ export default async function Page({params}:{params:Promise<{tenantSlug:string}>
     ['สัญญาเช่า',r.contract,'✍️','อ่าน/เซ็น/ดาวน์โหลดสัญญา'],
     ['ผู้อยู่อาศัย',r.occupants,'👥','ผู้พักหลักและผู้พักร่วมที่อนุมัติแล้ว'],
     ['รถที่ลงทะเบียน',r.vehicles,'🚗','รถที่เจ้าของอนุมัติให้ผูกกับห้อง'],
+    ['NFC ของฉัน',r.myAccessKey,'📱','สิทธิ์เข้าออกที่เจ้าของหอออกให้'],
     ['เอกสารห้อง',r.documents,'📄','เอกสารที่เจ้าของอนุญาตให้ดู']
   ]
   return <TenantShell slug={tenantSlug} title="ห้องของฉัน">
     <RoomNav slug={tenantSlug}/>
     <section className="roomHero card">
-      <div><span className="eyebrow">MY ROOM</span><h2>ข้อมูลประจำห้องของฉัน</h2><p className="muted">ข้อมูลต้นทางมาจากหลังบ้านเจ้าของ หน้านี้ใช้ดูและเป็นทางลัด ไม่สร้างข้อมูลซ้ำกับบิล ซ่อม บริการ ข่าวสาร หรือ NFC Access</p></div>
+      <div><span className="eyebrow">MY ROOM</span><h2>ข้อมูลประจำห้องของฉัน</h2><p className="muted">ข้อมูลต้นทางมาจากหลังบ้านเจ้าของ หน้านี้ใช้ดูและเป็นทางลัด ไม่สร้างข้อมูลซ้ำกับบิล ซ่อม บริการ หรือข่าวสาร</p></div>
       <span className="pill">เฉพาะห้องของฉัน</span>
     </section>
 
@@ -29,6 +31,8 @@ export default async function Page({params}:{params:Promise<{tenantSlug:string}>
     </div>
 
     <section className="section"><h2>ไปส่วนไหน</h2><div className="grid roomMenu">{roomNav.map(([title,href,icon,detail])=><a className="card tile" href={href} key={href}><span className="icon">{icon}</span><div><h3>{title}</h3><p className="muted">{detail}</p></div></a>)}</div></section>
+
+    <MyRoomNfcCard slug={tenantSlug}/>
 
     <section className="section splitGrid">
       <div className="card"><h3>ข้อมูลห้อง</h3><Info label="เลขห้อง" value="—" owner/><Info label="อาคาร" value="—" owner/><Info label="ชั้น" value="—" owner/><Info label="สถานะเข้าพัก" value="—" owner/></div>
@@ -53,6 +57,6 @@ export default async function Page({params}:{params:Promise<{tenantSlug:string}>
 
     <section className="section card"><h3>สรุปสัญญาปัจจุบัน</h3><div className="splitGrid"><div><Info label="วันเริ่มสัญญา" value="—" owner/><Info label="วันสิ้นสุด" value="—" owner/></div><div><Info label="ค่าเช่ารายเดือน" value="—" owner/><Info label="เงินประกัน" value="—" owner/></div></div></section>
 
-    <section className="section card noticeBox"><strong>ไม่เก็บข้อมูลซ้ำ</strong><p className="muted">ยอดเงินจริง → บิล & ชำระ · งานเสีย → แจ้งซ่อม · รูป/ประวัติพัสดุ → บริการ · ประกาศเฉพาะห้อง → ข่าวสาร · NFC/ประตู/ที่จอดรถ → Access Control ส่วนภาพรวมห้องแสดงเพียงข้อมูลอ้างอิงและสถานะสรุป</p></section>
+    <section className="section card noticeBox"><strong>ไม่เก็บข้อมูลซ้ำ</strong><p className="muted">ยอดเงินจริง → บิล & ชำระ · งานเสีย → แจ้งซ่อม · รูป/ประวัติพัสดุ → บริการ · ประกาศเฉพาะห้อง → ข่าวสาร · NFC แสดงสถานะใน “ห้องของฉัน” แต่การออก/เพิกถอนสิทธิ์ยังอยู่ Access Control หลังบ้านเจ้าของ</p></section>
   </TenantShell>
 }
