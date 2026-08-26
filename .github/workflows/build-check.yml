@@ -15,6 +15,7 @@ jobs:
     env:
       NEXT_PUBLIC_SUPABASE_URL: https://exqsiwvmjyzkkydfdhby.supabase.co
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ssBp33CUhUN0K5JNjy-71g_MXBtoNIx
+      NEXT_TELEMETRY_DISABLED: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v4
