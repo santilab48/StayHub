@@ -8,7 +8,7 @@ export default async function Page({params}:{params:Promise<{tenantSlug:string}>
   const {tenantSlug}=await params
   const r=tenantRoutes(tenantSlug)
   const roomNav=[
-    ['ภาพรวมห้อง',r.room,'🏠','ข้อมูลห้อง + ผู้เช่าหลัก'],
+    ['ภาพรวมห้อง',r.room,'🏠','ข้อมูลห้อง + ผู้เช่าหลัก + ที่อยู่จัดส่ง'],
     ['สัญญาเช่า',r.contract,'✍️','อ่าน/เซ็น/ดาวน์โหลดสัญญา'],
     ['ผู้อยู่อาศัย',r.occupants,'👥','ผู้พักหลักและผู้พักร่วมที่อนุมัติแล้ว'],
     ['รถที่ลงทะเบียน',r.vehicles,'🚗','รถที่เจ้าของอนุมัติให้ผูกกับห้อง'],
@@ -38,8 +38,10 @@ export default async function Page({params}:{params:Promise<{tenantSlug:string}>
       <div className="card"><h3>ผู้เช่าหลัก</h3><Info label="ชื่อผู้เช่า" value="—" owner/><Info label="เบอร์โทร" value="—" owner/><Info label="ผู้ติดต่อฉุกเฉิน" value="—" owner/><Info label="สถานะสัญญา" value="—" owner/></div>
     </section>
 
+    <section className="section card"><h3>ที่อยู่จัดส่งพัสดุ</h3><p className="muted">ใช้เป็นที่อยู่มาตรฐานสำหรับส่งของเข้าหอ เจ้าของกำหนดข้อมูลหลักจากหลังบ้าน แล้วระบบประกอบเลขห้องของผู้เช่าให้อัตโนมัติ</p><div className="splitGrid"><div><Info label="ชื่อผู้รับ" value="—"/><Info label="เบอร์โทรผู้รับ" value="—"/></div><div><Info label="อาคาร / เลขห้อง" value="—" owner/><Info label="ที่อยู่หอ / รหัสไปรษณีย์" value="—" owner/></div></div><div className="section"><button className="btn secondary">คัดลอกที่อยู่จัดส่ง</button></div></section>
+
     <section className="section card"><h3>สรุปสัญญาปัจจุบัน</h3><div className="splitGrid"><div><Info label="วันเริ่มสัญญา" value="—" owner/><Info label="วันสิ้นสุด" value="—" owner/></div><div><Info label="ค่าเช่ารายเดือน" value="—" owner/><Info label="เงินประกัน" value="—" owner/></div></div></section>
 
-    <section className="section card noticeBox"><strong>แยกจากโมดูลอื่น</strong><p className="muted">บิล/สลิป/ใบเสร็จ → “บิล & ชำระ” · งานเสีย → “แจ้งซ่อม” · พัสดุ/รถรับจ้าง → “บริการ” · ประกาศ → “ข่าวสาร” · กุญแจ NFC/ประตู/ที่จอดรถ → “Access Control” แยกต่างหาก</p></section>
+    <section className="section card noticeBox"><strong>แยกจากโมดูลอื่น</strong><p className="muted">ที่อยู่จัดส่งเป็นข้อมูลอ้างอิงของห้องเท่านั้น ส่วนสถานะรับพัสดุ/รูปพัสดุ/การรับของยังอยู่ใน “บริการ” · บิล/สลิป/ใบเสร็จ → “บิล & ชำระ” · งานเสีย → “แจ้งซ่อม” · ประกาศ → “ข่าวสาร” · กุญแจ NFC/ประตู/ที่จอดรถ → “Access Control” แยกต่างหาก</p></section>
   </TenantShell>
 }
