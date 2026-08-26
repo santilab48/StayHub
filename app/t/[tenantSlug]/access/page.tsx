@@ -1,0 +1,6 @@
+import { tenantRoutes } from '../../../../lib/routes'
+
+export default async function Page({params}:{params:Promise<{tenantSlug:string}>}){
+  const {tenantSlug}=await params
+  const r=tenantRoutes(tenantSlug)
+  return <main className="wrap"><div className="toolbar"><div><a href={r.home}>← StayHub</a><span className="pill">Access Module</span><h1>กุญแจดิจิทัล</h1><p className="lead">หน้าเข้าใช้งานสิทธิ์ประตูและที่จอดรถ แยกจากเมนูห้อง บิล แจ้งซ่อม และบริการ</p></div></div><section className="card"><div className="metricGrid"><div className="metric"><span className="muted">สถานะ NFC</span><strong>—</strong></div><div className="metric"><span className="muted">พื้นที่ที่เข้าได้</span><strong>—</strong></div><div className="metric"><span className="muted">หมดอายุ</span><strong>—</strong></div><div className="metric"><span className="muted">อุปกรณ์</span><strong>—</strong></div></div><div className="section"><a className="btn" href={r.myAccessKey}>ดูสิทธิ์กุญแจของฉัน</a></div></section><section className="section card"><strong>การออกสิทธิ์</strong><p className="muted">ผู้ใช้ไม่สามารถสร้าง NFC credential เองได้ เจ้าของหอหรือ Admin ต้องเป็นผู้ออกสิทธิ์และกำหนดพื้นที่เข้าออกก่อน</p></section></main>}
