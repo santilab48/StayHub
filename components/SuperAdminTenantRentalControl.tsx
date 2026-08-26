@@ -7,6 +7,7 @@ type Req={id:string;base_amount:number;room_unit_price:number;room_count:number;
 export default function SuperAdminTenantRentalControl({tenantId}:{tenantId:string}){
   const supabase=useMemo(()=>createSupabaseBrowser(),[])
   const [base,setBase]=useState(0),[perRoom,setPerRoom]=useState(0),[limit,setLimit]=useState(0)
+  const [addRooms,setAddRooms]=useState(1)
   const [requests,setRequests]=useState<Req[]>([])
   const [status,setStatus]=useState('กำลังโหลด...'),[saving,setSaving]=useState(false)
   const load=async()=>{
@@ -18,10 +19,20 @@ export default function SuperAdminTenantRentalControl({tenantId}:{tenantId:strin
   }
   useEffect(()=>{load()},[tenantId])
   const save=async(e:FormEvent)=>{e.preventDefault();setSaving(true);const {error}=await supabase.from('tenants').update({rental_price_monthly:base,room_price_monthly:perRoom,licensed_room_count:limit,updated_at:new Date().toISOString()}).eq('id',tenantId);setSaving(false);setStatus(error?error.message:'บันทึกราคาและสิทธิ์แล้ว')}
+  const addRoomQuota=async()=>{
+    const qty=Math.max(1,Math.floor(addRooms||1))
+    const next=limit+qty
+    setSaving(true);setStatus('กำลังเพิ่มจำนวนห้อง...')
+    const {error}=await supabase.from('tenants').update({licensed_room_count:next,updated_at:new Date().toISOString()}).eq('id',tenantId)
+    setSaving(false)
+    if(error){setStatus(error.message);return}
+    setLimit(next);setAddRooms(1);setStatus(`เพิ่มสิทธิ์แล้ว เป็น ${next} ห้อง`)
+  }
   const approve=async(r:Req)=>{setStatus('กำลังอนุมัติ...');const {error:e1}=await supabase.from('tenants').update({licensed_room_count:r.room_count,billing_status:'active',updated_at:new Date().toISOString()}).eq('id',tenantId);if(e1){setStatus(e1.message);return}const {error:e2}=await supabase.from('tenant_rental_requests').update({status:'approved',reviewed_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',r.id);setStatus(e2?e2.message:'อนุมัติและตั้งจำนวนห้องแล้ว');await load()}
   return <section className="section card">
     <div className="toolbar"><div><h2>ค่าเช่า & จำกัดการใช้งาน</h2><p className="muted">Super Admin ตั้งราคาฐาน ราคาต่อห้อง และจำนวนห้องที่ OA ใช้งานได้จริง</p></div><span className="pill">{status}</span></div>
     <form onSubmit={save} className="section"><div className="formGrid"><label>ค่าเช่าหลัก/เดือน<input type="number" min="0" value={base} onChange={e=>setBase(Number(e.target.value))}/></label><label>ค่าต่อห้อง/เดือน<input type="number" min="0" value={perRoom} onChange={e=>setPerRoom(Number(e.target.value))}/></label><label>จำนวนห้องที่อนุญาต<input type="number" min="0" value={limit} onChange={e=>setLimit(Number(e.target.value))}/></label></div><div className="section"><button className="btn" disabled={saving}>{saving?'กำลังบันทึก...':'บันทึกการตั้งค่า'}</button></div></form>
+    <div className="section card"><div className="toolbar"><div><h3>➕ เพิ่มห้องให้ OA</h3><p className="muted">ใช้เมื่อ OA ขอเพิ่มห้องภายหลัง ปัจจุบันอนุญาต {limit} ห้อง</p></div><strong>{limit} ห้อง</strong></div><div className="formGrid section"><label>เพิ่มอีกกี่ห้อง<input type="number" min="1" value={addRooms} onChange={e=>setAddRooms(Math.max(1,Number(e.target.value)))}/></label><label>จำนวนหลังเพิ่ม<input value={`${limit+Math.max(1,Math.floor(addRooms||1))} ห้อง`} readOnly/></label></div><button type="button" className="btn" disabled={saving} onClick={addRoomQuota}>เพิ่มจำนวนห้อง</button></div>
     <div className="section"><h3>คำขอจาก OA</h3>{requests.length===0?<p className="muted">ยังไม่มีคำขอ</p>:requests.map(r=><div className="row" key={r.id}><div><strong>{r.room_count} ห้อง · {Number(r.total_amount).toLocaleString()} บาท/เดือน</strong><div className="muted">ฐาน {Number(r.base_amount).toLocaleString()} + {r.room_count} × {Number(r.room_unit_price).toLocaleString()} = {Number(r.total_amount).toLocaleString()} · {r.status}</div></div>{r.status==='pending'&&<button className="btn" onClick={()=>approve(r)}>อนุมัติ + จำกัด {r.room_count} ห้อง</button>}</div>)}</div>
   </section>
 }
