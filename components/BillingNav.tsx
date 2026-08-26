@@ -1,0 +1,2 @@
+import { tenantRoutes } from '../lib/routes'
+export default function BillingNav({slug}:{slug:string}){const r=tenantRoutes(slug);const items=[['ภาพรวม',r.billing],['บิลปัจจุบัน',r.billingCurrent],['แจ้งชำระ',r.billingPay],['ประวัติ',r.billingHistory],['ใบเสร็จ',r.billingReceipts]];return <nav className="roomSubnav" aria-label="เมนูบิลและชำระ">{items.map(([t,h])=><a href={h} key={h}>{t}</a>)}</nav>}
