@@ -20,16 +20,13 @@ export default async function Page({params}:{params:Promise<{tenantSlug:string}>
     </section>
 
     <section className="section card">
-      <h3>แจ้งซ่อมใหม่</h3>
+      <div className="toolbar"><div><h3>แจ้งซ่อม</h3><p className="muted">กรอกสั้น ๆ แล้วส่ง เจ้าของจะรับงานและนัดหมายภายหลัง</p></div><span className="pill">3 ขั้นตอน</span></div>
       <div className="formGrid">
-        <label>ประเภทปัญหา<select><option>ไฟฟ้า</option><option>ประปา</option><option>แอร์</option><option>อินเทอร์เน็ต</option><option>ประตู / กุญแจ</option><option>เฟอร์นิเจอร์</option><option>ห้องน้ำ</option><option>อื่น ๆ</option></select></label>
-        <label>ความเร่งด่วน<select><option>ปกติ</option><option>เร่งด่วน</option></select></label>
-        <label className="span2">รายละเอียด<textarea rows={4} placeholder="เช่น แอร์ไม่เย็น มีน้ำหยดจากเครื่อง ตั้งแต่เมื่อคืน"/></label>
-        <label>วัน/เวลาที่สะดวก<input type="datetime-local"/></label>
-        <label>เข้าห้องได้เมื่อไม่อยู่หรือไม่<select><option>ต้องมีผู้เช่าอยู่</option><option>อนุญาตให้เจ้าหน้าที่เข้าซ่อมได้</option></select></label>
-        <label className="span2">รูปประกอบ<input type="file" accept="image/*" multiple/></label>
+        <label>หัวข้อที่เสีย<select><option>ไฟฟ้า</option><option>ประปา</option><option>แอร์</option><option>อินเทอร์เน็ต</option><option>ประตู / กุญแจ</option><option>เฟอร์นิเจอร์</option><option>ห้องน้ำ</option><option>อื่น ๆ</option></select></label>
+        <label className="span2">รายละเอียด<textarea rows={3} placeholder="บอกอาการสั้น ๆ เช่น แอร์ไม่เย็นและมีน้ำหยด"/></label>
+        <label className="span2">แนบภาพ<input type="file" accept="image/*" multiple/></label>
       </div>
-      <div className="section"><button className="btn">ส่งเรื่องซ่อม</button></div>
+      <div className="section"><button className="btn">ส่งแจ้งซ่อม</button></div>
     </section>
 
     <section className="section card">
