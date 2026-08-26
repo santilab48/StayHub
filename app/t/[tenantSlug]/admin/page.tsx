@@ -1,7 +1,3 @@
-const adminMenus = [
-  ['Dashboard',''],['ห้องพัก','rooms'],['ผู้เช่า','residents'],['สัญญา Paperless','contracts'],['การเงิน','billing'],['มิเตอร์ OCR','billing/meter-walk'],['แจ้งซ่อม','repairs'],['พัสดุ','parcels'],['รถรับจ้าง','rides'],['ประกาศ','announcements'],['รายงาน','reports'],['ตั้งค่า','settings']
-]
-export default async function TenantAdmin({ params }: { params: Promise<{ tenantSlug: string }> }) {
-  const { tenantSlug } = await params
-  return <main className="wrap"><div className="topbar"><div><span className="brand">StayHub Admin</span><span className="badge">{tenantSlug}</span></div><a href={`/t/${tenantSlug}/app`}>← ผู้เช่า</a></div><h1>จัดการหอ</h1><p className="muted">พื้นที่นี้ต้องผ่าน tenant guard + role guard (staff/admin/owner)</p><div className="grid">{adminMenus.map(([title,path])=><a className="card" href={`/t/${tenantSlug}/admin${path?`/${path}`:''}`} key={title}><strong>{title}</strong></a>)}</div></main>
-}
+import AdminShell from '../../../../components/AdminShell'
+import { tenantRoutes } from '../../../../lib/routes'
+export default async function Page({params}:{params:Promise<{tenantSlug:string}>}){const {tenantSlug}=await params;const r=tenantRoutes(tenantSlug);const modules=[['🏢','ห้องพัก',r.adminRooms],['👥','ผู้เช่า',r.adminTenants],['📝','สัญญา',r.adminContracts],['💰','การเงิน',r.adminFinance],['📷','มิเตอร์ OCR',r.adminMeters],['🔧','แจ้งซ่อม',r.adminRepairs],['📦','พัสดุ',r.adminParcels],['🚕','รถรับจ้าง',r.adminRides],['📢','ประกาศ',r.adminNews],['📊','รายงาน',r.adminReports],['⚙️','ตั้งค่า',r.adminSettings]];return <AdminShell slug={tenantSlug} title="ภาพรวม"><div className="metricGrid"><div className="metric"><span className="muted">ห้องทั้งหมด</span><strong>—</strong></div><div className="metric"><span className="muted">ห้องว่าง</span><strong>—</strong></div><div className="metric"><span className="muted">ค้างชำระ</span><strong>—</strong></div><div className="metric"><span className="muted">งานซ่อมค้าง</span><strong>—</strong></div></div><div className="grid section">{modules.map(([i,t,h])=><a className="card tile" href={h} key={t}><span className="icon">{i}</span><h3>{t}</h3></a>)}</div></AdminShell>}

@@ -1,0 +1,2 @@
+import AdminShell from '../../../../../components/AdminShell'
+export default async function Page({params}:{params:Promise<{tenantSlug:string}>}){const {tenantSlug}=await params;return <AdminShell slug={tenantSlug} title="พัสดุ"><div className="toolbar"><div className="muted">บันทึกพัสดุแล้วระบบเตรียมแจ้งสมาชิกห้องนั้น</div><button className="btn">+ รับพัสดุ</button></div><div className="card"><p className="muted">ข้อมูล: ห้อง • บริษัทขนส่ง • tracking • รูป • arrived_at • waiting/picked_up/returned</p></div></AdminShell>}

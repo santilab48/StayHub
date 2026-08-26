@@ -1,0 +1,1 @@
+export default function EmptyState({title,detail,action}:{title:string,detail:string,action?:string}){return <div className="card empty"><strong>{title}</strong><p className="muted">{detail}</p>{action&&<button className="btn">{action}</button>}</div>}

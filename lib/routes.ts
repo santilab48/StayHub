@@ -1,41 +1,11 @@
 export const stayhubRoutes = {
-  public: {
-    home: '/',
-    tenantEntry: (tenantSlug: string) => `/t/${tenantSlug}`,
-    blocked: (tenantSlug: string) => `/t/${tenantSlug}/blocked`,
-  },
-  resident: {
-    home: (tenantSlug: string) => `/t/${tenantSlug}/app`,
-    room: (tenantSlug: string) => `/t/${tenantSlug}/app/room`,
-    contract: (tenantSlug: string) => `/t/${tenantSlug}/app/room/contract`,
-    billing: (tenantSlug: string) => `/t/${tenantSlug}/app/billing`,
-    repairs: (tenantSlug: string) => `/t/${tenantSlug}/app/repair`,
-    services: (tenantSlug: string) => `/t/${tenantSlug}/app/services`,
-    news: (tenantSlug: string) => `/t/${tenantSlug}/app/news`,
-  },
-  admin: {
-    home: (tenantSlug: string) => `/t/${tenantSlug}/admin`,
-    rooms: (tenantSlug: string) => `/t/${tenantSlug}/admin/rooms`,
-    residents: (tenantSlug: string) => `/t/${tenantSlug}/admin/residents`,
-    contracts: (tenantSlug: string) => `/t/${tenantSlug}/admin/contracts`,
-    billing: (tenantSlug: string) => `/t/${tenantSlug}/admin/billing`,
-    meterWalk: (tenantSlug: string) => `/t/${tenantSlug}/admin/billing/meter-walk`,
-    payments: (tenantSlug: string) => `/t/${tenantSlug}/admin/billing/payments`,
-    repairs: (tenantSlug: string) => `/t/${tenantSlug}/admin/repairs`,
-    parcels: (tenantSlug: string) => `/t/${tenantSlug}/admin/parcels`,
-    rides: (tenantSlug: string) => `/t/${tenantSlug}/admin/rides`,
-    announcements: (tenantSlug: string) => `/t/${tenantSlug}/admin/announcements`,
-    reports: (tenantSlug: string) => `/t/${tenantSlug}/admin/reports`,
-    settings: (tenantSlug: string) => `/t/${tenantSlug}/admin/settings`,
-  },
-  platform: {
-    home: '/platform',
-    tenants: '/platform/tenants',
-    tenant: (tenantId: string) => `/platform/tenants/${tenantId}`,
-    subscription: (tenantId: string) => `/platform/tenants/${tenantId}/subscription`,
-    access: (tenantId: string) => `/platform/tenants/${tenantId}/access`,
-    billing: '/platform/billing',
-    reports: '/platform/reports',
-    settings: '/platform/settings',
-  },
+  public:{home:'/',tenantEntry:(s:string)=>`/t/${s}`,blocked:(s:string)=>`/t/${s}/blocked`},
+  resident:{home:(s:string)=>`/t/${s}/app`,room:(s:string)=>`/t/${s}/app/room`,contract:(s:string)=>`/t/${s}/app/room/contract`,billing:(s:string)=>`/t/${s}/app/billing`,repairs:(s:string)=>`/t/${s}/app/repair`,services:(s:string)=>`/t/${s}/app/services`,news:(s:string)=>`/t/${s}/app/news`},
+  admin:{home:(s:string)=>`/t/${s}/admin`,rooms:(s:string)=>`/t/${s}/admin/rooms`,tenants:(s:string)=>`/t/${s}/admin/tenants`,contracts:(s:string)=>`/t/${s}/admin/contracts`,finance:(s:string)=>`/t/${s}/admin/finance`,meters:(s:string)=>`/t/${s}/admin/meters`,repairs:(s:string)=>`/t/${s}/admin/repairs`,parcels:(s:string)=>`/t/${s}/admin/parcels`,rides:(s:string)=>`/t/${s}/admin/rides`,news:(s:string)=>`/t/${s}/admin/news`,reports:(s:string)=>`/t/${s}/admin/reports`,settings:(s:string)=>`/t/${s}/admin/settings`},
+  platform:{home:'/platform',oas:'/platform/oas',billing:'/platform/billing',reports:'/platform/reports',settings:'/platform/settings',tenant:(id:string)=>`/platform/oas/${id}`}
 } as const
+
+export function tenantRoutes(s:string){return {
+  home:stayhubRoutes.resident.home(s),room:stayhubRoutes.resident.room(s),contract:stayhubRoutes.resident.contract(s),billing:stayhubRoutes.resident.billing(s),repair:stayhubRoutes.resident.repairs(s),services:stayhubRoutes.resident.services(s),news:stayhubRoutes.resident.news(s),
+  admin:stayhubRoutes.admin.home(s),adminRooms:stayhubRoutes.admin.rooms(s),adminTenants:stayhubRoutes.admin.tenants(s),adminContracts:stayhubRoutes.admin.contracts(s),adminFinance:stayhubRoutes.admin.finance(s),adminMeters:stayhubRoutes.admin.meters(s),adminRepairs:stayhubRoutes.admin.repairs(s),adminParcels:stayhubRoutes.admin.parcels(s),adminRides:stayhubRoutes.admin.rides(s),adminNews:stayhubRoutes.admin.news(s),adminReports:stayhubRoutes.admin.reports(s),adminSettings:stayhubRoutes.admin.settings(s)
+}}

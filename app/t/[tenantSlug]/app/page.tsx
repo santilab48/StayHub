@@ -1,12 +1,3 @@
-const residentMenus = [
-  ['🏠','ห้องของฉัน','room'],
-  ['💳','บิล & ชำระ','billing'],
-  ['🔧','แจ้งซ่อม','repair'],
-  ['📦','บริการ','services'],
-  ['📢','ข่าวสาร','news'],
-]
-
-export default async function TenantApp({ params }: { params: Promise<{ tenantSlug: string }> }) {
-  const { tenantSlug } = await params
-  return <main className="wrap"><div className="topbar"><div><span className="brand">StayHub</span><span className="badge">{tenantSlug}</span></div></div><h1>บริการผู้เช่า</h1><p className="muted">ข้อมูลทั้งหมดของหน้านี้ต้องถูกกรองด้วย tenant ของ {tenantSlug}</p><div className="grid">{residentMenus.map(([icon,title,path])=><a className="card tile" href={`/t/${tenantSlug}/app/${path}`} key={path}><div className="icon">{icon}</div><strong>{title}</strong></a>)}</div><div className="card" style={{marginTop:16}}><a href={`/t/${tenantSlug}/admin`}>⚙️ จัดการหอ (สำหรับเจ้าหน้าที่)</a></div></main>
-}
+import TenantShell from '../../../../components/TenantShell'
+import { tenantRoutes } from '../../../../lib/routes'
+export default async function Page({params}:{params:Promise<{tenantSlug:string}>}){const {tenantSlug}=await params;const r=tenantRoutes(tenantSlug);const items=[['🏠','ห้องของฉัน','ข้อมูลห้อง • สัญญา • เงินประกัน',r.room],['💳','บิล & ชำระ','ค่าเช่า • น้ำไฟ • สลิป • ใบเสร็จ',r.billing],['🔧','แจ้งซ่อม','แจ้งปัญหา • นัดหมาย • ติดตาม',r.repair],['📦','บริการ','พัสดุ • รถรับจ้าง • Grab',r.services],['📢','ข่าวสาร','ประกาศ • กฎ • แจ้งเตือน',r.news]];return <TenantShell slug={tenantSlug} title="หน้าหลัก"><div className="grid">{items.map(([i,t,d,h])=><a className="card tile" href={h} key={t}><span className="icon">{i}</span><div><h3>{t}</h3><div className="muted">{d}</div></div></a>)}</div></TenantShell>}
