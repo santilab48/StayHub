@@ -1,0 +1,48 @@
+name: StayHub UI Preview
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/preview/**'
+      - 'app/globals.css'
+      - '.github/workflows/ui-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://exqsiwvmjyzkkydfdhby.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ssBp33CUhUN0K5JNjy-71g_MXBtoNIx
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install --no-audit --no-fund
+      - run: npm run build
+      - run: npx --yes playwright@1.55.0 install --with-deps chromium
+      - name: Start app
+        run: |
+          npm start > /tmp/stayhub-preview.log 2>&1 &
+          echo $! > /tmp/stayhub-preview.pid
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:3000/preview/my-room >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/stayhub-preview.log
+          exit 1
+      - name: Capture real rendered page
+        run: npx --yes playwright@1.55.0 screenshot --device='Desktop Chrome HiDPI' --full-page http://127.0.0.1:3000/preview/my-room my-room-real.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: my-room-real-screenshot
+          path: my-room-real.png
+          if-no-files-found: error
+          retention-days: 7
