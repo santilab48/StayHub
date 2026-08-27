@@ -15,7 +15,7 @@ type Inventory={item_name:string;quantity:number;condition:string|null;updated_a
 const fmtMoney=(v:number|null|undefined)=>v==null?'—':`${Number(v).toLocaleString('th-TH')} บาท`
 const fmtDate=(v:string|null|undefined)=>v?new Date(v).toLocaleDateString('th-TH'):'—'
 const Info=({label,value}:{label:string;value:string})=><div className="myRoomInfo"><span>{label}</span><strong>{value||'—'}</strong></div>
-const PhoneLink=({label,phone,icon}:{label:string;phone:string|null|undefined;icon:string})=>phone?<a className="myRoomPhoneLink" href={`tel:${phone}`}><span>{icon}</span><strong>{label}</strong><small>แตะเพื่อโทรออก</small><b>›</b></a>:<div className="myRoomPhoneLink disabled"><span>{icon}</span><strong>{label}</strong><small>ยังไม่ได้ตั้งค่าเบอร์</small></div>
+const PhoneLink=({label,phone,icon}:{label:string;phone:string|null|undefined;icon:string})=>phone?<a className="myRoomInfo" style={{textDecoration:'none',color:'inherit'}} href={`tel:${phone}`}><span>{icon} {label}</span><strong>แตะเพื่อโทร ›</strong></a>:<div className="myRoomInfo"><span>{icon} {label}</span><strong>ยังไม่ได้ตั้งค่า</strong></div>
 
 export default function MyRoomOverview({slug}:{slug:string}){
  const supabase=useMemo(()=>createSupabaseBrowser(),[]),r=tenantRoutes(slug)
@@ -84,7 +84,7 @@ export default function MyRoomOverview({slug}:{slug:string}){
 
   <section className="myRoomSection"><div className="myRoomSectionHead"><div><span>🗝️</span><h3>รับมอบห้องและทรัพย์สิน</h3></div><small>ข้อมูลจากเจ้าของหอ</small></div><div className="myRoomPanel"><Info label="วันที่เข้าอยู่" value={fmtDate(portal?.move_in_date||lease.start_date)}/><Info label="กุญแจ" value={portal?.keys_issued==null?'—':`${portal.keys_issued} ดอก`}/><Info label="สภาพตอนรับมอบ" value={portal?.handover_condition||'—'}/><Info label="ทรัพย์สินทั้งหมด" value={`${inventory.reduce((s,x)=>s+Number(x.quantity||0),0)} รายการ`}/><Info label="รายการผิดปกติ" value={`${abnormal} รายการ`}/><Info label="ตรวจล่าสุด" value={fmtDate(portal?.inventory_last_checked_at)}/><Info label="รายการหลัก" value={inventory.slice(0,3).map(x=>`${x.item_name} x${x.quantity}`).join(', ')||'—'}/></div></section>
 
-  <section className="myRoomSection"><div className="myRoomSectionHead"><div><span>☎️</span><h3>เบอร์โทร</h3></div><small>กดชื่อเพื่อโทรออก</small></div><div className="myRoomPhoneGrid"><PhoneLink label="สำนักงาน / เจ้าของ" phone={portal?.office_phone} icon="🏢"/><PhoneLink label="รปภ." phone={portal?.security_phone} icon="🛡️"/><PhoneLink label="ฉุกเฉิน" phone={portal?.emergency_phone} icon="🚨"/></div></section>
+  <section className="myRoomSection"><div className="myRoomSectionHead"><div><span>☎️</span><h3>เบอร์โทร</h3></div><small>กดชื่อเพื่อโทรออก</small></div><div className="myRoomPanel"><PhoneLink label="สำนักงาน / เจ้าของ" phone={portal?.office_phone} icon="🏢"/><PhoneLink label="รปภ." phone={portal?.security_phone} icon="🛡️"/><PhoneLink label="ฉุกเฉิน" phone={portal?.emergency_phone} icon="🚨"/></div></section>
 
   {(portal?.move_out_notice_date||portal?.inspection_date||portal?.move_out_status)&&<section className="myRoomSection"><div className="myRoomSectionHead"><div><span>🚪</span><h3>การย้ายออก</h3></div><small>ข้อมูลจากเจ้าของหอ</small></div><div className="myRoomPanel"><Info label="แจ้งย้ายออก" value={fmtDate(portal?.move_out_notice_date)}/><Info label="นัดตรวจห้อง" value={fmtDate(portal?.inspection_date)}/><Info label="สถานะ" value={portal?.move_out_status||'—'}/></div></section>}
  </div>
