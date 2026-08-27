@@ -2,6 +2,7 @@ import AdminShell from '../../../../../components/AdminShell'
 import GeneralRoomContextSelector from '../../../../../components/GeneralRoomContextSelector'
 import RoomTenantAssignmentForm from '../../../../../components/RoomTenantAssignmentForm'
 import RoomOwnerSourceForm from '../../../../../components/RoomOwnerSourceForm'
+import RoomDisplayDocumentsForm from '../../../../../components/RoomDisplayDocumentsForm'
 import NfcIssueForm from '../../../../../components/NfcIssueForm'
 import GeneralRoomCountForm from '../../../../../components/GeneralRoomCountForm'
 import ServiceContactSettingsForm from '../../../../../components/ServiceContactSettingsForm'
@@ -42,6 +43,8 @@ export default async function Page({params,searchParams}:{params:Promise<{tenant
     <RoomTenantAssignmentForm/>
 
     <RoomOwnerSourceForm slug={tenantSlug}/>
+
+    <RoomDisplayDocumentsForm/>
 
     <NfcIssueForm/>
 
