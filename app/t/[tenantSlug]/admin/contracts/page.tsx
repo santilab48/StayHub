@@ -1,10 +1,12 @@
 import AdminShell from '../../../../../components/AdminShell'
 import ContractManager from '../../../../../components/ContractManager'
+import RoomDisplayDocumentsForm from '../../../../../components/RoomDisplayDocumentsForm'
 
 export default async function Page({params}:{params:Promise<{tenantSlug:string}>}){
   const {tenantSlug}=await params
   return <AdminShell slug={tenantSlug} title="สัญญา">
     <ContractManager/>
-    <section className="section card noticeBox"><strong>Paperless</strong><p className="muted">ร่างสัญญาเก็บ snapshot + version, ลายเซ็นเก็บไฟล์ private แยกตาม lease และมี audit log ทุกครั้ง เมื่อเซ็นครบจะยังไม่แก้ snapshot เดิม ขั้น PDF Final จะสร้างจาก snapshot + signatures เท่านั้น</p></section>
+    <RoomDisplayDocumentsForm mode="contract"/>
+    <section className="section card noticeBox"><strong>Paperless</strong><p className="muted">สัญญาใช้ข้อมูล active lease ของห้องเป็นต้นทางเดียว ลายเซ็นมีเจ้าของหอและผู้เช่า 2 ฝ่าย ส่วนรูปสัญญาที่อัปโหลดในหน้านี้จะผูก room_id และไปแสดงที่ “ห้องของฉัน” ของผู้เช่าห้องนั้น</p></section>
   </AdminShell>
 }
