@@ -1,2 +1,11 @@
 import AdminShell from '../../../../../components/AdminShell'
-export default async function Page({params}:{params:Promise<{tenantSlug:string}>}){const {tenantSlug}=await params;return <AdminShell slug={tenantSlug} title="มิเตอร์ OCR"><div className="card"><h2>โหมดเดินจดมิเตอร์</h2><p className="lead">เลือกอาคาร/ชั้น แล้วทำทีละห้อง: ถ่ายรูป → AI อ่าน → แสดงค่าที่อ่าน → คนแก้ได้ → ยืนยัน → ห้องถัดไป</p><div className="flow"><span>ห้อง A101</span><span>📷 ถ่าย</span><span>🔎 อ่านค่า</span><span>✍️ ตรวจ</span><span>✅ ยืนยัน</span><span>→ A102</span></div></div><section className="section card"><strong>กฎสำคัญ</strong><p className="muted">ห้าม OCR บันทึกเองโดยไม่มี human confirmation; เก็บ detected_value และ confirmed_value แยก พร้อมรูปต้นฉบับและ confidence</p></section></AdminShell>}
+import FinanceTabs from '../../../../../components/FinanceTabs'
+import MeterEntryWorkspace from '../../../../../components/MeterEntryWorkspace'
+
+export default async function Page({params}:{params:Promise<{tenantSlug:string}>}){
+  const {tenantSlug}=await params
+  return <AdminShell slug={tenantSlug} title="บันทึกน้ำ / ไฟ">
+    <FinanceTabs slug={tenantSlug}/>
+    <MeterEntryWorkspace/>
+  </AdminShell>
+}
