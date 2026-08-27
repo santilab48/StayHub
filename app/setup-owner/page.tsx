@@ -4,6 +4,7 @@ import {FormEvent,useMemo,useState} from 'react'
 import {createSupabaseBrowser} from '../../lib/supabase-browser'
 
 const tenantSlug='stayhub-demo'
+const productionSetupUrl='https://stayhub-tawny.vercel.app/setup-owner'
 
 export default function SetupOwnerPage(){
   const supabase=useMemo(()=>createSupabaseBrowser(),[])
@@ -37,10 +38,17 @@ export default function SetupOwnerPage(){
   const signUp=async()=>{
     if(!email||password.length<6){setStatus('กรอกอีเมลและรหัสผ่านอย่างน้อย 6 ตัว');return}
     setBusy(true);setStatus('กำลังสร้างบัญชี...')
-    const {data,error}=await supabase.auth.signUp({email,password,options:{data:{full_name:fullName}}})
+    const {data,error}=await supabase.auth.signUp({
+      email,
+      password,
+      options:{
+        data:{full_name:fullName},
+        emailRedirectTo:productionSetupUrl,
+      },
+    })
     if(error){setBusy(false);setStatus(`สมัครไม่สำเร็จ: ${error.message}`);return}
     if(data.session){setStatus('สร้างบัญชีแล้ว กำลังผูกสิทธิ์เจ้าบ้าน...');await claim()}
-    else setStatus('สร้างบัญชีแล้ว กรุณาเปิดอีเมลยืนยัน จากนั้นกลับมาหน้านี้และกด “เข้าสู่ระบบ + เปิดหลังบ้าน”')
+    else setStatus('สร้างบัญชีแล้ว กรุณาเปิดอีเมลยืนยัน ระบบจะกลับมาที่ StayHub จากนั้นกด “เข้าสู่ระบบ + เปิดหลังบ้าน”')
     setBusy(false)
   }
 
