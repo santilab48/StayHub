@@ -1,6 +1,6 @@
 'use client'
 
-import {ChangeEvent,useEffect,useMemo,useState} from 'react'
+import {ChangeEvent,useEffect,useMemo,useRef,useState} from 'react'
 import {useSearchParams} from 'next/navigation'
 import {createSupabaseBrowser} from '../lib/supabase-browser'
 
@@ -15,7 +15,9 @@ export default function RoomDisplayDocumentsForm(){
   const [profileId,setProfileId]=useState('')
   const [docs,setDocs]=useState<SavedDoc[]>([])
   const [busy,setBusy]=useState<DocType|null>(null)
-  const [status,setStatus]=useState('เลือกห้องด้านบน แล้วอัปโหลดรูปสัญญาหรือกฎระเบียบได้เลย')
+  const [status,setStatus]=useState('เลือกห้องด้านบน แล้วกดปุ่มอัปโหลดได้เลย')
+  const contractRef=useRef<HTMLInputElement>(null)
+  const rulesRef=useRef<HTMLInputElement>(null)
 
   const load=async()=>{
     const {data:{user}}=await supabase.auth.getUser()
@@ -23,11 +25,11 @@ export default function RoomDisplayDocumentsForm(){
     const {data:p}=await supabase.from('profiles').select('id,tenant_id,role').eq('auth_user_id',user.id).maybeSingle()
     if(!p||!['owner','admin','staff'].includes(p.role)){setStatus('ไม่มีสิทธิ์');return}
     setTenantId(p.tenant_id);setProfileId(p.id)
-    if(!roomId){setDocs([]);return}
+    if(!roomId){setDocs([]);setStatus('เลือกห้องด้านบนก่อน');return}
     const {data,error}=await supabase.from('room_display_documents').select('doc_type,title,image_path').eq('tenant_id',p.tenant_id).eq('room_id',roomId)
     if(error){setStatus(`โหลดเอกสารไม่สำเร็จ: ${error.message}`);return}
     setDocs((data||[]) as SavedDoc[])
-    setStatus('รูปที่อัปโหลดจะไปแสดงใน “ห้องของฉัน” ของห้องนี้โดยตรง')
+    setStatus('รูปที่บันทึกจะไปแสดงใน “ห้องของฉัน” ของห้องนี้โดยตรง')
   }
 
   useEffect(()=>{void load()},[roomId])
@@ -35,7 +37,8 @@ export default function RoomDisplayDocumentsForm(){
   const upload=async(type:DocType,e:ChangeEvent<HTMLInputElement>)=>{
     const file=e.target.files?.[0]
     e.target.value=''
-    if(!file||!roomId||!tenantId||!profileId)return
+    if(!file)return
+    if(!roomId||!tenantId||!profileId){setStatus('เลือกห้องก่อนอัปโหลด');return}
     if(!['image/jpeg','image/png','image/webp'].includes(file.type)){setStatus('รองรับ JPG, PNG, WEBP เท่านั้น');return}
     if(file.size>10*1024*1024){setStatus('ไฟล์ต้องไม่เกิน 10 MB');return}
     setBusy(type);setStatus('กำลังอัปโหลด...')
@@ -50,18 +53,19 @@ export default function RoomDisplayDocumentsForm(){
     await load();setBusy(null);setStatus(type==='contract'?'บันทึกรูปสัญญาแล้ว':'บันทึกรูปกฎระเบียบแล้ว')
   }
 
-  const Box=({type,label,icon}:{type:DocType;label:string;icon:string})=>{
+  const Box=({type,label,icon,inputRef}:{type:DocType;label:string;icon:string;inputRef:React.RefObject<HTMLInputElement|null>})=>{
     const saved=docs.find(d=>d.doc_type===type)
-    return <label className="card" style={{display:'block',cursor:'pointer'}}>
-      <div className="toolbar"><div><h3>{icon} {label}</h3><p className="muted">{saved?'มีรูปแล้ว · เลือกรูปใหม่เพื่อแทนที่':'ยังไม่มีรูป'}</p></div><span className="pill">{busy===type?'กำลังอัปโหลด...':saved?'พร้อมให้ผู้เช่าดู':'อัปโหลดรูป'}</span></div>
-      <input type="file" accept="image/jpeg,image/png,image/webp" disabled={!roomId||Boolean(busy)} onChange={e=>upload(type,e)} style={{marginTop:12}}/>
-    </label>
+    return <div className="card">
+      <div className="toolbar"><div><h3>{icon} {label}</h3><p className="muted">{saved?'มีรูปแล้ว · อัปโหลดใหม่เพื่อแทนที่':'ยังไม่มีรูป'}</p></div><span className="pill">{saved?'พร้อมให้ผู้เช่าดู':'ยังไม่มีไฟล์'}</span></div>
+      <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" disabled={!roomId||Boolean(busy)} onChange={e=>upload(type,e)} style={{display:'none'}}/>
+      <button type="button" className="btn section" disabled={!roomId||Boolean(busy)} onClick={()=>inputRef.current?.click()}>{busy===type?'กำลังอัปโหลด...':saved?'เลือกรูปใหม่':'เลือกและอัปโหลดรูป'}</button>
+    </div>
   }
 
   return <section className="section card">
-    <h2>เอกสารที่ส่งไป “ห้องของฉัน”</h2>
-    <p className="muted">อัปโหลดเป็นรูป เจ้าบ้านใส่ครั้งเดียว เอกสารจะผูกกับ room_id ห้องที่เลือกด้านบนทันที</p>
-    <div className="grid section"><Box type="contract" label="สัญญา" icon="📄"/><Box type="rules" label="กฎระเบียบ" icon="📘"/></div>
-    <p className="muted">{status}</p>
+    <h2>รูปสัญญาและกฎระเบียบ</h2>
+    <p className="muted">ใช้ห้องที่เลือกด้านบนโดยตรง ไม่ต้องเลือกห้องซ้ำ</p>
+    <div className="grid section"><Box type="contract" label="สัญญา" icon="📄" inputRef={contractRef}/><Box type="rules" label="กฎระเบียบ" icon="📘" inputRef={rulesRef}/></div>
+    <div className="noticeBox section"><strong>สถานะ</strong><p className="muted">{status}</p></div>
   </section>
 }
