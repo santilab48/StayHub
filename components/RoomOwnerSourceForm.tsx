@@ -1,6 +1,7 @@
 'use client'
 
 import {FormEvent,useEffect,useMemo,useState} from 'react'
+import {useSearchParams} from 'next/navigation'
 import {createSupabaseBrowser} from '../lib/supabase-browser'
 import {tenantRoutes} from '../lib/routes'
 
@@ -11,10 +12,13 @@ type RoomSummary={building:string;resident:string;lease:string}
 const blank:Portal={delivery_address:'',postal_code:'',office_phone:'',security_phone:'',emergency_phone:'',wifi_ssid:'',wifi_password:'',wifi_note:'',move_in_date:'',keys_issued:0,handover_condition:'',move_out_notice_date:'',inspection_date:'',move_out_status:'none',owner_note:''}
 
 export default function RoomOwnerSourceForm({slug}:{slug:string}){
- const supabase=useMemo(()=>createSupabaseBrowser(),[]),r=tenantRoutes(slug)
- const [rooms,setRooms]=useState<Room[]>([]),[roomId,setRoomId]=useState(''),[tenantId,setTenantId]=useState('')
+ const supabase=useMemo(()=>createSupabaseBrowser(),[]),r=tenantRoutes(slug),search=useSearchParams()
+ const contextRoomId=search.get('room_id')||''
+ const [rooms,setRooms]=useState<Room[]>([]),[roomId,setRoomId]=useState(contextRoomId),[tenantId,setTenantId]=useState('')
  const [data,setData]=useState<Portal>(blank),[summary,setSummary]=useState<RoomSummary>({building:'—',resident:'—',lease:'—'})
  const [status,setStatus]=useState('กำลังตรวจสิทธิ์...'),[saving,setSaving]=useState(false)
+
+ useEffect(()=>{if(contextRoomId)setRoomId(contextRoomId)},[contextRoomId])
 
  useEffect(()=>{(async()=>{
   const {data:{user}}=await supabase.auth.getUser()
@@ -25,8 +29,11 @@ export default function RoomOwnerSourceForm({slug}:{slug:string}){
   setTenantId(profile.tenant_id)
   const {data:rows,error:rErr}=await supabase.from('rooms').select('id,room_no,floor,status,building_id').eq('tenant_id',profile.tenant_id).order('room_no')
   if(rErr){setStatus('โหลดรายการห้องไม่สำเร็จ');return}
-  setRooms(rows||[]);if(rows?.length)setRoomId(rows[0].id);setStatus('พร้อมแก้ไขข้อมูล')
- })()},[supabase])
+  setRooms(rows||[])
+  if(contextRoomId&&rows?.some(x=>x.id===contextRoomId))setRoomId(contextRoomId)
+  else if(!roomId&&rows?.length)setRoomId(rows[0].id)
+  setStatus('พร้อมแก้ไขข้อมูล')
+ })()},[supabase,contextRoomId,roomId])
 
  useEffect(()=>{if(!roomId||!tenantId)return;(async()=>{
   setStatus('กำลังโหลดข้อมูลห้อง...')
@@ -50,11 +57,12 @@ export default function RoomOwnerSourceForm({slug}:{slug:string}){
   setSaving(false);setStatus(error?`บันทึกไม่สำเร็จ: ${error.message}`:'บันทึกแล้ว — ข้อมูลพร้อมแสดงใน ห้องของฉัน')
  }
  const selected=rooms.find(x=>x.id===roomId)
+ const withRoom=(href:string)=>roomId?`${href}?room_id=${encodeURIComponent(roomId)}`:href
 
  return <form onSubmit={save} className="section">
   <section className="card">
-   <div className="toolbar"><div><h2>เลือกห้องที่จะกรอกข้อมูล</h2><p className="muted">เลือกห้องครั้งเดียว แล้วกรอกเฉพาะข้อมูลที่ผู้พักต้องเห็น</p></div><span className="pill">{status}</span></div>
-   <div className="formGrid"><label className="span2">ห้อง<select value={roomId} onChange={e=>setRoomId(e.target.value)} disabled={!rooms.length}><option value="">เลือกห้อง</option>{rooms.map(x=><option key={x.id} value={x.id}>{x.room_no}{x.floor?` · ชั้น ${x.floor}`:''}</option>)}</select></label></div>
+   <div className="toolbar"><div><h2>ห้องที่กำลังจัดการ</h2><p className="muted">รับ room_id ตรงจากแท็บทั่วไปและบันทึกทุกช่องลงห้องนี้</p></div><span className="pill">{status}</span></div>
+   <div className="formGrid"><label className="span2">ห้อง<select value={roomId} onChange={e=>setRoomId(e.target.value)} disabled={Boolean(contextRoomId)||!rooms.length}><option value="">เลือกห้อง</option>{rooms.map(x=><option key={x.id} value={x.id}>{x.room_no}{x.floor?` · ชั้น ${x.floor}`:''}</option>)}</select></label></div>
    {selected&&<div className="metricGrid"><div className="metric"><span className="muted">ห้อง</span><strong>{selected.room_no}</strong><small>{summary.building}{selected.floor?` · ชั้น ${selected.floor}`:''}</small></div><div className="metric"><span className="muted">ผู้เช่าหลัก</span><strong style={{fontSize:18}}>{summary.resident}</strong><small>จากสัญญา active</small></div><div className="metric"><span className="muted">สัญญา</span><strong style={{fontSize:15}}>{summary.lease}</strong><small>ข้อมูลอ่านอย่างเดียว</small></div><div className="metric"><span className="muted">สถานะห้อง</span><strong style={{fontSize:18}}>{selected.status||'—'}</strong><small>จากข้อมูลห้อง</small></div></div>}
   </section>
 
@@ -64,11 +72,11 @@ export default function RoomOwnerSourceForm({slug}:{slug:string}){
 
   <section className="card section"><div className="toolbar"><div><h2>☎️ เบอร์โทร</h2><p className="muted">หน้า member ไม่โชว์ตัวเลข ผู้พักกดชื่อแล้วโทรออกทันที</p></div><span className="pill">กดชื่อเพื่อโทร</span></div><div className="formGrid"><label>สำนักงาน / เจ้าของ<input inputMode="tel" value={data.office_phone||''} onChange={e=>set('office_phone',e.target.value)} placeholder="เบอร์โทร"/></label><label>รปภ.<input inputMode="tel" value={data.security_phone||''} onChange={e=>set('security_phone',e.target.value)} placeholder="เบอร์โทร"/></label><label>ฉุกเฉิน<input inputMode="tel" value={data.emergency_phone||''} onChange={e=>set('emergency_phone',e.target.value)} placeholder="เช่น 1669 หรือเบอร์ฉุกเฉินของหอ"/></label></div></section>
 
-  <section className="card section"><div className="toolbar"><div><h2>🗝️ รับมอบห้องและทรัพย์สิน</h2><p className="muted">ข้อมูลชุดนี้ไปรวมเป็นกล่องเดียวในหน้า ห้องของฉัน</p></div><span className="pill">แสดงให้ผู้พัก</span></div><div className="formGrid"><label>วันที่เข้าอยู่<input type="date" value={data.move_in_date||''} onChange={e=>set('move_in_date',e.target.value)}/></label><label>จำนวนกุญแจ<input type="number" min="0" value={data.keys_issued} onChange={e=>set('keys_issued',Number(e.target.value))}/></label><label className="span2">สภาพตอนรับมอบ<textarea value={data.handover_condition||''} onChange={e=>set('handover_condition',e.target.value)} placeholder="เช่น ห้องปกติ ผนัง/พื้น/เฟอร์นิเจอร์ตรวจแล้ว"/></label></div><div className="toolbar" style={{marginTop:8,marginBottom:0}}><div><strong>ทรัพย์สินในห้อง</strong><p className="muted">แอร์ เตียง ตู้ โต๊ะ ทีวี และสภาพของแต่ละรายการ</p></div><a className="btn secondary" href={r.adminRoomDocuments}>จัดการรายการ/เอกสารทรัพย์สิน</a></div></section>
+  <section className="card section"><div className="toolbar"><div><h2>🗝️ รับมอบห้องและทรัพย์สิน</h2><p className="muted">ข้อมูลชุดนี้ไปรวมเป็นกล่องเดียวในหน้า ห้องของฉัน</p></div><span className="pill">แสดงให้ผู้พัก</span></div><div className="formGrid"><label>วันที่เข้าอยู่<input type="date" value={data.move_in_date||''} onChange={e=>set('move_in_date',e.target.value)}/></label><label>จำนวนกุญแจ<input type="number" min="0" value={data.keys_issued} onChange={e=>set('keys_issued',Number(e.target.value))}/></label><label className="span2">สภาพตอนรับมอบ<textarea value={data.handover_condition||''} onChange={e=>set('handover_condition',e.target.value)} placeholder="เช่น ห้องปกติ ผนัง/พื้น/เฟอร์นิเจอร์ตรวจแล้ว"/></label></div><div className="toolbar" style={{marginTop:8,marginBottom:0}}><div><strong>ทรัพย์สินในห้อง</strong><p className="muted">แอร์ เตียง ตู้ โต๊ะ ทีวี และสภาพของแต่ละรายการ</p></div><a className="btn secondary" href={withRoom(r.adminRoomDocuments)}>จัดการรายการ/เอกสารทรัพย์สิน</a></div></section>
 
   <section className="card section"><div className="toolbar"><div><h2>🚪 การย้ายออก</h2><p className="muted">จะแสดงเฉพาะเมื่อมีข้อมูลย้ายออก</p></div><span className="pill">แสดงเมื่อมีข้อมูล</span></div><div className="formGrid"><label>วันที่แจ้งย้ายออก<input type="date" value={data.move_out_notice_date||''} onChange={e=>set('move_out_notice_date',e.target.value)}/></label><label>วันนัดตรวจห้อง<input type="date" value={data.inspection_date||''} onChange={e=>set('inspection_date',e.target.value)}/></label><label>สถานะ<select value={data.move_out_status} onChange={e=>set('move_out_status',e.target.value)}><option value="none">ยังไม่แจ้ง</option><option value="notice_given">แจ้งแล้ว</option><option value="inspection_scheduled">นัดตรวจห้องแล้ว</option><option value="moving_out">กำลังย้ายออก</option><option value="completed">สิ้นสุดการเข้าพัก</option></select></label><label>หมายเหตุเจ้าของ<input value={data.owner_note||''} onChange={e=>set('owner_note',e.target.value)}/></label></div></section>
 
-  <section className="card section"><div className="toolbar"><div><h2>ข้อมูลที่หน้า ห้องของฉัน ดึงจากระบบอื่น</h2><p className="muted">กดเข้าไปจัดการต้นทาง ไม่กรอกซ้ำในหน้านี้</p></div></div><div className="grid roomMenu"><a className="card tile" href={r.adminAccess}><span className="icon">📱</span><h3>NFC เข้า-ออกหอ</h3><p className="muted">ออก/เพิกถอนสิทธิ์ NFC</p></a><a className="card tile" href={r.adminContracts}><span className="icon">📄</span><h3>สัญญา PDF</h3><p className="muted">สัญญา Paperless และ PDF Final</p></a><a className="card tile" href={r.adminRoomDocuments}><span className="icon">📘</span><h3>กฎระเบียบหอ</h3><p className="muted">ไฟล์/เอกสารที่ผู้พักเปิดอ่าน</p></a><a className="card tile" href={r.adminRoomOccupancy}><span className="icon">👥</span><h3>ผู้พัก</h3><p className="muted">ผู้พักหลักและผู้พักร่วม</p></a><a className="card tile" href={r.adminRoomVehicles}><span className="icon">🚗</span><h3>รถของห้อง</h3><p className="muted">ทะเบียนและสถานะอนุมัติ</p></a></div></section>
+  <section className="card section"><div className="toolbar"><div><h2>ข้อมูลที่หน้า ห้องของฉัน ดึงจากระบบอื่น</h2><p className="muted">ทุกปุ่มส่ง room_id ห้องปัจจุบันต่อไป ไม่เลือกห้องใหม่ระหว่างทาง</p></div></div><div className="grid roomMenu"><a className="card tile" href={withRoom(r.adminAccessIssue)}><span className="icon">📱</span><h3>NFC เข้า-ออกหอ</h3><p className="muted">ออกสิทธิ์ให้ห้องนี้</p></a><a className="card tile" href={withRoom(r.adminContracts)}><span className="icon">📄</span><h3>สัญญา PDF</h3><p className="muted">สัญญา Paperless และ PDF Final</p></a><a className="card tile" href={withRoom(r.adminRoomDocuments)}><span className="icon">📘</span><h3>กฎระเบียบหอ</h3><p className="muted">ไฟล์/เอกสารของห้องนี้</p></a><a className="card tile" href={withRoom(r.adminRoomOccupancy)}><span className="icon">👥</span><h3>ผู้พัก</h3><p className="muted">ผู้พักของห้องนี้</p></a><a className="card tile" href={withRoom(r.adminRoomVehicles)}><span className="icon">🚗</span><h3>รถของห้อง</h3><p className="muted">ทะเบียนของห้องนี้</p></a></div></section>
 
   <div className="section" style={{display:'flex',justifyContent:'flex-end'}}><button className="btn" disabled={saving||!tenantId||!roomId}>{saving?'กำลังบันทึก...':'บันทึกข้อมูลที่แสดงให้ผู้พัก'}</button></div>
  </form>
