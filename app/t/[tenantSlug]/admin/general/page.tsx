@@ -2,7 +2,6 @@ import AdminShell from '../../../../../components/AdminShell'
 import GeneralRoomContextSelector from '../../../../../components/GeneralRoomContextSelector'
 import RoomTenantAssignmentForm from '../../../../../components/RoomTenantAssignmentForm'
 import RoomOwnerSourceForm from '../../../../../components/RoomOwnerSourceForm'
-import RoomDisplayDocumentsForm from '../../../../../components/RoomDisplayDocumentsForm'
 import NfcIssueForm from '../../../../../components/NfcIssueForm'
 import GeneralRoomCountForm from '../../../../../components/GeneralRoomCountForm'
 import ServiceContactSettingsForm from '../../../../../components/ServiceContactSettingsForm'
@@ -24,8 +23,8 @@ export default async function Page({params,searchParams}:{params:Promise<{tenant
     ['🚕','รถรับจ้าง',withRoom(r.adminRides),'จัดการคำขอของห้องที่เลือก'],
     ['👥','ผู้พัก',withRoom(r.adminRoomOccupancy),'จัดการผู้พักหลักและผู้พักร่วมของห้อง'],
     ['🚗','รถของห้อง',withRoom(r.adminRoomVehicles),'ทะเบียนรถของผู้พักในห้องนี้'],
-    ['📘','กฎ/เอกสารห้อง',withRoom(r.adminRoomDocuments),'เอกสารที่ผู้พักห้องนี้เปิดดูได้'],
-    ['📄','สัญญา',withRoom(r.adminContracts),'สัญญาของผู้เช่าห้องที่เลือก']
+    ['📘','กฎ/เอกสารห้อง',withRoom(r.adminRoomDocuments),'อัปโหลดกฎระเบียบของห้องนี้'],
+    ['📄','สัญญา',withRoom(r.adminContracts),'ทำสัญญาและอัปโหลดรูปสัญญาของห้องนี้']
   ]
   const systemItems=[
     ['📢','ประกาศ',r.adminNews,'ประกาศระดับหอหรือผู้พัก'],
@@ -41,11 +40,7 @@ export default async function Page({params,searchParams}:{params:Promise<{tenant
     <section className="section card noticeBox"><strong>กำลังแก้ข้อมูลของห้องที่เลือก</strong><p className="muted">ส่วนด้านล่างบันทึกตรงเข้าห้องนี้ทันที ไม่ต้องเลือกห้องซ้ำ ถ้าเปลี่ยนห้องด้านบน ฟอร์มจะโหลดข้อมูลของห้องใหม่อัตโนมัติ</p></section>
 
     <RoomTenantAssignmentForm/>
-
     <RoomOwnerSourceForm slug={tenantSlug}/>
-
-    <RoomDisplayDocumentsForm/>
-
     <NfcIssueForm/>
 
     <section className="section"><h2>งานอื่นของห้องที่เลือก</h2><div className="grid">{roomItems.map(([icon,title,href,detail])=><a className="card tile" href={href} key={title}><span className="icon">{icon}</span><div><h3>{title}</h3><p className="muted">{detail}</p></div></a>)}</div></section>
