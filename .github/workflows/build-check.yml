@@ -23,6 +23,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Upload source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: stayhub-source
+          path: |
+            app
+            components
+            lib
+            package.json
+            package-lock.json
+            tsconfig.json
+            next.config.*
+            middleware.*
+            proxy.*
+            public
+          if-no-files-found: ignore
+          include-hidden-files: true
+          retention-days: 1
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
