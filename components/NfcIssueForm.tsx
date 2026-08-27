@@ -1,6 +1,7 @@
 'use client'
 
 import { FormEvent, useEffect, useMemo, useState } from 'react'
+import {useSearchParams} from 'next/navigation'
 import { createSupabaseBrowser } from '../lib/supabase-browser'
 
 type Room={id:string;room_no:string;floor:string|null;status:string|null;is_enabled:boolean}
@@ -9,16 +10,20 @@ type Zone={id:string;name:string;zone_type:string}
 
 export default function NfcIssueForm(){
   const supabase=useMemo(()=>createSupabaseBrowser(),[])
+  const search=useSearchParams()
+  const contextRoomId=search.get('room_id')||''
   const [rooms,setRooms]=useState<Room[]>([])
   const [residentByRoom,setResidentByRoom]=useState<Record<string,string>>({})
   const [zones,setZones]=useState<Zone[]>([])
-  const [roomId,setRoomId]=useState('')
+  const [roomId,setRoomId]=useState(contextRoomId)
   const [zoneIds,setZoneIds]=useState<string[]>([])
   const [credentialType,setCredentialType]=useState('mobile_nfc')
   const [devicePlatform,setDevicePlatform]=useState('unknown')
   const [validUntil,setValidUntil]=useState('')
   const [status,setStatus]=useState('กำลังตรวจสิทธิ์...')
   const [saving,setSaving]=useState(false)
+
+  useEffect(()=>{if(contextRoomId)setRoomId(contextRoomId)},[contextRoomId])
 
   useEffect(()=>{(async()=>{
     const {data:{user}}=await supabase.auth.getUser()
@@ -38,9 +43,10 @@ export default function NfcIssueForm(){
     const eligible=(r||[]).filter(x=>Boolean(map[x.id]))
     setRooms(eligible)
     setZones(z||[])
-    if(eligible.length)setRoomId(eligible[0].id)
+    if(contextRoomId&&eligible.some(x=>x.id===contextRoomId)) setRoomId(contextRoomId)
+    else if(!roomId&&eligible.length)setRoomId(eligible[0].id)
     setStatus(eligible.length?'พร้อมสร้าง NFC':'ยังไม่มีห้องที่มีผู้เช่า active')
-  })()},[supabase])
+  })()},[supabase,contextRoomId,roomId])
 
   const toggle=(id:string)=>setZoneIds(v=>v.includes(id)?v.filter(x=>x!==id):[...v,id])
   const submit=async(e:FormEvent)=>{
@@ -61,10 +67,10 @@ export default function NfcIssueForm(){
 
   const selected=rooms.find(x=>x.id===roomId)
   return <form onSubmit={submit} className="card section">
-    <div className="toolbar"><div><h2>สร้าง NFC ให้ห้อง</h2><p className="muted">เลือกห้อง ระบบจะหาผู้เช่าหลักจากสัญญา active และส่ง NFC ไปหน้า “ห้องของฉัน” ของผู้เช่าคนนั้นอัตโนมัติ</p></div><span className="pill">{status}</span></div>
+    <div className="toolbar"><div><h2>สร้าง NFC ให้ห้อง</h2><p className="muted">ใช้ห้องที่เลือกจากแท็บทั่วไปโดยตรง ระบบหาผู้เช่าหลักและส่ง NFC ไป “ห้องของฉัน” อัตโนมัติ</p></div><span className="pill">{status}</span></div>
 
     <div className="formGrid section">
-      <label>ห้อง<select value={roomId} onChange={e=>setRoomId(e.target.value)}><option value="">เลือกห้อง</option>{rooms.map(r=><option key={r.id} value={r.id}>ห้อง {r.room_no}{r.floor?` · ชั้น ${r.floor}`:''}</option>)}</select></label>
+      <label>ห้อง<select value={roomId} onChange={e=>setRoomId(e.target.value)} disabled={Boolean(contextRoomId)}><option value="">เลือกห้อง</option>{rooms.map(r=><option key={r.id} value={r.id}>ห้อง {r.room_no}{r.floor?` · ชั้น ${r.floor}`:''}</option>)}</select></label>
       <label>ผู้เช่าหลัก<input readOnly value={roomId?(residentByRoom[roomId]||'ไม่พบผู้เช่า active'):''}/></label>
       <label>รูปแบบ NFC<select value={credentialType} onChange={e=>setCredentialType(e.target.value)}><option value="mobile_nfc">NFC บนมือถือ</option><option value="wallet_nfc">NFC ใน Wallet</option><option value="physical_card">บัตร NFC</option><option value="qr_fallback">QR สำรอง</option></select></label>
       <label>อุปกรณ์<select value={devicePlatform} onChange={e=>setDevicePlatform(e.target.value)}><option value="unknown">ไม่ระบุ</option><option value="ios">iPhone</option><option value="android">Android</option><option value="physical">บัตรจริง</option></select></label>
@@ -72,7 +78,7 @@ export default function NfcIssueForm(){
       <label className="span2">พื้นที่ที่เข้าได้<div className="checkGrid">{zones.map(z=><label key={z.id}><input type="checkbox" checked={zoneIds.includes(z.id)} onChange={()=>toggle(z.id)}/> {z.name}</label>)}</div></label>
     </div>
 
-    {selected&&<section className="noticeBox card"><strong>กำลังส่งให้ห้อง {selected.room_no}</strong><p className="muted">ผู้รับ: {residentByRoom[selected.id]} · เมื่อกดสร้าง ระบบจะสร้างสิทธิ์และแสดงใน NFC ของฉัน โดยผู้เช่าดูอย่างเดียว</p></section>}
+    {selected&&<section className="noticeBox card"><strong>กำลังส่งให้ห้อง {selected.room_no}</strong><p className="muted">ผู้รับ: {residentByRoom[selected.id]} · room_id ถูกส่งตรงมาจากแท็บทั่วไปและจะไม่เปลี่ยนระหว่างขั้นตอนนี้</p></section>}
 
     <div className="toolbar section"><p className="muted">ผู้เช่าไม่ต้องเลือกห้องหรือกรอกข้อมูล NFC เอง เจ้าของเป็นผู้สร้าง/เพิกถอนทั้งหมด</p><button className="btn" disabled={saving||!roomId||!zoneIds.length}>{saving?'กำลังสร้าง...':'สร้างและส่งให้ห้อง'}</button></div>
   </form>
