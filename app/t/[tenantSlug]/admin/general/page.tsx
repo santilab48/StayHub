@@ -1,5 +1,6 @@
 import AdminShell from '../../../../../components/AdminShell'
 import GeneralRoomContextSelector from '../../../../../components/GeneralRoomContextSelector'
+import RoomTenantAssignmentForm from '../../../../../components/RoomTenantAssignmentForm'
 import RoomOwnerSourceForm from '../../../../../components/RoomOwnerSourceForm'
 import NfcIssueForm from '../../../../../components/NfcIssueForm'
 import GeneralRoomCountForm from '../../../../../components/GeneralRoomCountForm'
@@ -37,6 +38,8 @@ export default async function Page({params,searchParams}:{params:Promise<{tenant
     <GeneralRoomContextSelector/>
 
     <section className="section card noticeBox"><strong>กำลังแก้ข้อมูลของห้องที่เลือก</strong><p className="muted">ส่วนด้านล่างบันทึกตรงเข้าห้องนี้ทันที ไม่ต้องเลือกห้องซ้ำ ถ้าเปลี่ยนห้องด้านบน ฟอร์มจะโหลดข้อมูลของห้องใหม่อัตโนมัติ</p></section>
+
+    <RoomTenantAssignmentForm/>
 
     <RoomOwnerSourceForm slug={tenantSlug}/>
 
