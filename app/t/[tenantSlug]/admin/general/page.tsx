@@ -1,5 +1,7 @@
 import AdminShell from '../../../../../components/AdminShell'
 import GeneralRoomContextSelector from '../../../../../components/GeneralRoomContextSelector'
+import RoomOwnerSourceForm from '../../../../../components/RoomOwnerSourceForm'
+import NfcIssueForm from '../../../../../components/NfcIssueForm'
 import GeneralRoomCountForm from '../../../../../components/GeneralRoomCountForm'
 import ServiceContactSettingsForm from '../../../../../components/ServiceContactSettingsForm'
 import RepairBacklogPanel from '../../../../../components/RepairBacklogPanel'
@@ -14,12 +16,14 @@ export default async function Page({params,searchParams}:{params:Promise<{tenant
   const withRoom=(href:string)=>roomId?`${href}?room_id=${encodeURIComponent(roomId)}`:href
 
   const roomItems=[
-    ['🔐','NFC / Access',withRoom(r.adminAccessIssue),'สร้างสิทธิ์แล้วผูกห้องที่เลือกทันที'],
-    ['🏠','ข้อมูลห้องของฉัน',withRoom(r.adminRoomSource),'Wi‑Fi ที่อยู่ เบอร์โทร รับมอบห้อง และทรัพย์สิน'],
     ['📷','มิเตอร์',withRoom(r.adminMeters),'จดหรือสแกนค่าของห้องที่เลือก'],
-    ['🔧','งานซ่อม',withRoom(r.adminRepairs),'ดูงานซ่อมของห้องที่เลือก'],
+    ['🔧','งานซ่อม',withRoom(r.adminRepairs),'ดูและจัดการงานซ่อมของห้องที่เลือก'],
     ['📦','พัสดุ',withRoom(r.adminParcels),'รับและติดตามพัสดุของห้องที่เลือก'],
-    ['🚕','รถรับจ้าง',withRoom(r.adminRides),'จัดการคำขอของห้องที่เลือก']
+    ['🚕','รถรับจ้าง',withRoom(r.adminRides),'จัดการคำขอของห้องที่เลือก'],
+    ['👥','ผู้พัก',withRoom(r.adminRoomOccupancy),'จัดการผู้พักหลักและผู้พักร่วมของห้อง'],
+    ['🚗','รถของห้อง',withRoom(r.adminRoomVehicles),'ทะเบียนรถของผู้พักในห้องนี้'],
+    ['📘','กฎ/เอกสารห้อง',withRoom(r.adminRoomDocuments),'เอกสารที่ผู้พักห้องนี้เปิดดูได้'],
+    ['📄','สัญญา',withRoom(r.adminContracts),'สัญญาของผู้เช่าห้องที่เลือก']
   ]
   const systemItems=[
     ['📢','ประกาศ',r.adminNews,'ประกาศระดับหอหรือผู้พัก'],
@@ -28,11 +32,17 @@ export default async function Page({params,searchParams}:{params:Promise<{tenant
   ]
 
   return <AdminShell slug={tenantSlug} title="ทั่วไป">
-    <section className="card"><h2>จัดการจากห้องเดียว</h2><p className="muted">เลือก “ห้องที่กำลังจัดการ” ก่อน ทุกการสร้างหรือบันทึกด้านล่างจะส่ง room_id ห้องเดียวกันไปต่อ ไม่เลือกห้องซ้ำระหว่างทาง</p></section>
+    <section className="card"><h2>จัดการจากห้องเดียว</h2><p className="muted">เลือกห้องด้านล่างครั้งเดียว ทุกฟอร์มและทุกปุ่มในแท็บทั่วไปจะใช้ room_id ห้องนี้ต่อเนื่อง เพื่อกันข้อมูลหลุดหรือทับกัน</p></section>
 
     <GeneralRoomContextSelector/>
 
-    <section className="section"><h2>ข้อมูลและงานของห้องที่เลือก</h2><div className="grid">{roomItems.map(([icon,title,href,detail])=><a className="card tile" href={href} key={title}><span className="icon">{icon}</span><div><h3>{title}</h3><p className="muted">{detail}</p></div></a>)}</div></section>
+    <section className="section card noticeBox"><strong>กำลังแก้ข้อมูลของห้องที่เลือก</strong><p className="muted">ส่วนด้านล่างบันทึกตรงเข้าห้องนี้ทันที ไม่ต้องเลือกห้องซ้ำ ถ้าเปลี่ยนห้องด้านบน ฟอร์มจะโหลดข้อมูลของห้องใหม่อัตโนมัติ</p></section>
+
+    <RoomOwnerSourceForm slug={tenantSlug}/>
+
+    <NfcIssueForm/>
+
+    <section className="section"><h2>งานอื่นของห้องที่เลือก</h2><div className="grid">{roomItems.map(([icon,title,href,detail])=><a className="card tile" href={href} key={title}><span className="icon">{icon}</span><div><h3>{title}</h3><p className="muted">{detail}</p></div></a>)}</div></section>
 
     <RepairBacklogPanel/>
     <GeneralAnnouncementComposer/>
