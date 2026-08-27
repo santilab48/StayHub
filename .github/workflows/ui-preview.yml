@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'app/preview/**'
+      - 'components/AdminShell.tsx'
       - 'app/globals.css'
       - '.github/workflows/ui-preview.yml'
   workflow_dispatch:
@@ -33,16 +34,16 @@ jobs:
           npm start > /tmp/stayhub-preview.log 2>&1 &
           echo $! > /tmp/stayhub-preview.pid
           for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:3000/preview/my-room >/dev/null; then exit 0; fi
+            if curl -fsS http://127.0.0.1:3000/preview/admin-tabs >/dev/null; then exit 0; fi
             sleep 1
           done
           cat /tmp/stayhub-preview.log
           exit 1
-      - name: Capture real rendered page
-        run: npx --yes playwright@1.55.0 screenshot --device='Desktop Chrome HiDPI' --full-page http://127.0.0.1:3000/preview/my-room my-room-real.png
+      - name: Capture owner admin tabs
+        run: npx --yes playwright@1.55.0 screenshot --device='Desktop Chrome HiDPI' --full-page http://127.0.0.1:3000/preview/admin-tabs owner-admin-tabs.png
       - uses: actions/upload-artifact@v4
         with:
-          name: my-room-real-screenshot
-          path: my-room-real.png
+          name: owner-admin-tabs-screenshot
+          path: owner-admin-tabs.png
           if-no-files-found: error
           retention-days: 7
