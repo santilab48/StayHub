@@ -34,24 +34,28 @@ jobs:
       - name: Type check and production build
         run: npm run build
 
-      - name: Check Vercel token
+      - name: Deployment status
         run: |
           if [ -z "$VERCEL_TOKEN" ]; then
-            echo "VERCEL_TOKEN_NOT_CONFIGURED"
-            echo "Add a GitHub Actions repository secret named VERCEL_TOKEN, then rerun this workflow."
-            exit 1
+            echo "Build passed. Production deploy skipped because VERCEL_TOKEN is not configured."
+          else
+            echo "Build passed. Production deploy is enabled."
           fi
 
       - name: Link Vercel project
+        if: ${{ env.VERCEL_TOKEN != '' }}
         run: |
           mkdir -p .vercel
           printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > .vercel/project.json
 
       - name: Pull Vercel production environment
+        if: ${{ env.VERCEL_TOKEN != '' }}
         run: npx --yes vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
 
       - name: Build with Vercel production environment
+        if: ${{ env.VERCEL_TOKEN != '' }}
         run: npx --yes vercel@latest build --prod --token="$VERCEL_TOKEN"
 
       - name: Deploy production
+        if: ${{ env.VERCEL_TOKEN != '' }}
         run: npx --yes vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"
