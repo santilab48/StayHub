@@ -13,12 +13,13 @@ type BillItem={type:string;description:string;quantity:number;unitPrice:number;a
 
 const monthNow=()=>new Date().toISOString().slice(0,7)
 const today=()=>new Date().toISOString().slice(0,10)
+const fmtDate=(v:string)=>v?new Date(`${v}T00:00:00`).toLocaleDateString('th-TH'):'—'
 
 export default function AdminBillBuilder({slug}:{slug:string}){
  const supabase=useMemo(()=>createSupabaseBrowser(),[]),search=useSearchParams()
  const contextRoomId=search.get('room_id')||''
  const [tenantId,setTenantId]=useState(''),[rooms,setRooms]=useState<Room[]>([]),[roomId,setRoomId]=useState(contextRoomId)
- const [period,setPeriod]=useState(monthNow()),[dueDate,setDueDate]=useState(''),[sendAt,setSendAt]=useState('')
+ const [period,setPeriod]=useState(monthNow()),[issuedDate,setIssuedDate]=useState(today()),[dueDate,setDueDate]=useState(''),[sendAt,setSendAt]=useState('')
  const [lease,setLease]=useState<Lease|null>(null),[resident,setResident]=useState<Profile|null>(null)
  const [water,setWater]=useState<Meter|null>(null),[electric,setElectric]=useState<Meter|null>(null)
  const [waterCurrent,setWaterCurrent]=useState('0'),[electricCurrent,setElectricCurrent]=useState('0')
@@ -70,6 +71,7 @@ export default function AdminBillBuilder({slug}:{slug:string}){
  const waterAmount=flatWater?Number(flatWaterAmount||0):waterUnits*charges.waterRate
  const electricAmount=electricUnits*charges.electricRate
  const selectedRoom=rooms.find(r=>r.id===roomId)
+ const invoiceNo=selectedRoom?`SH-${period.replace(/-/g,'')}-${selectedRoom.room_no}`:'—'
  const setCharge=(k:keyof Charges,v:string)=>setCharges(c=>({...c,[k]:Number(v)||0}))
 
  const items:BillItem[]=useMemo(()=>{
@@ -106,21 +108,21 @@ export default function AdminBillBuilder({slug}:{slug:string}){
  const saveBill=async(send:boolean)=>{
   if(!tenantId||!roomId||!lease){setBillStatus('เลือกห้องที่มีผู้เช่า active ก่อน');return}
   if(!period.trim()){setBillStatus('กรอกรอบบิลก่อน');return}
-  setSavingBill(true);setBillStatus(send?'กำลังสร้างและเตรียมส่งบิล...':'กำลังบันทึกบิล...')
+  setSavingBill(true);setBillStatus(send?'กำลังสร้างและส่งบิลไปห้องของฉัน...':'กำลังบันทึกบิล...')
   const lineReady=Boolean(resident?.line_user_id)
-  const card={type:'stayhub_invoice_card',title:'บิลค่าเช่า',room:selectedRoom?.room_no||'',resident:resident?.full_name||'',period,due_date:dueDate||null,total,items:items.map(i=>({description:i.description,quantity:i.quantity,unit_price:i.unitPrice,amount:i.amount}))}
-  const invoicePayload={tenant_id:tenantId,room_id:roomId,lease_id:lease.id,period:period.trim(),rent_amount:charges.rent,water_amount:waterAmount,electric_amount:electricAmount,other_amount:charges.internetFee+charges.parkingFee+charges.otherFee,total_amount:total,due_date:dueDate||null,status:'unpaid',send_at:sendAt?new Date(sendAt).toISOString():null,scheduled_status:send?(sendAt?'scheduled':'draft'):'draft',resident_name:resident?.full_name||null,resident_phone:resident?.phone||null,issuer_name:issuerName.trim()||null,issuer_address:issuerAddress.trim()||null,water_billing_mode:flatWater?'flat':'meter',water_flat_amount:flatWater?Number(flatWaterAmount||0):0,water_previous_value:previousWater,water_current_value:currentWater,electric_previous_value:previousElectric,electric_current_value:currentElectric,line_card_payload:card,line_delivery_status:send?(lineReady?'queued':'waiting_line_link'):'not_requested',line_delivery_error:send&&!lineReady?'ผู้เช่ายังไม่มี LINE user ID':null}
+  const card={type:'stayhub_invoice_card',title:'ใบแจ้งค่าใช้จ่าย',invoice_no:invoiceNo,issued_at:issuedDate,room:selectedRoom?.room_no||'',resident:resident?.full_name||'',period,due_date:dueDate||null,total,items:items.map(i=>({description:i.description,quantity:i.quantity,unit_price:i.unitPrice,amount:i.amount}))}
+  const invoicePayload={tenant_id:tenantId,room_id:roomId,lease_id:lease.id,period:period.trim(),invoice_no:invoiceNo,issued_at:issuedDate,rent_amount:charges.rent,water_amount:waterAmount,electric_amount:electricAmount,other_amount:charges.internetFee+charges.parkingFee+charges.otherFee,total_amount:total,due_date:dueDate||null,status:'unpaid',send_at:sendAt?new Date(sendAt).toISOString():null,scheduled_status:send?(sendAt?'scheduled':(lineReady?'queued':'draft')):'draft',resident_name:resident?.full_name||null,resident_phone:resident?.phone||null,issuer_name:issuerName.trim()||null,issuer_address:issuerAddress.trim()||null,water_billing_mode:flatWater?'flat':'meter',water_flat_amount:flatWater?Number(flatWaterAmount||0):0,water_previous_value:previousWater,water_current_value:currentWater,electric_previous_value:previousElectric,electric_current_value:currentElectric,line_card_payload:card,line_delivery_status:send?(lineReady?'queued':'waiting_line_link'):'not_requested',line_delivery_error:send&&!lineReady?'ผู้เช่ายังไม่มี LINE user ID':null,published_to_room_at:send?new Date().toISOString():null}
   const {data:inv,error:ie}=await supabase.from('invoices').upsert(invoicePayload,{onConflict:'tenant_id,room_id,period'}).select('id').single()
   if(ie||!inv){setSavingBill(false);setBillStatus(`บันทึกบิลไม่สำเร็จ: ${ie?.message||'ไม่พบ invoice id'}`);return}
   await supabase.from('invoice_items').delete().eq('invoice_id',inv.id)
   if(items.length){const {error:itemError}=await supabase.from('invoice_items').insert(items.map(i=>({tenant_id:tenantId,invoice_id:inv.id,item_type:i.type,description:i.description,quantity:i.quantity,unit_price:i.unitPrice,amount:i.amount,source_id:i.sourceId||null})));if(itemError){setSavingBill(false);setBillStatus(`บันทึกรายการบิลไม่สำเร็จ: ${itemError.message}`);return}}
   setSavingBill(false)
-  if(send){setBillStatus(lineReady?'บันทึกบิลและเข้าคิว LINE แล้ว — รอ Messaging API ส่งการ์ด':'บันทึกบิลแล้ว แต่ยังส่ง LINE ไม่ได้ เพราะผู้เช่ายังไม่เชื่อม LINE')}else setBillStatus('บันทึกฉบับร่างแล้ว')
+  if(send){setBillStatus(lineReady?'ส่งบิลเข้าห้องของฉันแล้ว + เข้าคิว LINE แล้ว':'ส่งบิลเข้าห้องของฉันแล้ว · LINE จะส่งเพิ่มเมื่อเชื่อมผู้เช่า')}else setBillStatus('บันทึกฉบับร่างแล้ว')
  }
 
  return <div className="section">
   <section className="card"><div className="toolbar"><div><h2>ทำบิลรายห้อง</h2><p className="muted">เลือกห้องครั้งเดียว แล้วดึงผู้เช่า ค่าเช่า และข้อมูลเดิมของห้องอัตโนมัติ</p></div><span className="pill">{status}</span></div>
-   <div className="formGrid"><label>ห้อง<select value={roomId} onChange={e=>setRoomId(e.target.value)} disabled={Boolean(contextRoomId)}><option value="">เลือกห้อง</option>{rooms.map(r=><option value={r.id} key={r.id}>{r.room_no}{r.floor?` · ชั้น ${r.floor}`:''}</option>)}</select></label><label>ผู้เช่า<input value={resident?.full_name||''} readOnly placeholder="ดึงจาก active lease"/></label><label>รอบบิล<input value={period} onChange={e=>setPeriod(e.target.value)} placeholder="2026-08"/></label><label>วันครบกำหนด<input type="date" value={dueDate} onChange={e=>setDueDate(e.target.value)}/></label></div>
+   <div className="formGrid"><label>ห้อง<select value={roomId} onChange={e=>setRoomId(e.target.value)} disabled={Boolean(contextRoomId)}><option value="">เลือกห้อง</option>{rooms.map(r=><option value={r.id} key={r.id}>{r.room_no}{r.floor?` · ชั้น ${r.floor}`:''}</option>)}</select></label><label>ผู้เช่า<input value={resident?.full_name||''} readOnly placeholder="ดึงจาก active lease"/></label><label>รอบบิล<input value={period} onChange={e=>setPeriod(e.target.value)} placeholder="2026-08"/></label><label>วันที่ออกบิล<input type="date" value={issuedDate} onChange={e=>setIssuedDate(e.target.value)}/></label><label>วันครบกำหนด<input type="date" value={dueDate} onChange={e=>setDueDate(e.target.value)}/></label></div>
    <p className="muted">{billStatus}</p>
   </section>
 
@@ -134,8 +136,14 @@ export default function AdminBillBuilder({slug}:{slug:string}){
 
   <section className="section card"><h3>รายการค่าใช้จ่าย</h3><div className="formGrid"><label>ค่าเช่า<input type="number" min="0" value={charges.rent} onChange={e=>setCharge('rent',e.target.value)}/></label><label>ค่าเน็ต<input type="number" min="0" value={charges.internetFee} onChange={e=>setCharge('internetFee',e.target.value)}/></label><label>ค่าจอดรถ<input type="number" min="0" value={charges.parkingFee} onChange={e=>setCharge('parkingFee',e.target.value)}/></label><label>ค่าใช้จ่ายอื่น<input type="number" min="0" value={charges.otherFee} onChange={e=>setCharge('otherFee',e.target.value)}/></label></div></section>
 
-  <section className="section card"><div className="toolbar"><div><h3>🧾 ตัวอย่างบิล</h3><p className="muted">รายการด้านล่างคือรายการเดียวกับที่จะบันทึกลงบิล</p></div><strong style={{fontSize:'1.6rem'}}>{total.toLocaleString()} บาท</strong></div><div className="section"><strong>{issuerName||'ยังไม่ได้ตั้งชื่อผู้ออกบิล'}</strong><p className="muted" style={{whiteSpace:'pre-wrap'}}>{issuerAddress||'ยังไม่ได้ตั้งที่อยู่ออกบิล'}</p><p><b>ห้อง {selectedRoom?.room_no||'—'}</b> · {resident?.full_name||'ยังไม่มีผู้เช่า'} · รอบ {period||'—'}</p></div>{items.map(i=><div className="infoRow" key={i.type}><span>{i.description}{i.quantity!==1?` · ${i.quantity} × ${i.unitPrice.toLocaleString()}`:''}</span><strong>{i.amount.toLocaleString()} บาท</strong></div>)}</section>
+  <section className="section card" style={{padding:'28px'}}>
+   <div className="toolbar" style={{alignItems:'flex-start'}}><div><div className="pill">ใบแจ้งค่าใช้จ่าย</div><h2 style={{marginBottom:4}}>{issuerName||'ชื่อหอ / ผู้ออกบิล'}</h2><p className="muted" style={{whiteSpace:'pre-wrap',marginTop:0}}>{issuerAddress||'ที่อยู่ออกบิล'}</p></div><div style={{textAlign:'right'}}><div><span className="muted">เลขที่บิล</span><br/><strong>{invoiceNo}</strong></div><div style={{marginTop:8}}><span className="muted">วันที่ออกบิล</span><br/><strong>{fmtDate(issuedDate)}</strong></div></div></div>
+   <hr/>
+   <div className="splitGrid section"><div><span className="muted">เรียกเก็บจาก</span><h3>{resident?.full_name||'ยังไม่มีผู้เช่า'}</h3><p>ห้อง {selectedRoom?.room_no||'—'}{resident?.phone?` · ${resident.phone}`:''}</p></div><div><div className="infoRow"><span>รอบบิล</span><strong>{period||'—'}</strong></div><div className="infoRow"><span>ครบกำหนด</span><strong>{fmtDate(dueDate)}</strong></div></div></div>
+   <div className="section"><div className="infoRow"><strong>รายการ</strong><strong>จำนวนเงิน</strong></div>{items.map(i=><div className="infoRow" key={i.type}><span>{i.description}{i.quantity!==1?` · ${i.quantity} × ${i.unitPrice.toLocaleString()}`:''}</span><strong>{i.amount.toLocaleString()} บาท</strong></div>)}</div>
+   <div className="section" style={{borderTop:'2px solid currentColor',paddingTop:16}}><div className="toolbar"><strong style={{fontSize:'1.2rem'}}>ยอดรวมทั้งสิ้น</strong><strong style={{fontSize:'2rem'}}>{total.toLocaleString()} บาท</strong></div></div>
+  </section>
 
-  <section className="section card"><div className="formGrid"><label>วัน/เวลาส่ง LINE (ถ้าต้องการตั้งเวลา)<input type="datetime-local" value={sendAt} onChange={e=>setSendAt(e.target.value)}/></label></div><div className="flow section"><button type="button" className="btn secondary" disabled={savingBill||!roomId||!lease} onClick={()=>saveBill(false)}>บันทึกฉบับร่าง</button><button type="button" className="btn" disabled={savingBill||!roomId||!lease} onClick={()=>saveBill(true)}>{savingBill?'กำลังบันทึก...':'ส่งบิล'}</button></div><p className="muted">เมื่อเชื่อม LINE OA แล้ว ปุ่มส่งบิลจะส่งการ์ดตามผู้เช่าที่ผูกกับ active lease ของห้องนี้โดยตรง</p></section>
+  <section className="section card"><div className="formGrid"><label>วัน/เวลาส่ง LINE (ถ้าต้องการตั้งเวลา)<input type="datetime-local" value={sendAt} onChange={e=>setSendAt(e.target.value)}/></label></div><div className="flow section"><button type="button" className="btn secondary" disabled={savingBill||!roomId||!lease} onClick={()=>saveBill(false)}>บันทึกฉบับร่าง</button><button type="button" className="btn" disabled={savingBill||!roomId||!lease} onClick={()=>saveBill(true)}>{savingBill?'กำลังส่ง...':'ส่งบิล'}</button></div><p className="muted">กดส่งบิล = ส่งเข้าหน้า “ห้องของฉัน” ทันที และส่ง LINE เพิ่มอีกทางเมื่อผู้เช่าเชื่อม LINE แล้ว</p></section>
  </div>
 }
