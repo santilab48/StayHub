@@ -38,11 +38,11 @@ export default function ContractManager(){
   const [{data:r},{data:u},{data:l}]=await Promise.all([
    supabase.from('rooms').select('id,room_no,monthly_rent,deposit_amount').eq('tenant_id',p.tenant_id).eq('is_enabled',true).order('room_no'),
    supabase.from('profiles').select('id,full_name,phone').eq('tenant_id',p.tenant_id).eq('role','tenant').order('full_name'),
-   supabase.from('leases').select('id,tenant_id,room_id,profile_id,start_date,end_date,rent_amount,deposit_amount,status,contract_version,tenant_signed_at,admin_signed_at,final_pdf_path,contract_snapshot').eq('tenant_id',p.tenant_id).in('status',['active','draft','sent','tenant_signed']).order('created_at',{ascending:false})
+   supabase.from('leases').select('id,tenant_id,room_id,profile_id,start_date,end_date,rent_amount,deposit_amount,status,contract_version,tenant_signed_at,admin_signed_at,final_pdf_path,contract_snapshot').eq('tenant_id',p.tenant_id).eq('status','active').order('created_at',{ascending:false})
   ])
   setRooms((r||[]) as Room[]);setPeople((u||[]) as Profile[]);setLeases((l||[]) as Lease[])
   const target=contextRoomId||(roomId||'')
-  if(target){setRoomId(target);const lease=(l||[]).find((x:any)=>x.room_id===target);setTerms(lease?.contract_snapshot?.terms||'')}
+  if(target){setRoomId(target);const activeLease=(l||[]).find((x:any)=>x.room_id===target);setTerms(activeLease?.contract_snapshot?.terms||'')}
   setStatus('เลือกห้อง แล้วข้อมูลผู้เช่าจะขึ้นอัตโนมัติ')
  }
  useEffect(()=>{void load()},[])
@@ -54,9 +54,9 @@ export default function ContractManager(){
 
  const chooseRoom=(id:string)=>{
   setRoomId(id)
-  const l=leases.find(x=>x.room_id===id)
-  setTerms(l?.contract_snapshot?.terms||'')
-  setStatus(l?'ดึงข้อมูลผู้เช่าจากห้องนี้แล้ว':'ห้องนี้ยังไม่มีผู้เช่าหรือ active lease')
+  const activeLease=leases.find(x=>x.room_id===id)
+  setTerms(activeLease?.contract_snapshot?.terms||'')
+  setStatus(activeLease?'ดึงข้อมูลผู้เช่าจาก active lease ของห้องนี้แล้ว':'ห้องนี้ยังไม่มี active lease')
  }
 
  const saveContract=async()=>{
