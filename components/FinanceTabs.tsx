@@ -3,6 +3,7 @@ import { tenantRoutes } from '../lib/routes'
 export default function FinanceTabs({slug}:{slug:string}){
   const r=tenantRoutes(slug)
   const items=[
+    ['บันทึกน้ำ / ไฟ',r.adminMeters],
     ['ทำบิล',r.adminFinanceInvoices],
     ['ตรวจสลิป',r.adminFinancePayments],
     ['ใบเสร็จ',r.adminFinanceReceipts],
