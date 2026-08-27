@@ -41,30 +41,33 @@ export default function GeneralRoomCountForm(){
 
   const save=async(e:FormEvent)=>{
     e.preventDefault(); if(!tenantId)return
-    setSaving(true); setStatus('กำลังบันทึก...')
-    const {error}=await supabase.from('tenant_settings').upsert({
-      tenant_id:tenantId,
-      declared_room_count:count,
-      room_number_format:format,
-      room_number_prefix:prefix,
-      room_number_start:start,
-      room_number_digits:digits,
-      room_number_preview:sampleNumber,
-      updated_at:new Date().toISOString()
-    },{onConflict:'tenant_id'})
-    setSaving(false); setStatus(error?`บันทึกไม่สำเร็จ: ${error.message}`:'บันทึกจำนวนห้องและรูปแบบเลขห้องแล้ว')
+    setSaving(true); setStatus('กำลังสร้างห้อง...')
+    const {data,error}=await supabase.rpc('owner_apply_room_setup',{
+      p_count:count,
+      p_prefix:prefix,
+      p_start:start,
+      p_digits:digits,
+      p_format:format
+    })
+    if(error){
+      const msg=error.message.includes('ROOM_LIMIT_EXCEEDED')?'จำนวนห้องเกินสิทธิ์ที่เปิดใช้งาน':error.message
+      setSaving(false);setStatus(`บันทึกไม่สำเร็จ: ${msg}`);return
+    }
+    setStatus(`บันทึกแล้ว · สร้างห้องใหม่ ${Number(data||0)} ห้อง`)
+    setSaving(false)
+    window.setTimeout(()=>window.location.reload(),500)
   }
 
   return <form onSubmit={save} className="card section">
-    <div className="toolbar"><div><h2>จำนวนห้อง + รูปแบบเลขห้อง</h2><p className="muted">กำหนดได้เอง เช่น A301, A302… หรือ 3301, 3302… เพื่อใช้เลขห้องรูปแบบเดียวกันทั้งระบบ</p></div><span className="pill">{status}</span></div>
+    <div className="toolbar"><div><h2>จำนวนห้อง + รูปแบบเลขห้อง</h2><p className="muted">ตั้งครั้งแรกตรงนี้ ระบบจะสร้างรายการห้องตามรูปแบบให้เลือกด้านล่างทันที</p></div><span className="pill">{status}</span></div>
     <div className="formGrid">
       <label>จำนวนห้อง<input type="number" min="0" value={count} onChange={e=>setCount(Math.max(0,Number(e.target.value)))}/></label>
       <label>คำนำหน้า (ถ้ามี)<input value={prefix} onChange={e=>setPrefix(e.target.value)} placeholder="เช่น A หรือเว้นว่าง"/></label>
-      <label>เลขเริ่มต้น<input type="number" value={start} onChange={e=>setStart(Number(e.target.value))} placeholder="เช่น 301 หรือ 3301"/></label>
+      <label>เลขเริ่มต้น<input type="number" value={start} onChange={e=>setStart(Number(e.target.value))} placeholder="เช่น 201 หรือ 3301"/></label>
       <label>จำนวนหลักเลข (ถ้าต้องเติม 0)<input type="number" min="0" value={digits} onChange={e=>setDigits(Math.max(0,Number(e.target.value)))}/></label>
-      <label className="span2">รูปแบบ<input value={format} onChange={e=>setFormat(e.target.value)} placeholder="{prefix}{number}"/><small className="muted">ใช้ {'{prefix}'} และ {'{number}'} เช่น {'{prefix}{number}'} = A301 หรือใช้ {'{number}'} อย่างเดียว = 3301</small></label>
+      <label className="span2">รูปแบบ<input value={format} onChange={e=>setFormat(e.target.value)} placeholder="{prefix}{number}"/><small className="muted">เช่น {'{prefix}{number}'} = A201 หรือใช้ {'{number}'} อย่างเดียว = 3301</small></label>
     </div>
     <div className="section card"><strong>ตัวอย่างเลขห้อง</strong><div className="flow section">{preview.map(v=><span className="pill" key={v}>{v}</span>)}</div><p className="muted">ตัวอย่างแรก: {sampleNumber}</p></div>
-    <div className="section"><button className="btn" disabled={!tenantId||saving}>{saving?'กำลังบันทึก...':'บันทึกการตั้งค่าห้อง'}</button></div>
+    <div className="section"><button className="btn" disabled={!tenantId||saving}>{saving?'กำลังสร้างห้อง...':'บันทึกและสร้างห้อง'}</button></div>
   </form>
 }
