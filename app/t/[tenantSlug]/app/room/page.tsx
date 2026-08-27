@@ -3,6 +3,7 @@ import RoomNav from '../../../../../components/RoomNav'
 import MyRoomOverview from '../../../../../components/MyRoomOverview'
 import MyRoomDocumentsCard from '../../../../../components/MyRoomDocumentsCard'
 import MyRoomNfcCard from '../../../../../components/MyRoomNfcCard'
+import MyRoomLatestBillCard from '../../../../../components/MyRoomLatestBillCard'
 import { tenantRoutes } from '../../../../../lib/routes'
 
 export default async function Page({params}:{params:Promise<{tenantSlug:string}>}){
@@ -20,7 +21,7 @@ export default async function Page({params}:{params:Promise<{tenantSlug:string}>
   return <TenantShell slug={tenantSlug} title="ห้องของฉัน">
     <RoomNav slug={tenantSlug}/>
     <MyRoomOverview slug={tenantSlug}/>
-
+    <MyRoomLatestBillCard slug={tenantSlug}/>
     <MyRoomDocumentsCard/>
 
     <section className="section"><h2>เมนูห้องของฉัน</h2><div className="grid roomMenu">{roomNav.map(([title,href,icon,detail])=><a className="card tile" href={href} key={href}><span className="icon">{icon}</span><div><h3>{title}</h3><p className="muted">{detail}</p></div></a>)}</div></section>
