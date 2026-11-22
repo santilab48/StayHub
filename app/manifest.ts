@@ -5,11 +5,12 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'StayHub',
     short_name: 'StayHub',
     description: 'จัดการหอพักและบริการผู้เช่าในแอปเดียว',
-    start_url: '/',
+    start_url: '/my',
     scope: '/',
     display: 'standalone',
     background_color: '#f7f9fc',
     theme_color: '#162033',
     lang: 'th',
+    icons: [{src:'/icons/stayhub.svg',type:'image/svg+xml',sizes:'any',purpose:'any maskable'}],
   }
 }
