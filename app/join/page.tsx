@@ -30,7 +30,7 @@ function JoinContent(){
         <p className="muted">QR นี้ใช้ส่งคำขอเข้าร่วม ไม่ใช่สิทธิ์เข้าถึงบิลหรือข้อมูลห้องโดยตรง</p>
         <button className="btn" disabled={busy} onClick={()=>void join()}>ยืนยันขอเข้าร่วม</button>
         <p><a href={'/cloud?return='+encodeURIComponent('/join?token='+encodeURIComponent(token))}>ยังไม่มีบัญชี? สมัครหรือเข้าสู่ระบบเพื่อเข้าร่วม</a></p></>}
-      {status&&<p role="status">{status} <a href="/my">เปิดแผงผู้เช่า</a></p>
+      {status&&<p role="status">{status} <a href="/my">เปิดแผงผู้เช่า</a></p>}
     </section>
   </main>
 }
