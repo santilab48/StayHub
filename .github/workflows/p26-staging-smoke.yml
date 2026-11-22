@@ -1,0 +1,63 @@
+name: StayHub P2.6 staging HTTP smoke (read-only)
+
+on:
+  push:
+    branches: ['feat/stayhub-p26-readiness']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stayhub-p26-staging-smoke
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Read-only staging HTTP and auth gate checks
+        shell: bash
+        env:
+          BASE: https://stayhub-fsd-staging.up.railway.app
+        run: |
+          set -euo pipefail
+          request() {
+            local path="$1" expected="$2" actual
+            actual=$(curl --silent --show-error --location --retry 4 --retry-delay 3 \
+              --connect-timeout 10 --max-time 30 \
+              --output /dev/null --write-out '%{http_code}' "$BASE$path")
+            printf '%s -> HTTP %s (expected %s)\n' "$path" "$actual" "$expected"
+            test "$actual" = "$expected"
+          }
+          request / 200
+          request /cloud 200
+          request /cloud/billing 200
+          request /icons/stayhub.svg 200
+          request /manifest.webmanifest 200
+          request /api/health 200
+          request /api/health/db 200
+          request /api/v2/me 401
+          request /api/v2/properties 401
+          request /api/v2/bills 401
+
+      - name: Check no caching of session or billing responses
+        shell: bash
+        env:
+          BASE: https://stayhub-fsd-staging.up.railway.app
+        run: |
+          set -euo pipefail
+          for path in /api/v2/me /api/v2/bills; do
+            headers=$(mktemp)
+            curl --silent --show-error --location --retry 3 \
+              --connect-timeout 10 --max-time 30 -D "$headers" \
+              -o /dev/null "$BASE$path"
+            if ! grep -Eiq '^cache-control:.*no-store' "$headers"; then
+              echo "::error::Missing Cache-Control: no-store on $path"
+              rm -f "$headers"
+              exit 1
+            fi
+            rm -f "$headers"
+            echo "$path: no-store confirmed"
+          done
