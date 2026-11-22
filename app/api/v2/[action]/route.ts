@@ -247,8 +247,12 @@ export async function POST(req:NextRequest,{params}:Params){
         const item=r.rows[0]
         const owner=await client.query('SELECT 1 FROM stayhub.property_memberships WHERE account_id=$1 AND property_id=$2 AND role=ANY($3::text[])',[account.id,item.property_id,roles])
         if(owner.rowCount)return 'owner'
-        const existing=await client.query('SELECT id FROM stayhub.join_requests WHERE property_id=$1 AND account_id=$2',[item.property_id,account.id])
+        const existing=await client.query("SELECT id FROM stayhub.join_requests WHERE property_id=$1 AND account_id=$2 AND status='pending'",[item.property_id,account.id])
         if(existing.rowCount)return 'existing'
+        const active=await client.query(`SELECT 1 FROM stayhub.stays
+          WHERE property_id=$1 AND account_id=$2 AND starts_at<=now()
+          AND (ends_at IS NULL OR ends_at>now()) LIMIT 1`,[item.property_id,account.id])
+        if(active.rowCount)return 'already_resident'
         await client.query('INSERT INTO stayhub.join_requests(invite_id,property_id,account_id,unit_id) VALUES($1,$2,$3,$4)',[item.id,item.property_id,account.id,item.unit_id])
         await client.query('UPDATE stayhub.invites SET use_count=use_count+1 WHERE id=$1',[item.id])
         return 'pending'
