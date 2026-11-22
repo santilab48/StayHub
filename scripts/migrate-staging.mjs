@@ -12,12 +12,16 @@ import {createHash} from 'node:crypto'
 import pg from 'pg'
 
 const EXPECTED_PROJECT = 'a8a5a434-4d18-438f-b4ea-ece072094595'
+const EXPECTED_ENVIRONMENT = 'ced39691-4fe7-4707-bba7-6d0e801f1ff8'
 const env = process.env
 const dryRun = process.argv.includes('--dry-run')
 const checkOnly = process.argv.includes('--check')
 
 if(env.RAILWAY_ENVIRONMENT_NAME !== 'staging') {
   throw new Error('REFUSED: RAILWAY_ENVIRONMENT_NAME must be staging')
+}
+if(env.RAILWAY_ENVIRONMENT_ID !== EXPECTED_ENVIRONMENT) {
+  throw new Error('REFUSED: incorrect Railway staging environment id')
 }
 if(env.RAILWAY_PROJECT_ID !== EXPECTED_PROJECT) {
   throw new Error('REFUSED: incorrect Railway project id')
