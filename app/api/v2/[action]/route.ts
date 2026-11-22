@@ -94,6 +94,14 @@ export async function GET(req:NextRequest,{params}:Params){
       `,[propertyId])
       return reply({items:r.rows})
     }
+    if(action==='blocks'){
+      const propertyId=req.nextUrl.searchParams.get('propertyId')
+      if(!validId(propertyId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
+      const r=await postgresQuery(`SELECT id,unit_id,starts_at,ends_at,reason
+        FROM stayhub.unit_blocks WHERE property_id=$1 AND ends_at>now()
+        ORDER BY ends_at ASC LIMIT 250`,[propertyId])
+      return reply({items:r.rows})
+    }
     if(action==='residents'){
       const propertyId=req.nextUrl.searchParams.get('propertyId')
       if(!validId(propertyId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
@@ -289,6 +297,44 @@ export async function POST(req:NextRequest,{params}:Params){
         return previous?'checked_out':'not_active'
       })
       return result==='checked_out'?reply({status:result}):reply({error:result},409)
+    }
+    if(action==='block-room'){
+      if(!validId(propertyId)||!validId(body.unitId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
+      const reason=body.reason
+      const until=body.endsAt
+      if(!['maintenance','owner_hold','other'].includes(String(reason))||
+         typeof until!=='string'||until.length>48||!Number.isFinite(Date.parse(until)))
+        return reply({error:'Invalid block reason or end date'},400)
+      const end=new Date(until)
+      if(end.getTime()<=Date.now()||end.getTime()>Date.now()+90*86400_000)
+        return reply({error:'Block must end within the next 90 days'},400)
+      const status=await withPostgresTransaction(async client=>{
+        const unit=await client.query(`SELECT id FROM stayhub.units
+          WHERE id=$1 AND property_id=$2 AND active=true FOR UPDATE`,[body.unitId,propertyId])
+        if(!unit.rowCount)return 'invalid_unit'
+        const occupied=await client.query(`SELECT 1 FROM stayhub.stays
+          WHERE property_id=$1 AND unit_id=$2 AND starts_at<=now()
+          AND (ends_at IS NULL OR ends_at>now()) LIMIT 1`,[propertyId,body.unitId])
+        if(occupied.rowCount)return 'occupied'
+        const booked=await client.query(`SELECT 1 FROM stayhub.reservations
+          WHERE property_id=$1 AND unit_id=$2 AND status IN ('confirmed','checked_in')
+          AND arrival_date<$3::date AND departure_date>=CURRENT_DATE LIMIT 1`,
+          [propertyId,body.unitId,end.toISOString()])
+        if(booked.rowCount)return 'reserved'
+        await client.query(`INSERT INTO stayhub.unit_blocks
+          (property_id,unit_id,starts_at,ends_at,reason,created_by)
+          VALUES($1,$2,now(),$3,$4,$5)`,[propertyId,body.unitId,end.toISOString(),reason,account.id])
+        return 'blocked'
+      })
+      return status==='blocked'?reply({status}):reply({error:status},409)
+    }
+    if(action==='unblock-room'){
+      if(!validId(propertyId)||!validId(body.blockId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
+      const r=await postgresQuery(`UPDATE stayhub.unit_blocks
+        SET ends_at=now()
+        WHERE id=$1 AND property_id=$2 AND ends_at>now() RETURNING id`,
+        [body.blockId,propertyId])
+      return r.rowCount?reply({status:'unblocked'}):reply({error:'Block not found'},404)
     }
     if(action==='room-ready'){
       if(!validId(propertyId)||!validId(body.unitId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
