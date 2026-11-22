@@ -32,6 +32,16 @@ export async function GET(req:NextRequest,{params}:Params){
     const account=await accountFromSession()
     if(!account)return reply({error:'Please sign in'},401)
     if(action==='me')return reply({id:account.id,email:account.email})
+    if(action==='my-stays'){
+      const r=await postgresQuery(`SELECT s.id,p.name AS property_name,u.name AS unit_name,p.property_type
+        FROM stayhub.stays s
+        JOIN stayhub.properties p ON p.id=s.property_id
+        JOIN stayhub.units u ON u.id=s.unit_id AND u.property_id=s.property_id
+        WHERE s.account_id=$1 AND s.starts_at<=now()
+        AND (s.ends_at IS NULL OR s.ends_at>now())
+        ORDER BY s.starts_at DESC LIMIT 30`,[account.id])
+      return reply({items:r.rows})
+    }
     if(action==='properties'){
       const r=await postgresQuery(`SELECT p.id,p.name,p.property_type,p.billing_mode,m.role
         FROM stayhub.properties p JOIN stayhub.property_memberships m ON m.property_id=p.id
