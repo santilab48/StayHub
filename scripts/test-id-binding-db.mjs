@@ -66,6 +66,24 @@ try{
   console.log('PASS Pending QR join does not grant membership')
   await c.query("INSERT INTO stayhub.reservations(property_id,unit_id,arrival_date,departure_date,status) VALUES($1,$2,'2027-01-01','2027-01-04','confirmed')",[a,unitA])
   await expectConstraint('Active reservations cannot overlap',()=>c.query("INSERT INTO stayhub.reservations(property_id,unit_id,arrival_date,departure_date,status) VALUES($1,$2,'2027-01-03','2027-01-05','confirmed')",[a,unitA]),'23P01')
+  const res=(await c.query("SELECT id FROM stayhub.reservations WHERE property_id=$1 AND unit_id=$2 AND arrival_date='2027-01-01'",[a,unitA])).rows[0].id
+  await c.query("UPDATE stayhub.reservations SET guest_account_id=$1,status='checked_in' WHERE id=$2",[tenant,res])
+  await expectConstraint('Reservation stay cannot impersonate a different guest',
+    ()=>c.query('INSERT INTO stayhub.stays(property_id,unit_id,account_id,reservation_id) VALUES($1,$2,$3,$4)',
+      [a,unitA,ownerB,res]))
+  await expectConstraint('Reservation stay cannot reference a room from another property',
+    ()=>c.query('INSERT INTO stayhub.stays(property_id,unit_id,account_id,reservation_id) VALUES($1,$2,$3,$4)',
+      [b,unitB,tenant,res]))
+  const linked=(await c.query('INSERT INTO stayhub.stays(property_id,unit_id,account_id,reservation_id) VALUES($1,$2,$3,$4) RETURNING id',
+    [a,unitA,tenant,res])).rows[0].id
+  await expectConstraint('Reservation can only have one linked stay',
+    ()=>c.query('INSERT INTO stayhub.stays(property_id,unit_id,account_id,reservation_id) VALUES($1,$2,$3,$4)',
+      [a,unitA,tenant,res]),'23505')
+  await c.query("UPDATE stayhub.stays SET ends_at=now() WHERE id=$1",[linked])
+  await c.query("UPDATE stayhub.reservations SET status='checked_out' WHERE id=$1",[res])
+  const closed=await c.query("SELECT status FROM stayhub.reservations WHERE id=$1",[res])
+  if(closed.rows[0].status!=='checked_out')throw Error('Reservation checkout not persisted inside transaction')
+  console.log('PASS Reservation / stay linked lifecycle')
   await c.query('ROLLBACK')
   console.log('All staging database ID-binding checks passed; all temporary data rolled back.')
 }catch(e){
