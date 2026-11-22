@@ -84,6 +84,16 @@ try{
   const closed=await c.query("SELECT status FROM stayhub.reservations WHERE id=$1",[res])
   if(closed.rows[0].status!=='checked_out')throw Error('Reservation checkout not persisted inside transaction')
   console.log('PASS Reservation / stay linked lifecycle')
+  await c.query("UPDATE stayhub.join_requests SET status='approved' WHERE id=$1",[request])
+  const revisit=(await c.query(`INSERT INTO stayhub.join_requests
+    (invite_id,property_id,account_id,unit_id) VALUES($1,$2,$3,$4) RETURNING id`,
+    [invite,a,tenant,unitA])).rows[0].id
+  if(!revisit)throw Error('Repeat visitor request not created')
+  await expectConstraint('Only one pending QR request per property and guest',
+    ()=>c.query(`INSERT INTO stayhub.join_requests
+      (invite_id,property_id,account_id,unit_id) VALUES($1,$2,$3,$4)`,
+      [invite,a,tenant,unitA]),'23505')
+  console.log('PASS Repeat guests may submit new QR requests after prior approval')
   await c.query('ROLLBACK')
   console.log('All staging database ID-binding checks passed; all temporary data rolled back.')
 }catch(e){
