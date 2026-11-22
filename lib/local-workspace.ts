@@ -1,10 +1,13 @@
 'use client'
 
+import { accommodationTypes, isAccommodationType, type AccommodationType } from './accommodation-types'
+
 /** Local-only onboarding workspace, never confused with a verified server account. */
 export type DeviceWorkspace = {
   id: string
   ownerName: string
   dormName: string
+  accommodationType?: AccommodationType
   createdAt: string
   version: 1
 }
@@ -48,12 +51,13 @@ async function read<T>(key:string):Promise<T|undefined>{
     return await requestValue<T|undefined>(tx.objectStore(STORE).get(key))
   } finally {db.close()}
 }
-export async function createDeviceWorkspace(ownerName:string,dormName:string):Promise<DeviceWorkspace>{
+export async function createDeviceWorkspace(ownerName:string,dormName:string,accommodationType:AccommodationType='apartment'):Promise<DeviceWorkspace>{
   const owner=ownerName.trim().slice(0,80)
   const dorm=dormName.trim().slice(0,100)
-  if(!owner||!dorm)throw new Error('กรุณากรอกชื่อและชื่อหอพัก')
+  if(!owner||!dorm)throw new Error('กรุณากรอกชื่อและชื่อที่พัก')
+  if(!isAccommodationType(accommodationType))throw new Error('ประเภทที่พักไม่ถูกต้อง')
   if(typeof crypto==='undefined'||!crypto.randomUUID)throw new Error('ต้องเปิดผ่าน HTTPS หรือ localhost')
-  const workspace:DeviceWorkspace={id:crypto.randomUUID(),ownerName:owner,dormName:dorm,createdAt:new Date().toISOString(),version:1}
+  const workspace:DeviceWorkspace={id:crypto.randomUUID(),ownerName:owner,dormName:dorm,accommodationType,createdAt:new Date().toISOString(),version:1}
   await write('workspace:'+workspace.id,workspace)
   await write(ACTIVE,workspace.id)
   return workspace
