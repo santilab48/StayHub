@@ -31,6 +31,8 @@ jobs:
         run: npm run test:structure
       - name: Railway staging migration contract check
         run: npm run test:migration
+      - name: Identity and QR property isolation contract check
+        run: npm run test:id-binding
       - name: Static P1 audit
         run: npm run audit:p1
       - name: Type check
