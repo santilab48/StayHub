@@ -12,13 +12,19 @@ export function getPostgresPool(): Pool {
     process.env.RAILWAY_ENVIRONMENT_NAME !== 'staging' ||
     process.env.RAILWAY_ENVIRONMENT_ID !== 'ced39691-4fe7-4707-bba7-6d0e801f1ff8'
   )) throw new Error('Neon staging connection refused outside approved Railway staging')
-  const connectionString = usingNeonStaging
+  let connectionString = usingNeonStaging
     ? process.env.STAYHUB_NEON_STAGING_URL
     : process.env.DATABASE_URL
   if (!connectionString) throw new Error('PostgreSQL connection is not configured')
   if (usingNeonStaging) {
-    const host = connectionString.split('@').at(-1)?.split('/')[0]?.split(':')[0] || ''
-    if (!host.endsWith('.neon.tech')) throw new Error('Neon staging URL must point to Neon')
+    const url = new URL(connectionString)
+    if (url.protocol !== 'postgresql:' && url.protocol !== 'postgres:')
+      throw new Error('Neon staging URL must use PostgreSQL')
+    if (!url.hostname.endsWith('.neon.tech')) throw new Error('Neon staging URL must point to Neon')
+    // pg parses URL SSL options after Pool options. Require certificate and hostname
+    // verification here even if a stored connection URL has sslmode=disable.
+    url.searchParams.set('sslmode', 'verify-full')
+    connectionString = url.toString()
   }
   if (!pool) {
     pool = new Pool({
