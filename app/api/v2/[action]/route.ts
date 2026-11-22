@@ -4,6 +4,7 @@ import {accountFromSession,checkOrigin,hashPassword,hashToken,issueSession,newTo
 import QRCode from 'qrcode'
 import {cookies} from 'next/headers'
 import {consumeAuthAttempt,clearAuthAttempt} from '../../../../lib/auth-throttle'
+import {ensureUnitCanAccept,endStay} from '../../../../lib/stay-lifecycle'
 
 export const dynamic='force-dynamic'
 type Params={params:Promise<{action:string}>}
@@ -69,6 +70,42 @@ export async function GET(req:NextRequest,{params}:Params){
         JOIN stayhub.properties p ON p.id=r.property_id
         LEFT JOIN stayhub.units u ON u.id=r.unit_id AND u.property_id=r.property_id
         WHERE r.account_id=$1 ORDER BY r.created_at DESC LIMIT 50`,[account.id])
+      return reply({items:r.rows})
+    }
+    if(action==='occupancy'){
+      const propertyId=req.nextUrl.searchParams.get('propertyId')
+      if(!validId(propertyId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
+      const r=await postgresQuery(`
+        SELECT u.id,u.name,u.kind,u.capacity,u.active,
+          (SELECT count(*)::integer FROM stayhub.stays st
+           WHERE st.property_id=u.property_id AND st.unit_id=u.id
+           AND st.starts_at<=now() AND (st.ends_at IS NULL OR st.ends_at>now())) AS occupants,
+          EXISTS(SELECT 1 FROM stayhub.housekeeping_tasks h
+           WHERE h.property_id=u.property_id AND h.unit_id=u.id
+           AND h.status IN ('pending','in_progress')) AS cleaning,
+          EXISTS(SELECT 1 FROM stayhub.unit_blocks b
+           WHERE b.property_id=u.property_id AND b.unit_id=u.id
+           AND b.starts_at<=now() AND b.ends_at>now()) AS blocked,
+          EXISTS(SELECT 1 FROM stayhub.reservations r
+           WHERE r.property_id=u.property_id AND r.unit_id=u.id
+           AND r.status IN ('confirmed','checked_in')
+           AND r.arrival_date<=CURRENT_DATE AND r.departure_date>CURRENT_DATE) AS reserved
+        FROM stayhub.units u WHERE u.property_id=$1 ORDER BY u.name LIMIT 500
+      `,[propertyId])
+      return reply({items:r.rows})
+    }
+    if(action==='residents'){
+      const propertyId=req.nextUrl.searchParams.get('propertyId')
+      if(!validId(propertyId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
+      const r=await postgresQuery(`
+        SELECT st.id AS stay_id,st.account_id,st.unit_id,st.starts_at,st.ends_at,
+          a.email,u.name AS unit_name
+        FROM stayhub.stays st
+        JOIN stayhub.accounts a ON a.id=st.account_id
+        JOIN stayhub.units u ON u.id=st.unit_id AND u.property_id=st.property_id
+        WHERE st.property_id=$1
+        ORDER BY st.starts_at DESC LIMIT 500
+      `,[propertyId])
       return reply({items:r.rows})
     }
     if(action==='requests'){
@@ -210,14 +247,29 @@ export async function POST(req:NextRequest,{params}:Params){
       })
       return result==='pending'?reply({status:'pending'},201):reply({error:result},400)
     }
+    if(action==='checkout'){
+      if(!validId(propertyId)||!validId(body.stayId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
+      const result=await withPostgresTransaction(async client=>{
+        const previous=await endStay(client,propertyId,body.stayId,account.id)
+        return previous?'checked_out':'not_active'
+      })
+      return result==='checked_out'?reply({status:result}):reply({error:result},409)
+    }
+    if(action==='room-ready'){
+      if(!validId(propertyId)||!validId(body.unitId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
+      const r=await postgresQuery(`UPDATE stayhub.housekeeping_tasks SET status='ready',completed_at=now()
+        WHERE property_id=$1 AND unit_id=$2 AND status IN ('pending','in_progress')
+        RETURNING id`,[propertyId,body.unitId])
+      return r.rowCount?reply({status:'ready'}):reply({error:'No active cleaning task'},409)
+    }
     if(action==='approve'){
       if(!validId(propertyId)||!validId(body.requestId)||!validId(body.unitId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
       const result=await withPostgresTransaction(async client=>{
         const r=await client.query<{account_id:string;status:string}>(`SELECT account_id,status FROM stayhub.join_requests
           WHERE id=$1 AND property_id=$2 FOR UPDATE`,[body.requestId,propertyId])
         if(!r.rowCount||r.rows[0].status!=='pending')return 'not_pending'
-        const unit=await client.query('SELECT id FROM stayhub.units WHERE id=$1 AND property_id=$2 AND active=true',[body.unitId,propertyId])
-        if(!unit.rowCount)return 'invalid_unit'
+        const availability=await ensureUnitCanAccept(client,propertyId,body.unitId)
+        if(availability!=='ok')return availability
         const membership=await client.query('SELECT role FROM stayhub.property_memberships WHERE property_id=$1 AND account_id=$2',[propertyId,r.rows[0].account_id])
         if(membership.rows.some(row=>!['resident','guest'].includes(row.role)))return 'reserved_role'
         await client.query(`INSERT INTO stayhub.stays(property_id,unit_id,account_id,join_request_id)
@@ -226,6 +278,9 @@ export async function POST(req:NextRequest,{params}:Params){
           VALUES($1,$2,'resident') ON CONFLICT(property_id,account_id) DO UPDATE SET role='resident'
           WHERE stayhub.property_memberships.role IN ('resident','guest')`,[propertyId,r.rows[0].account_id])
         await client.query(`UPDATE stayhub.join_requests SET status='approved',reviewed_by=$1,reviewed_at=now(),unit_id=$2 WHERE id=$3`,[account.id,body.unitId,body.requestId])
+        const newStay=await client.query('SELECT id FROM stayhub.stays WHERE join_request_id=$1',[body.requestId])
+        await client.query(`INSERT INTO stayhub.stay_events(property_id,stay_id,account_id,actor_account_id,event_type,to_unit_id)
+          VALUES($1,$2,$3,$4,'approved',$5)`,[propertyId,newStay.rows[0].id,r.rows[0].account_id,account.id,body.unitId])
         return 'approved'
       })
       return result==='approved'?reply({status:'approved'}):reply({error:result},409)
