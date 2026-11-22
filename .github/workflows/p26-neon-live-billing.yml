@@ -1,0 +1,37 @@
+name: StayHub P2.6 Neon LIVE Billing HTTP E2E
+
+on:
+  push:
+    branches: ['feat/stayhub-p26-readiness']
+    paths:
+      - '.github/workflows/p26-neon-live-billing.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stayhub-neon-live-billing
+  cancel-in-progress: false
+
+jobs:
+  live-billing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      P26_NEON_LIVE_E2E_BASE: https://stayhub-fsd-staging.up.railway.app
+    steps:
+      - name: Check out source without secrets
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check read-only Neon-backed staging health
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 --retry-delay 3 --max-time 30 \
+            "$P26_NEON_LIVE_E2E_BASE/api/health/db" | node -e "let s='';process.stdin.on('data',x=>s+=x);process.stdin.on('end',()=>{let d=JSON.parse(s);if(d.database!=='ready')process.exit(1);console.log('PASS remote database readiness')})"
+      - name: End-to-end signup, QR, lease, meters, bills and payments on Neon staging
+        run: node scripts/p26-neon-live-billing.mjs
