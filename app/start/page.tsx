@@ -3,11 +3,13 @@
 import {useEffect,useState} from 'react'
 import {useRouter} from 'next/navigation'
 import {createDeviceWorkspace,getActiveWorkspace} from '../../lib/local-workspace'
+import { accommodationTypes, type AccommodationType } from '../../lib/accommodation-types'
 
 export default function StartPage(){
   const router=useRouter()
   const [ownerName,setOwnerName]=useState('')
   const [dormName,setDormName]=useState('')
+  const [accommodationType,setAccommodationType]=useState<AccommodationType>('apartment')
   const [error,setError]=useState('')
   const [saving,setSaving]=useState(false)
   const [existing,setExisting]=useState(false)
@@ -15,7 +17,7 @@ export default function StartPage(){
   async function submit(event:React.FormEvent<HTMLFormElement>){
     event.preventDefault();setSaving(true);setError('')
     try{
-      await createDeviceWorkspace(ownerName,dormName)
+      await createDeviceWorkspace(ownerName,dormName,accommodationType)
       router.push('/workspace')
     }catch(e){setError(e instanceof Error?e.message:'บันทึกข้อมูลไม่ได้')}finally{setSaving(false)}
   }
@@ -23,11 +25,12 @@ export default function StartPage(){
     <a href="/" className="muted">← StayHub</a>
     <section className="card section">
       <span className="badge">เริ่มต้นใช้งาน</span>
-      <h1>สร้างพื้นที่หอพักของคุณ</h1>
+      <h1>สร้างพื้นที่ที่พักของคุณ</h1>
       <p className="lead">ตั้งค่าพื้นที่ใช้งานบนอุปกรณ์นี้ได้ทันที โดยไม่ต้องใช้ LINE OA</p>
       <form onSubmit={submit} className="list">
         <label>ชื่อผู้ดูแล<input required maxLength={80} autoComplete="name" value={ownerName} onChange={e=>setOwnerName(e.target.value)} placeholder="ชื่อของคุณ"/></label>
-        <label>ชื่อหอพัก<input required maxLength={100} value={dormName} onChange={e=>setDormName(e.target.value)} placeholder="เช่น บ้านสวน เรสซิเดนซ์"/></label>
+        <label>ประเภทที่พัก<select value={accommodationType} onChange={e=>setAccommodationType(e.target.value as AccommodationType)}>{Object.entries(accommodationTypes).map(([key,item])=><option key={key} value={key}>{item.label}</option>)}</select></label>
+        <label>ชื่อที่พัก<input required maxLength={100} value={dormName} onChange={e=>setDormName(e.target.value)} placeholder="เช่น บ้านสวน เรสซิเดนซ์"/></label>
         {error&&<p role="alert" style={{color:'#a22'}}>{error}</p>}
         <button className="btn" disabled={saving} type="submit">{saving?'กำลังบันทึก...':'สร้างพื้นที่และเริ่มใช้งาน'}</button>
       </form>
