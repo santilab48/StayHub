@@ -5,8 +5,21 @@ let pool: Pool | undefined
 
 /** Server-only connection for the managed PostgreSQL instance on Railway. */
 export function getPostgresPool(): Pool {
-  const connectionString = process.env.DATABASE_URL
-  if (!connectionString) throw new Error('DATABASE_URL is not configured')
+  // Opt-in staging-only Neon cutover. Keep Railway's DATABASE_URL intact for rollback.
+  const usingNeonStaging = process.env.STAYHUB_DB_PROVIDER === 'neon-staging'
+  if (usingNeonStaging && (
+    process.env.RAILWAY_PROJECT_ID !== 'a8a5a434-4d18-438f-b4ea-ece072094595' ||
+    process.env.RAILWAY_ENVIRONMENT_NAME !== 'staging' ||
+    process.env.RAILWAY_ENVIRONMENT_ID !== 'ced39691-4fe7-4707-bba7-6d0e801f1ff8'
+  )) throw new Error('Neon staging connection refused outside approved Railway staging')
+  const connectionString = usingNeonStaging
+    ? process.env.STAYHUB_NEON_STAGING_URL
+    : process.env.DATABASE_URL
+  if (!connectionString) throw new Error('PostgreSQL connection is not configured')
+  if (usingNeonStaging) {
+    const host = connectionString.split('@').at(-1)?.split('/')[0]?.split(':')[0] || ''
+    if (!host.endsWith('.neon.tech')) throw new Error('Neon staging URL must point to Neon')
+  }
   if (!pool) {
     pool = new Pool({
       connectionString,
