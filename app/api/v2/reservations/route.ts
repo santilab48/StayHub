@@ -72,6 +72,8 @@ export async function POST(req:NextRequest){
       const arrival=data.arrival,departure=data.departure,unitId=data.unitId
       const nights=(Date.parse(departure)-Date.parse(arrival))/86400000
       if(nights<1||nights>365)return reply({error:'Reservation must be 1–365 nights'},400)
+      const bangkokToday=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())
+      if(arrival<bangkokToday)return reply({error:'Arrival date is in the past'},400)
       const idempotency=req.headers.get('idempotency-key')
       if(!idempotency||idempotency.length>120||!/^[-\w]{12,120}$/.test(idempotency))
         return reply({error:'Idempotency-Key header required (12–120 safe characters)'},400)
@@ -95,8 +97,8 @@ export async function POST(req:NextRequest){
       if(result.status==='existing'){
         const previous=result.item
         if(previous.unit_id!==unitId||
-           String(previous.arrival_date).slice(0,10)!==arrival||
-           String(previous.departure_date).slice(0,10)!==departure||
+           new Date(previous.arrival_date as string).toISOString().slice(0,10)!==arrival||
+           new Date(previous.departure_date as string).toISOString().slice(0,10)!==departure||
            (previous.total_amount===null?null:Number(previous.total_amount))!==(amount??null))
           return reply({error:'Idempotency key reused with different reservation'},409)
         return reply({id:previous.id,status:previous.status,replayed:true})
