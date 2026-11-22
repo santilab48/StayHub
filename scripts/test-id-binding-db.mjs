@@ -32,6 +32,7 @@ try{
   await expectConstraint('Invitation cannot bind to other property',()=>c.query("INSERT INTO stayhub.join_requests(invite_id,property_id,account_id) VALUES($1,$2,$3)",[invite,b,tenant]))
   const request=(await c.query('INSERT INTO stayhub.join_requests(invite_id,property_id,account_id,unit_id) VALUES($1,$2,$3,$4) RETURNING id',[invite,a,tenant,unitA])).rows[0].id
   await expectConstraint('Stay cannot use a room from other property',()=>c.query('INSERT INTO stayhub.stays(property_id,unit_id,account_id,join_request_id) VALUES($1,$2,$3,$4)',[a,unitB,tenant,request]))
+  await expectConstraint('Stay cannot impersonate another account from the same request',()=>c.query('INSERT INTO stayhub.stays(property_id,unit_id,account_id,join_request_id) VALUES($1,$2,$3,$4)',[a,unitA,ownerB,request]))
   await expectConstraint('Stay cannot use join request from other property',()=>c.query('INSERT INTO stayhub.stays(property_id,unit_id,account_id,join_request_id) VALUES($1,$2,$3,$4)',[b,unitB,tenant,request]))
   const before=await c.query('SELECT 1 FROM stayhub.property_memberships WHERE property_id=$1 AND account_id=$2',[a,tenant])
   if(before.rowCount)throw Error('QR join request unexpectedly gave tenant membership')
