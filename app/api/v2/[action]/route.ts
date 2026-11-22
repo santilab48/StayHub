@@ -266,6 +266,8 @@ export async function POST(req:NextRequest,{params}:Params){
             AND (ends_at IS NULL OR ends_at>now()) FOR UPDATE`,[body.stayId,propertyId])
         if(!existing.rowCount)return {status:'not_active'}
         const previous=existing.rows[0]
+        const linked=await client.query('SELECT reservation_id FROM stayhub.stays WHERE property_id=$1 AND id=$2',[propertyId,previous.id])
+        if(linked.rows[0]?.reservation_id)return {status:'use_reservation_checkout'}
         const lease=await client.query("SELECT 1 FROM stayhub.leases WHERE property_id=$1 AND stay_id=$2 AND status='active' LIMIT 1",[propertyId,previous.id])
         if(lease.rowCount)return {status:'terminate_lease_first'}
         if(previous.unit_id===targetUnitId)return {status:'same_unit'}
@@ -295,6 +297,8 @@ export async function POST(req:NextRequest,{params}:Params){
     if(action==='checkout'){
       if(!validId(propertyId)||!validId(body.stayId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
       const result=await withPostgresTransaction(async client=>{
+        const reservation=await client.query('SELECT reservation_id FROM stayhub.stays WHERE property_id=$1 AND id=$2',[propertyId,body.stayId])
+        if(reservation.rows[0]?.reservation_id)return 'use_reservation_checkout'
         const lease=await client.query("SELECT 1 FROM stayhub.leases WHERE property_id=$1 AND stay_id=$2 AND status='active' LIMIT 1",[propertyId,body.stayId])
         if(lease.rowCount)return 'terminate_lease_first'
         const previous=await endStay(client,propertyId,body.stayId as string,account.id)
