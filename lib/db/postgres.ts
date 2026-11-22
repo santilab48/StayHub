@@ -8,6 +8,11 @@ export function getPostgresPool(): Pool {
   // Opt-in staging-only Neon cutover. Keep Railway's DATABASE_URL intact for rollback.
   const usingNeonStaging = process.env.STAYHUB_DB_PROVIDER === 'neon-staging'
   const usingNeonProduction = process.env.STAYHUB_DB_PROVIDER === 'neon-production'
+  const writeFreeze = process.env.STAYHUB_WRITE_FREEZE === 'YES'
+  // Prevent an accidental first Neon Production deployment with writes enabled.
+  if (usingNeonProduction && !writeFreeze) {
+    throw new Error('Neon production connection requires verified maintenance write freeze')
+  }
   if (usingNeonStaging && (
     process.env.RAILWAY_PROJECT_ID !== 'a8a5a434-4d18-438f-b4ea-ece072094595' ||
     process.env.RAILWAY_ENVIRONMENT_NAME !== 'staging' ||
@@ -43,6 +48,9 @@ export function getPostgresPool(): Pool {
       max: 5,
       idleTimeoutMillis: 30_000,
       connectionTimeoutMillis: 10_000,
+      // Defense in depth while cutover is frozen: all new application DB
+      // sessions default to read-only, including unexpected GET-side writes.
+      options: writeFreeze ? '-c default_transaction_read_only=on' : undefined,
       application_name: 'stayhub-web',
     })
   }
