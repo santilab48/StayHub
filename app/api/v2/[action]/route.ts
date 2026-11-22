@@ -2,6 +2,7 @@ import {NextRequest,NextResponse} from 'next/server'
 import {postgresQuery,withPostgresTransaction} from '../../../../lib/db/postgres'
 import {accountFromSession,checkOrigin,hashPassword,hashToken,issueSession,newToken,stagingAuthEnabled,verifyPassword} from '../../../../lib/cloud-identity'
 import QRCode from 'qrcode'
+import {cookies} from 'next/headers'
 
 export const dynamic='force-dynamic'
 type Params={params:Promise<{action:string}>}
@@ -92,6 +93,13 @@ export async function POST(req:NextRequest,{params}:Params){
       const r=await postgresQuery<{id:string;password_hash:string|null}>('SELECT id,password_hash FROM stayhub.accounts WHERE lower(email)=$1',[email])
       if(!r.rowCount||!r.rows[0].password_hash||!await verifyPassword(body.password,r.rows[0].password_hash))return reply({error:'Invalid credentials'},401)
       await issueSession(r.rows[0].id)
+      return reply({ok:true})
+    }
+    if(action==='logout'){
+      const jar=await cookies()
+      const raw=jar.get('stayhub_session')?.value
+      if(raw)await postgresQuery('UPDATE stayhub.sessions SET revoked_at=now() WHERE token_hash=$1 AND revoked_at IS NULL',[hashToken(raw)])
+      jar.delete('stayhub_session')
       return reply({ok:true})
     }
     const account=await accountFromSession()
