@@ -70,11 +70,12 @@ try {
   assert.equal(before.units,'1')
   console.log('PASS source fixture and 11 migration records established')
 
-  run('pg_dump',['--format=custom','--schema=stayhub','--no-owner',
+  run('pg_dump',['--format=custom','--no-owner',
     '--no-acl','--file='+backup,'--dbname=stayhub_p26_ci'])
   assert.ok(statSync(backup).size>1000,'Backup archive unexpectedly small')
   const entries=run('pg_restore',['--list',backup])
   assert.match(entries,/stayhub/)
+  assert.match(entries,/EXTENSION.*btree_gist/,'Backup must include required public btree_gist extension')
   console.log('PASS PostgreSQL custom-format schema/data backup and archive listing')
 
   run('pg_restore',['--exit-on-error','--single-transaction','--no-owner',
