@@ -18,8 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      NEXT_PUBLIC_SUPABASE_URL: https://exqsiwvmjyzkkydfdhby.supabase.co
-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ssBp33CUhUN0K5JNjy-71g_MXBtoNIx
+      NEXT_PUBLIC_SUPABASE_URL: https://build-only.invalid
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: build-only-placeholder
       NEXT_TELEMETRY_DISABLED: 1
     steps:
       - uses: actions/checkout@v4
