@@ -349,7 +349,7 @@ export async function POST(req:NextRequest,{params}:Params){
         const r=await client.query<{account_id:string;status:string}>(`SELECT account_id,status FROM stayhub.join_requests
           WHERE id=$1 AND property_id=$2 FOR UPDATE`,[body.requestId,propertyId])
         if(!r.rowCount||r.rows[0].status!=='pending')return 'not_pending'
-        const availability=await ensureUnitCanAccept(client,propertyId,body.unitId)
+        const availability=await ensureUnitCanAccept(client,propertyId,body.unitId as string)
         if(availability!=='ok')return availability
         const membership=await client.query('SELECT role FROM stayhub.property_memberships WHERE property_id=$1 AND account_id=$2',[propertyId,r.rows[0].account_id])
         if(membership.rows.some(row=>!['resident','guest'].includes(row.role)))return 'reserved_role'
