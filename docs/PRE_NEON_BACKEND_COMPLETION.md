@@ -67,3 +67,13 @@ The backend is still on Railway Postgres Staging; **no Neon cutover** and no UI 
 - Temporary pre-deploy commands were removed after those deployments. The Production service remains untouched.
 
 **P2.3 limitations:** manual reservation entry only; online tenant check-in, linking reservation to Stay, automatic checkout/reservation status reconciliation, monthly rent invoice generation, payment collection and signed documents are not yet built. Do not load real guests or money into Staging.
+
+## P2.4 — reservation-linked QR check-in and check-out (2026-11-22)
+
+- `db/migrations/008_reservation_stay_binding.sql` adds an optional `reservation_id` on `stays`, a unique reservation-to-stay mapping, and database composite FKs ensuring the property, unit and guest Account ID agree with the reservation.
+- `POST /api/v2/reservations` supports `action=check-in`, requiring an authenticated owner/admin and a property-scoped **pending QR join request**; the account comes from the join request rather than the caller. Check-in locks the unit and reservation, checks the Bangkok-local booking date range, room capacity/blocks/housekeeping, updates the reservation guest ID and status, creates the linked stay, and approves access in a single transaction.
+- `action=check-out` locks the unit/reservation and ends the linked stay with the existing housekeeping logic, revokes access when appropriate, and sets reservation status to checked_out in one transaction. An active monthly lease blocks checkout until terminated.
+- Generic checkout and transfer endpoints now refuse reservation-linked stays to prevent diverging reservation and access states.
+- CI static contract tests and transaction-only PostgreSQL test cases add account impersonation, cross-property FK and duplicate-reservation stay assertions. No permanent test tenants or bookings should survive the rollback.
+- The feature is still staging-only. **Not yet integrated:** repeated visits of the same guest require a redesigned QR join request uniqueness rule, early/late checkout policies, deposit/billing reconciliation, guest identity confirmation, documented race testing, direct HTTP cross-user tests and signed hotel registration forms. Do not treat it as a finished public hotel check-in system.
+- No Neon migration, UI redesign, PR merge or Production deployment.
