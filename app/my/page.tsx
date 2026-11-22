@@ -1,0 +1,36 @@
+'use client'
+import {useEffect,useState} from 'react'
+type Stay={id:string;property_name:string;unit_name:string;property_type:string}
+const tiles=[
+  ['🏠','ห้องของฉัน','ข้อมูลห้องและการเข้าพัก'],
+  ['🧾','บิลและชำระเงิน','รอเปิดระบบบิลออนไลน์'],
+  ['🔧','แจ้งซ่อม','รอเปิดระบบแจ้งซ่อมออนไลน์'],
+  ['📦','พัสดุและบริการ','รอเปิดระบบบริการ'],
+  ['📢','ประกาศ','รอเปิดระบบประกาศ'],
+  ['💬','ติดต่อที่พัก','รอเปิดช่องทางติดต่อ'],
+]
+export default function MyStayPage(){
+  const [stays,setStays]=useState<Stay[]>([])
+  const [state,setState]=useState('กำลังตรวจสอบสิทธิ์การเข้าพัก...')
+  useEffect(()=>{
+    fetch('/api/v2/my-stays',{cache:'no-store'})
+      .then(async r=>{const data=await r.json();if(!r.ok)throw Error(data.error||'Please sign in');setStays(data.items);setState('')})
+      .catch(()=>setState('กรุณาเข้าสู่ระบบเพื่อดูพื้นที่ของคุณ'))
+  },[])
+  return <main className="wrap" style={{maxWidth:900}}>
+    <a href="/">← StayHub</a><h1>แผงผู้เข้าพัก</h1>
+    <p className="muted">ที่พักและห้องบนแผงนี้ต้องผูกกับ Account ID และ Stay ID ที่เจ้าของอนุมัติแล้วเท่านั้น</p>
+    {state&&<p role="status" className="card">{state} <a href="/cloud">เข้าสู่ระบบ</a></p>}
+    {!state&&!stays.length&&<section className="card"><h2>ยังไม่มีห้องที่อนุมัติ</h2><p>สแกน QR ของเจ้าของแล้วส่งคำขอเข้าร่วม หรือรอเจ้าของอนุมัติห้องก่อน</p></section>}
+    {stays.map(stay=><section key={stay.id} className="card section">
+      <h2>{stay.property_name}</h2><p>ห้อง: <strong>{stay.unit_name}</strong></p>
+      <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))'}}>
+        {tiles.map(([icon,title,description],i)=><div key={title} className="card tile">
+          <span className="icon">{icon}</span><strong>{title}</strong>
+          <p className="muted">{i===0?'สิทธิ์ได้รับการยืนยันแล้ว':description}</p>
+        </div>)}
+      </div>
+      <p className="footnote">นี่คือแผงทดสอบ PWA: ฟีเจอร์บิลและบริการจะเปิดทีละส่วนหลังผ่านการตรวจสิทธิ์ ไม่แสดงข้อมูลปลอมหรือข้อมูลห้องอื่น</p>
+    </section>)}
+  </main>
+}
