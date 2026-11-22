@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { postgresQuery } from '../../../../../lib/db/postgres'
+import { getPostgresPool } from '../../../../../lib/db/postgres'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,10 +13,20 @@ export async function GET() {
     return NextResponse.json({ status: 'unavailable' }, { status: 404, headers })
   }
   try {
-    const result = await postgresQuery<{ tls: boolean }>(
-      'SELECT ssl AS tls FROM pg_stat_ssl WHERE pid = pg_backend_pid()',
-    )
-    const tls = result.rows[0]?.tls === true
+    const client = await getPostgresPool().connect()
+    let tls = false
+    try {
+      await client.query('SELECT 1')
+      // Neon may terminate the client TLS at its pooler. pg_stat_ssl on the
+      // backend then measures a different hop, so inspect the app's TLS socket.
+      const stream = client.connection.stream as unknown as {
+        encrypted?: boolean
+        authorized?: boolean
+      }
+      tls = stream.encrypted === true && stream.authorized === true
+    } finally {
+      client.release()
+    }
     return NextResponse.json({ status: tls ? 'ok' : 'insecure', tls },
       { status: tls ? 200 : 503, headers })
   } catch {
