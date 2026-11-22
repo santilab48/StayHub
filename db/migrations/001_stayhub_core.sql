@@ -1,7 +1,7 @@
--- StayHub P1.5: isolated, additive schema for a new EMPTY Neon staging database.
+-- StayHub P1.5: isolated core schema for a dedicated EMPTY Railway staging PostgreSQL database.
+-- Run through scripts/migrate-staging.mjs only after verifying the target.
 -- No legacy Supabase auth or storage data is copied by this migration.
--- Run ONLY after confirming the target is the dedicated StayHub staging database.
-BEGIN;
+-- Runner owns the transaction and migration ledger. Do not add BEGIN/COMMIT here.
 CREATE SCHEMA IF NOT EXISTS stayhub;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
@@ -84,4 +84,3 @@ REVOKE ALL ON ALL TABLES IN SCHEMA stayhub FROM PUBLIC;
 -- All table operations currently require a trusted, authenticated server role.
 -- Application authorization is REQUIRED before any user-scoped SQL executes.
 -- Do not grant access to browser-facing roles or claim RLS policies are ready.
-COMMIT;
