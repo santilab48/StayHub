@@ -11,6 +11,6 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: '#f7f9fc',
     theme_color: '#162033',
     lang: 'th',
-    icons: [{src:'/icons/stayhub.svg',type:'image/svg+xml',sizes:'any',purpose:'any maskable'}],
+    icons: [{src:'/icons/stayhub.svg',type:'image/svg+xml',sizes:'any',purpose:'any'}],
   }
 }
