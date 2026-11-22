@@ -36,3 +36,12 @@ One GitHub repo `santilab48/StayHub`; one Next.js web/API service per environmen
 - A PWA manifest exists, but service worker, offline sync and Web Push are not complete.
 - Published invoices, bookings and payments must remain authoritative on the server.
 - The plan is one Railway Project and one web service, but each Railway environment has its own deployment and database credentials.
+
+## 2026-11-22 staging infrastructure update
+- A dedicated `staging` environment now exists: `ced39691-4fe7-4707-bba7-6d0e801f1ff8`.
+- PostgreSQL service `Postgres` (id `6d7766fe-b2d7-4439-ad56-9dceed09c1ee`) deployed successfully in staging; its persistent volume is bound to staging only.
+- Staged-only StayHub web service `StayHub-F_Sd` (id `9274006f-7d9d-4ac1-bb3e-bc2b9e03b738`) is linked to repo `santilab48/StayHub`, branch `feat/stayhub-p1-security-staging-audit`.
+- `DATABASE_URL` is staged as the Railway variable reference `${{Postgres.DATABASE_URL}}`. `NODE_ENV=production` describes the Next.js runtime mode inside a staging environment; it does NOT change the Railway environment to production.
+- The staging patch has **7 non-destructive pending changes** and was **not committed/deployed**. The production environment's separate staged patch has not been touched.
+- Before deploying staging: verify correct branch/region, add only test-specific Supabase variables if legacy pages require them, ensure Next.js build can start; do not substitute live production credentials or hard-coded dummy endpoints for real authentication.
+- PostgreSQL migrations have not been applied. The shared modules still call Supabase; replacing those calls and implementing secure authorization remain prerequisites for a usable staging pilot.
