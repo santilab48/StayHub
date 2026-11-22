@@ -4,7 +4,7 @@ const required=['app/page.tsx','app/start/page.tsx','app/workspace/page.tsx','li
 for(const path of required) assert.ok(existsSync(path),'Missing '+path)
 const home=readFileSync('app/page.tsx','utf8')
 assert.ok(home.includes('href="/start"'),'Homepage must link to direct onboarding')
-assert.ok(!/LINE OA|Rich Menu|LIFF/.test(home),'Homepage must not advertise OA dependencies')
+assert.ok(!/Rich Menu 6 ช่อง|Multi-OA ready|ทุกเรื่องของหอพัก อยู่ใน LINE ที่เดียว/.test(home),'Homepage must not promote LINE-dependent navigation')
 const local=readFileSync('lib/local-workspace.ts','utf8')
 assert.ok(local.includes('indexedDB.open('),'Onboarding must persist to IndexedDB')
 assert.ok(!local.includes('service_role'),'No service credential in local onboarding')
