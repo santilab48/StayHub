@@ -21,7 +21,7 @@ function JoinContent(){
       const r=await fetch('/api/v2/join',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})})
       const data=await r.json()
       if(!r.ok)throw Error(data.error)
-      setStatus('ส่งคำขอเข้าร่วมแล้ว รอเจ้าของที่พักอนุมัติห้องก่อนใช้งาน')
+      setStatus('ส่งคำขอเข้าร่วมแล้ว รอเจ้าของที่พักอนุมัติห้องก่อนใช้งาน เปิดแผงได้หลังอนุมัติ')
     }catch(e){setStatus(e instanceof Error?e.message:'กรุณาเข้าสู่ระบบก่อน')}finally{setBusy(false)}
   }
   return <main className="wrap" style={{maxWidth:600}}><a href="/">← StayHub</a>
@@ -29,8 +29,8 @@ function JoinContent(){
       {item&&<><h2>{item.name}</h2><p>ห้องที่เชิญ: {item.unit_name||'เจ้าของจะระบุภายหลัง'}</p>
         <p className="muted">QR นี้ใช้ส่งคำขอเข้าร่วม ไม่ใช่สิทธิ์เข้าถึงบิลหรือข้อมูลห้องโดยตรง</p>
         <button className="btn" disabled={busy} onClick={()=>void join()}>ยืนยันขอเข้าร่วม</button>
-        <p><a href="/cloud">ยังไม่มีบัญชี? สมัคร/เข้าสู่ระบบที่นี่ แล้วกลับมาหน้านี้</a></p></>}
-      {status&&<p role="status">{status}</p>}
+        <p><a href={'/cloud?return='+encodeURIComponent('/join?token='+encodeURIComponent(token))}>ยังไม่มีบัญชี? สมัครหรือเข้าสู่ระบบเพื่อเข้าร่วม</a></p></>}
+      {status&&<p role="status">{status} <a href="/my">เปิดแผงผู้เช่า</a></p>
     </section>
   </main>
 }
