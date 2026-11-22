@@ -95,3 +95,6 @@ public/
 
 This is a **single-deploy target architecture**, not a claim that those features currently run.
 No production deployment, migration or merge is authorized by this document.
+
+## Property-type expansion (same deployment)
+The same property module supports apartments/monthly rentals, guesthouses, nightly stays and homestays. Property type and billing mode are data/configuration, not separate apps. See `docs/ACCOMMODATION_MODEL_V2.md`. Booking calendar, booking holds, nightly rates and check-in state machine remain future features until server-authorized and tested.
