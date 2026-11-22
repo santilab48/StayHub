@@ -13,6 +13,13 @@ export async function ensureUnitCanAccept(client:PoolClient,propertyId:string,un
     WHERE property_id=$1 AND unit_id=$2 AND starts_at<=now() AND ends_at>now()
     LIMIT 1`,[propertyId,unitId])
   if(block.rowCount)return 'blocked'
+  const booking=await client.query(`
+    SELECT 1 FROM stayhub.reservations
+    WHERE property_id=$1 AND unit_id=$2
+      AND status IN ('confirmed','checked_in')
+      AND arrival_date<=CURRENT_DATE AND departure_date>CURRENT_DATE
+    LIMIT 1`,[propertyId,unitId])
+  if(booking.rowCount)return 'reserved'
   const cleaning=await client.query(`
     SELECT 1 FROM stayhub.housekeeping_tasks
     WHERE property_id=$1 AND unit_id=$2 AND status IN ('pending','in_progress')
