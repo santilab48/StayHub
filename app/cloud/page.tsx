@@ -163,6 +163,7 @@ export default function CloudOwnerPage(){
           </form>
         </>}
       </section>
+      <section className="card section"><h2>ระบบบิลรายเดือน</h2><p className="muted">จดมิเตอร์ ออกบิล ดูยอดค้าง และรับเงินสด/โอน</p><a className="btn" href="/cloud/billing">เปิดระบบบิล</a></section>
       <section className="card section"><h2>QR เชิญผู้เช่า</h2>
         <label>เลือกที่พัก<select value={selected} onChange={e=>{setSelected(e.target.value);setInvite(null);setRequests([]);setInvites([]);setApproveUnit('');if(e.target.value){void loadUnits(e.target.value);void loadInvites(e.target.value)}}}>
           <option value="">-- เลือกที่พัก --</option>{properties.filter(p=>['owner','admin'].includes(p.role)).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
