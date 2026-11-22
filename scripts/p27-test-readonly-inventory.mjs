@@ -13,8 +13,12 @@ try{
  await db.query(`CREATE SCHEMA stayhub;
  CREATE TABLE stayhub.schema_migrations(filename text PRIMARY KEY,checksum text NOT NULL);
  CREATE TABLE stayhub.accounts(id integer PRIMARY KEY,email text NOT NULL);
+ CREATE TABLE stayhub.billing_bills(id integer PRIMARY KEY,total numeric(12,2),status text);
+ CREATE TABLE stayhub.billing_payments(id integer PRIMARY KEY,amount numeric(12,2));
  INSERT INTO stayhub.schema_migrations VALUES('001_fake_ci.sql','fixture-checksum');
- INSERT INTO stayhub.accounts VALUES(1,'demo@example.invalid'),(2,'hidden@example.invalid');`)
+ INSERT INTO stayhub.accounts VALUES(1,'demo@example.invalid'),(2,'hidden@example.invalid');
+ INSERT INTO stayhub.billing_bills VALUES(1,4350.00,'paid');
+ INSERT INTO stayhub.billing_payments VALUES(1,1500.00),(2,2850.00);`)
  const env={
   ...process.env,
   DATABASE_URL:url,
@@ -31,12 +35,16 @@ try{
  assert.equal(good.status,0,'Read-only inventory must run against disposable test database')
  const report=JSON.parse(good.stdout)
  assert.equal(report.database,'railway')
- assert.equal(report.tables,2)
+ assert.equal(report.tables,4)
  assert.equal(report.rowCounts.accounts,'2')
  assert.equal(report.rowCounts.schema_migrations,'1')
+ assert.deepEqual(report.billingAggregates.bills,{rows:'1',total_amount:'4350.00',paid_rows:'1'})
+ assert.deepEqual(report.billingAggregates.payments,{rows:'2',total_amount:'4350.00'})
+ assert.ok(report.installedExtensions.some(x=>x.extname==='plpgsql'))
  assert.equal(report.migrations.length,1)
  assert.ok(!good.stdout.includes('demo@example.invalid'),'No user details leaked')
  console.log('PASS read-only inventory outputs exact table counts and migration history')
+ console.log('PASS billing reconciliation totals and installed extensions (aggregate only)')
  const notEnabled=run({P27_READ_ONLY_AUDIT:'NO'})
  assert.notEqual(notEnabled.status,0)
  assert.match(notEnabled.stderr,/REFUSED/)
