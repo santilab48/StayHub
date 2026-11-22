@@ -1,5 +1,7 @@
 -- P2.2 room occupancy lifecycle, property-scoped movement audit, housekeeping.
 -- No personal documents or legacy Supabase records copied.
+ALTER TABLE stayhub.stays ADD CONSTRAINT stays_property_id_unique UNIQUE (property_id,id);
+
 CREATE TABLE IF NOT EXISTS stayhub.unit_blocks (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   property_id uuid NOT NULL,
@@ -22,11 +24,13 @@ CREATE TABLE IF NOT EXISTS stayhub.housekeeping_tasks (
   unit_id uuid NOT NULL,
   status text NOT NULL DEFAULT 'pending'
     CHECK(status IN ('pending','in_progress','ready','cancelled')),
-  triggered_by_stay_id uuid REFERENCES stayhub.stays(id),
+  triggered_by_stay_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
   completed_at timestamptz,
   CONSTRAINT housekeeping_unit_scope FOREIGN KEY(property_id,unit_id)
-    REFERENCES stayhub.units(property_id,id)
+    REFERENCES stayhub.units(property_id,id),
+  CONSTRAINT housekeeping_stay_scope FOREIGN KEY(property_id,triggered_by_stay_id)
+    REFERENCES stayhub.stays(property_id,id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS housekeeping_one_open_per_unit
   ON stayhub.housekeeping_tasks(property_id,unit_id)
@@ -35,13 +39,15 @@ CREATE UNIQUE INDEX IF NOT EXISTS housekeeping_one_open_per_unit
 CREATE TABLE IF NOT EXISTS stayhub.stay_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   property_id uuid NOT NULL REFERENCES stayhub.properties(id),
-  stay_id uuid NOT NULL REFERENCES stayhub.stays(id),
+  stay_id uuid NOT NULL,
   account_id uuid NOT NULL REFERENCES stayhub.accounts(id),
   actor_account_id uuid NOT NULL REFERENCES stayhub.accounts(id),
   event_type text NOT NULL CHECK(event_type IN ('approved','checked_out','transferred')),
   from_unit_id uuid,
   to_unit_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT stay_events_stay_scope FOREIGN KEY(property_id,stay_id)
+    REFERENCES stayhub.stays(property_id,id),
   CONSTRAINT stay_events_from_unit_scope FOREIGN KEY(property_id,from_unit_id)
     REFERENCES stayhub.units(property_id,id),
   CONSTRAINT stay_events_to_unit_scope FOREIGN KEY(property_id,to_unit_id)
