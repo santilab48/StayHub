@@ -18,6 +18,7 @@ export default function MyStayPage(){
   useEffect(()=>{
     fetch('/api/v2/my-stays',{cache:'no-store'})
       .then(async r=>{const data=await r.json();if(!r.ok)throw Error(data.error||'Please sign in');setStays(data.items);return fetch('/api/v2/my-requests',{cache:'no-store'})})
+      .then(async r=>{const data=await r.json();if(!r.ok)throw Error('Unable to load requests');setRequests(data.items);setState('')})
       .catch(()=>setState('กรุณาเข้าสู่ระบบเพื่อดูพื้นที่ของคุณ'))
   },[])
   return <main className="wrap" style={{maxWidth:900}}>
