@@ -34,6 +34,21 @@ try{
   await expectConstraint('Stay cannot use a room from other property',()=>c.query('INSERT INTO stayhub.stays(property_id,unit_id,account_id,join_request_id) VALUES($1,$2,$3,$4)',[a,unitB,tenant,request]))
   await expectConstraint('Stay cannot impersonate another account from the same request',()=>c.query('INSERT INTO stayhub.stays(property_id,unit_id,account_id,join_request_id) VALUES($1,$2,$3,$4)',[a,unitA,ownerB,request]))
   await expectConstraint('Stay cannot use join request from other property',()=>c.query('INSERT INTO stayhub.stays(property_id,unit_id,account_id,join_request_id) VALUES($1,$2,$3,$4)',[b,unitB,tenant,request]))
+  const stay=(await c.query('INSERT INTO stayhub.stays(property_id,unit_id,account_id,join_request_id) VALUES($1,$2,$3,$4) RETURNING id',[a,unitA,tenant,request])).rows[0].id
+  await expectConstraint('Housekeeping stay cannot belong to another property',
+    ()=>c.query("INSERT INTO stayhub.housekeeping_tasks(property_id,unit_id,triggered_by_stay_id) VALUES($1,$2,$3)",[b,unitB,stay]))
+  await expectConstraint('Stay audit cannot link another property',
+    ()=>c.query("INSERT INTO stayhub.stay_events(property_id,stay_id,account_id,actor_account_id,event_type) VALUES($1,$2,$3,$4,'approved')",[b,stay,tenant,ownerB]))
+  await expectConstraint('Unit block cannot reference another property',
+    ()=>c.query("INSERT INTO stayhub.unit_blocks(property_id,unit_id,starts_at,ends_at,reason,created_by) VALUES($1,$2,now(),now()+interval '1 day','maintenance',$3)",[b,unitA,ownerB]))
+  await c.query('UPDATE stayhub.stays SET ends_at=now() WHERE id=$1',[stay])
+  const activeAfter=(await c.query("SELECT count(*)::integer AS n FROM stayhub.stays WHERE property_id=$1 AND account_id=$2 AND ends_at IS NULL",[a,tenant])).rows[0].n
+  if(activeAfter!==0)throw Error('Checkout did not end old active stay')
+  console.log('PASS Checkout ends authorized active stay')
+  await c.query("INSERT INTO stayhub.housekeeping_tasks(property_id,unit_id,triggered_by_stay_id) VALUES($1,$2,$3)",[a,unitA,stay])
+  const pending=(await c.query("SELECT count(*)::integer AS n FROM stayhub.housekeeping_tasks WHERE property_id=$1 AND unit_id=$2 AND status='pending'",[a,unitA])).rows[0].n
+  if(pending!==1)throw Error('Checkout did not leave room in housekeeping queue')
+  console.log('PASS Checkout housekeeping queue is scoped to property and room')
   const before=await c.query('SELECT 1 FROM stayhub.property_memberships WHERE property_id=$1 AND account_id=$2',[a,tenant])
   if(before.rowCount)throw Error('QR join request unexpectedly gave tenant membership')
   console.log('PASS Pending QR join does not grant membership')
