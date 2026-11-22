@@ -32,7 +32,7 @@ export default function CloudOwnerPage(){
   }
   useEffect(()=>{void load()},[])
   async function run(fn:()=>Promise<void>){setBusy(true);setMessage('');try{await fn()}catch(e){setMessage(e instanceof Error?e.message:'เกิดข้อผิดพลาด')}finally{setBusy(false)}}
-  async function sign(e:{preventDefault:()=>void},action:'register'|'login'){e.preventDefault();await run(async()=>{await api(action,{email,password});setPassword('');await load();setMessage('เข้าสู่ระบบสำเร็จ')})}
+  async function sign(e:{preventDefault:()=>void},action:'register'|'login'){e.preventDefault();await run(async()=>{await api(action,{email,password});setPassword('');await load();setMessage('เข้าสู่ระบบสำเร็จ');const target=new URLSearchParams(window.location.search).get('return');if(target?.startsWith('/join?token='))window.location.assign(target)})}
   async function create(e:FormEvent){e.preventDefault();await run(async()=>{const p=await api('property',{name,type});await load();setSelected(p.id);setMessage('สร้างที่พักแล้ว');await loadUnits(p.id)})}
   async function loadUnits(id:string){const r=await fetch('/api/v2/units?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setUnits(data.items)}
   async function loadRequests(id:string){await run(async()=>{const r=await fetch('/api/v2/requests?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setRequests(data.items)})}
@@ -47,7 +47,7 @@ export default function CloudOwnerPage(){
           <button type="submit" disabled={busy} className="btn secondary">เข้าสู่ระบบ</button></div>
       </form>
     </section>:<>
-      <section className="card section"><strong>เข้าสู่ระบบ: {account.email}</strong><h2>สร้างที่พัก</h2>
+      <section className="card section"><div className="toolbar"><strong>เข้าสู่ระบบ: {account.email}</strong><button type="button" className="btn secondary" disabled={busy} onClick={()=>void run(async()=>{await api('logout',{});setAccount(null);setProperties([]);setSelected('');setInvite(null)})}>ออกจากระบบ</button></div><h2>สร้างที่พัก</h2>
         <form className="list" onSubmit={create}>
           <label>ชื่อที่พัก<input required maxLength={120} value={name} onChange={e=>setName(e.target.value)}/></label>
           <label>ประเภทที่พัก<select value={type} onChange={e=>setType(e.target.value)}>
