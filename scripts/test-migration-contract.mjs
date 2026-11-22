@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict'
+import {readFileSync,existsSync} from 'node:fs'
+const migration=readFileSync('scripts/migrate-staging.mjs','utf8')
+const core=readFileSync('db/migrations/001_stayhub_core.sql','utf8')
+const overlaps=readFileSync('db/migrations/002_reservation_conflict_guard.sql','utf8')
+assert.ok(migration.includes("RAILWAY_ENVIRONMENT_NAME !== 'staging'"))
+assert.ok(migration.includes("RAILWAY_PROJECT_ID !== EXPECTED_PROJECT"))
+assert.ok(migration.includes('pg_advisory_xact_lock'))
+assert.ok(migration.includes('sha256'))
+assert.ok(migration.includes('schema_migrations'))
+assert.ok(!/\b(BEGIN|COMMIT)\s*;/i.test(core),'Runner owns the migration transaction')
+assert.ok(overlaps.includes('EXCLUDE USING gist'))
+assert.ok(overlaps.includes('daterange(arrival_date, departure_date'))
+assert.ok(overlaps.includes("status IN ('confirmed', 'checked_in')"))
+assert.ok(existsSync('railway.json'))
+console.log('Staging migration safety contract passed (static checks; no database writes).')
