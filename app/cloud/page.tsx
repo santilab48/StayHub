@@ -2,7 +2,7 @@
 import {FormEvent,useEffect,useState} from 'react'
 import {accommodationTypes,isAccommodationType,type AccommodationType} from '../../lib/accommodation-types'
 type Property={id:string;name:string;property_type:string;role:string}
-type OnboardingScreen='loading'|'choose'|'auth'|'dashboard'
+type OnboardingScreen='loading'|'choose'|'auth'|'dashboard'|'unavailable'
 const ONBOARDING_KEY='stayhub_owner_preferred_type_v1'
 const typeIcons:Record<AccommodationType,string>={
   apartment:'🏢',guesthouse:'🛎️',daily:'🛏️',homestay:'🏡'
@@ -19,7 +19,11 @@ type InviteItem={id:string;created_at:string;expires_at:string;use_count:number;
 async function api(action:string,body?:Record<string,unknown>){
   const response=await fetch('/api/v2/'+action,{method:body?'POST':'GET',credentials:'same-origin',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,cache:'no-store'})
   const data=await response.json()
-  if(!response.ok)throw Error(data.error||'Request failed')
+  if(!response.ok){
+    const error=new Error(data.error||'Request failed') as Error&{status?:number}
+    error.status=response.status
+    throw error
+  }
   return data
 }
 export default function CloudOwnerPage(){
@@ -72,8 +76,14 @@ export default function CloudOwnerPage(){
           try{localStorage.setItem(ONBOARDING_KEY,p.items[0].property_type)}catch{}
         }else if(saved){setType(saved)}
         setScreen('dashboard')
-      }catch{
+      }catch(error){
         if(!active)return
+        if((error as Error&{status?:number}).status!==401){
+          setAccount(null)
+          setMessage('ไม่สามารถเชื่อมต่อระบบบัญชีได้ กรุณาลองใหม่อีกครั้ง')
+          setScreen('unavailable')
+          return
+        }
         setAccount(null)
         const isTenantReturn=new URLSearchParams(window.location.search).get('return')?.startsWith('/join?token=')
         if(saved)setType(saved)
@@ -101,8 +111,9 @@ export default function CloudOwnerPage(){
   async function loadRequests(id:string){await run(async()=>{const r=await fetch('/api/v2/requests?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setRequests(data.items)})}
   return <main className="wrap" style={{maxWidth:900}}>
     <a href="/">← StayHub</a><h1>StayHub Cloud · เจ้าของที่พัก</h1>
-    <p className="muted">ทดสอบระบบผูกบัญชีและ QR เฉพาะ Staging ยังไม่ใช่ระบบสำหรับข้อมูลผู้เช่าจริง</p>
+    <p className="muted">ระบบ Cloud และ QR อยู่ระหว่างตรวจสอบความพร้อมก่อนเปิดใช้งานจริง กรุณาอย่าใช้ข้อมูลส่วนบุคคลหรือข้อมูลการเงินจริงระหว่างทดสอบ</p>
     {screen==='loading'&&<section className="card section" aria-live="polite"><p>กำลังตรวจสอบบัญชีของคุณ...</p></section>}
+    {screen==='unavailable'&&<section className="card section" role="alert"><h2>ระบบบัญชียังไม่พร้อมใช้งาน</h2><p>ไม่สามารถตรวจสอบเซสชันหรือการเชื่อมต่อเซิร์ฟเวอร์ได้ โปรดลองใหม่ภายหลัง</p><button type="button" className="btn secondary" onClick={()=>window.location.reload()}>ลองใหม่</button></section>}
     {screen==='choose'&&<section className="card section">
       <span className="badge">เริ่มต้น StayHub</span>
       <h2>คุณดูแลที่พักประเภทไหน?</h2>
