@@ -7,7 +7,7 @@ export const dynamic='force-dynamic'
 type Params={params:Promise<{action:string}>}
 const reply=(data:unknown,status=200)=>NextResponse.json(data,{status,headers:{'Cache-Control':'no-store'}})
 function validEmail(s:unknown){return typeof s==='string'&&s.length<=254&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)}
-function validId(s:unknown){return typeof s==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s)}
+function validId(s:unknown):s is string{return typeof s==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s)}
 const roles=['owner','admin'] as const
 function enabled(){return stagingAuthEnabled()}
 async function ownerHasProperty(accountId:string,propertyId:string){
