@@ -3,6 +3,7 @@ import {FormEvent,useEffect,useState} from 'react'
 type Property={id:string;name:string;property_type:string;role:string}
 type RequestItem={id:string;email:string;status:string;unit_name:string|null}
 type Unit={id:string;name:string}
+type InviteItem={id:string;created_at:string;expires_at:string;use_count:number;max_uses:number;revoked_at:string|null;unit_id:string|null}
 async function api(action:string,body?:Record<string,unknown>){
   const response=await fetch('/api/v2/'+action,{method:body?'POST':'GET',credentials:'same-origin',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,cache:'no-store'})
   const data=await response.json()
@@ -18,7 +19,8 @@ export default function CloudOwnerPage(){
   const [properties,setProperties]=useState<Property[]>([])
   const [selected,setSelected]=useState('')
   const [unit,setUnit]=useState('')
-  const [invite,setInvite]=useState<{url:string;svg:string}|null>(null)
+  const [invite,setInvite]=useState<{id:string;url:string;svg:string}|null>(null)
+  const [invites,setInvites]=useState<InviteItem[]>([])
   const [requests,setRequests]=useState<RequestItem[]>([])
   const [units,setUnits]=useState<Unit[]>([])
   const [approveUnit,setApproveUnit]=useState('')
@@ -33,8 +35,9 @@ export default function CloudOwnerPage(){
   useEffect(()=>{void load()},[])
   async function run(fn:()=>Promise<void>){setBusy(true);setMessage('');try{await fn()}catch(e){setMessage(e instanceof Error?e.message:'เกิดข้อผิดพลาด')}finally{setBusy(false)}}
   async function sign(e:{preventDefault:()=>void},action:'register'|'login'){e.preventDefault();await run(async()=>{await api(action,{email,password});setPassword('');await load();setMessage('เข้าสู่ระบบสำเร็จ');const target=new URLSearchParams(window.location.search).get('return');if(target?.startsWith('/join?token='))window.location.assign(target)})}
-  async function create(e:FormEvent){e.preventDefault();await run(async()=>{const p=await api('property',{name,type});await load();setSelected(p.id);setMessage('สร้างที่พักแล้ว');await loadUnits(p.id)})}
+  async function create(e:FormEvent){e.preventDefault();await run(async()=>{const p=await api('property',{name,type});await load();setSelected(p.id);setMessage('สร้างที่พักแล้ว');await loadUnits(p.id);await loadInvites(p.id)})}
   async function loadUnits(id:string){const r=await fetch('/api/v2/units?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setUnits(data.items)}
+  async function loadInvites(id:string){const r=await fetch('/api/v2/invites?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setInvites(data.items)}
   async function loadRequests(id:string){await run(async()=>{const r=await fetch('/api/v2/requests?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setRequests(data.items)})}
   return <main className="wrap" style={{maxWidth:900}}>
     <a href="/">← StayHub</a><h1>StayHub Cloud · เจ้าของที่พัก</h1>
@@ -57,23 +60,39 @@ export default function CloudOwnerPage(){
         </form>
       </section>
       <section className="card section"><h2>QR เชิญผู้เช่า</h2>
-        <label>เลือกที่พัก<select value={selected} onChange={e=>{setSelected(e.target.value);setInvite(null);setRequests([]);setApproveUnit('');if(e.target.value)void loadUnits(e.target.value)}}>
+        <label>เลือกที่พัก<select value={selected} onChange={e=>{setSelected(e.target.value);setInvite(null);setRequests([]);setInvites([]);setApproveUnit('');if(e.target.value){void loadUnits(e.target.value);void loadInvites(e.target.value)}}}>
           <option value="">-- เลือกที่พัก --</option>{properties.filter(p=>['owner','admin'].includes(p.role)).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
         </select></label>
         {selected&&<div className="list section">
           <label>เพิ่มห้อง<input value={unit} onChange={e=>setUnit(e.target.value)} placeholder="เช่น A101"/></label>
           <button type="button" disabled={busy||!unit.trim()} className="btn secondary" onClick={()=>void run(async()=>{await api('unit',{propertyId:selected,name:unit});setUnit('');await loadUnits(selected);setMessage('เพิ่มห้องสำเร็จ')})}>เพิ่มห้องพัก</button>
-          <button disabled={busy} className="btn" onClick={()=>void run(async()=>{setInvite(await api('create-invite',{propertyId:selected}))})}>สร้าง QR ประจำที่พัก (7 วัน)</button>
+          <button disabled={busy} className="btn" onClick={()=>void run(async()=>{setInvite(await api('create-invite',{propertyId:selected}));await loadInvites(selected)})}>สร้าง QR ประจำที่พัก (7 วัน)</button>
           {invite&&<div className="card">
             <img src={'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(invite.svg)} width="260" height="260" alt="QR สำหรับเข้าร่วมที่พัก"/>
             <p><a href={invite.url}>{invite.url}</a></p>
             <p className="muted">QR ผูกกับที่พักนี้และบัญชีเจ้าของในฐานข้อมูลอัตโนมัติ สแกนแล้วรอการอนุมัติก่อนเข้าถึงข้อมูล</p>
           </div>}
+          <section className="card"><h3>QR ที่สร้างแล้ว</h3>
+            <p className="muted">ลิงก์ QR เดิมไม่สามารถดึงกลับมาได้ หลังออกจากหน้านี้ต้องสร้าง QR ใหม่เพื่อแชร์อีกครั้ง</p>
+            {invites.map(item=><div className="row" key={item.id}>
+              <div><strong>{item.revoked_at?'ยกเลิกแล้ว':new Date(item.expires_at)<=new Date()?'หมดอายุ':'ใช้งานได้'}</strong>
+                <p className="muted">ใช้แล้ว {item.use_count}/{item.max_uses} · หมดอายุ {new Date(item.expires_at).toLocaleDateString('th-TH')}</p></div>
+              {!item.revoked_at&&new Date(item.expires_at)>new Date()&&<button type="button" className="btn secondary" disabled={busy} onClick={()=>void run(async()=>{
+                await api('revoke-invite',{propertyId:selected,inviteId:item.id})
+                if(invite?.id===item.id)setInvite(null)
+                await loadInvites(selected)
+                setMessage('ยกเลิก QR แล้ว')
+              })}>ยกเลิก QR</button>}
+            </div>)}
+          </section>
           <button className="btn secondary" disabled={busy} onClick={()=>void loadRequests(selected)}>ดูคำขอเข้าร่วม</button>
           {requests.map(r=><div key={r.id} className="card">
             <p>{r.email} · {r.status} {r.unit_name||''}</p>
             {r.status==='pending'&&<div className="list"><label>เลือกห้องที่จะผูก<select value={approveUnit} onChange={e=>setApproveUnit(e.target.value)}><option value="">-- เลือกห้อง --</option>{units.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select></label>
-              <button className="btn" disabled={busy||!approveUnit} onClick={()=>void run(async()=>{await api('approve',{propertyId:selected,requestId:r.id,unitId:approveUnit});await loadRequests(selected)})}>อนุมัติผูกห้อง</button></div>}
+              <div className="flow">
+                <button className="btn" disabled={busy||!approveUnit} onClick={()=>void run(async()=>{await api('approve',{propertyId:selected,requestId:r.id,unitId:approveUnit});await loadRequests(selected);setMessage('อนุมัติผูกห้องเรียบร้อยแล้ว')})}>อนุมัติผูกห้อง</button>
+                <button className="btn secondary" disabled={busy} onClick={()=>void run(async()=>{await api('reject',{propertyId:selected,requestId:r.id});await loadRequests(selected);setMessage('ปฏิเสธคำขอแล้ว')})}>ปฏิเสธ</button>
+              </div></div>}
           </div>)}
         </div>}
       </section>
