@@ -8,7 +8,10 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "audit:p1": "node scripts/p1-audit.mjs",
-    "test:structure": "node scripts/verify-structure.mjs"
+    "test:structure": "node scripts/verify-structure.mjs",
+    "test:migration": "node scripts/test-migration-contract.mjs",
+    "db:staging:check": "node scripts/migrate-staging.mjs --check",
+    "db:staging:migrate": "node scripts/migrate-staging.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",
