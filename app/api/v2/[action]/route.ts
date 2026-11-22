@@ -3,6 +3,7 @@ import {postgresQuery,withPostgresTransaction} from '../../../../lib/db/postgres
 import {accountFromSession,checkOrigin,hashPassword,hashToken,issueSession,newToken,stagingAuthEnabled,verifyPassword} from '../../../../lib/cloud-identity'
 import QRCode from 'qrcode'
 import {cookies} from 'next/headers'
+import {consumeAuthAttempt,clearAuthAttempt} from '../../../../lib/auth-throttle'
 
 export const dynamic='force-dynamic'
 type Params={params:Promise<{action:string}>}
@@ -95,18 +96,26 @@ export async function POST(req:NextRequest,{params}:Params){
       const email=typeof body.email==='string'?body.email.trim().toLowerCase():''
       const password=body.password
       if(!validEmail(email)||typeof password!=='string'||password.length<12||password.length>128)return reply({error:'Provide valid email and a password of 12–128 characters'},400)
+      if(!await consumeAuthAttempt('register',email,3,3600))return reply({error:'Too many registration attempts. Please try again later'},429)
       const stored=await hashPassword(password)
+      let id:string
       try{
         const r=await postgresQuery<{id:string}>('INSERT INTO stayhub.accounts(email,password_hash) VALUES($1,$2) RETURNING id',[email,stored])
-        await issueSession(r.rows[0].id)
-        return reply({ok:true},201)
-      }catch{return reply({error:'Registration unavailable or email already registered'},409)}
+        id=r.rows[0].id
+      }catch(error){
+        if((error as {code?:string}).code==='23505')return reply({error:'Registration unavailable or email already registered'},409)
+        throw error
+      }
+      await issueSession(id)
+      return reply({ok:true},201)
     }
     if(action==='login'){
       const email=typeof body.email==='string'?body.email.trim().toLowerCase():''
       if(!validEmail(email)||typeof body.password!=='string')return reply({error:'Invalid credentials'},401)
+      if(!await consumeAuthAttempt('login',email,8,900))return reply({error:'Too many login attempts. Try again later'},429)
       const r=await postgresQuery<{id:string;password_hash:string|null}>('SELECT id,password_hash FROM stayhub.accounts WHERE lower(email)=$1',[email])
       if(!r.rowCount||!r.rows[0].password_hash||!await verifyPassword(body.password,r.rows[0].password_hash))return reply({error:'Invalid credentials'},401)
+      await clearAuthAttempt('login',email)
       await issueSession(r.rows[0].id)
       return reply({ok:true})
     }
