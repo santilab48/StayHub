@@ -77,3 +77,11 @@ The backend is still on Railway Postgres Staging; **no Neon cutover** and no UI 
 - CI static contract tests and transaction-only PostgreSQL test cases add account impersonation, cross-property FK and duplicate-reservation stay assertions. No permanent test tenants or bookings should survive the rollback.
 - The feature is still staging-only. **Not yet integrated:** repeated visits of the same guest require a redesigned QR join request uniqueness rule, early/late checkout policies, deposit/billing reconciliation, guest identity confirmation, documented race testing, direct HTTP cross-user tests and signed hotel registration forms. Do not treat it as a finished public hotel check-in system.
 - No Neon migration, UI redesign, PR merge or Production deployment.
+
+### P2.4 repeat-guest finishing work
+
+- Migration `009_repeat_guest_join_requests.sql` removes the old property/account lifetime uniqueness constraint on join requests, retaining a partial unique index that permits **one pending request at a time** for each property/account while preserving prior approved/rejected history.
+- QR join creation now considers only pending requests duplicates and rejects accounts with a current active stay. Guests who have checked out can scan a fresh QR and request the next stay with the same Account ID.
+- Regression tests add repeat-visit and duplicate-pending checks under a rollback-only PostgreSQL transaction.
+- Staging deploy with one-time guarded migration 009 reported SUCCESS (`3f1faf58-a7fb-4d16-9a8e-32a0ec748c28`); a staging deploy with `db:staging:check && test:id-binding:db` also reported SUCCESS (`2848b726-2c01-4bc6-afb7-6da3dfc471ce`). Individual SQL assertion output was not exposed by the connector, so independent case-level verification remains open.
+- Both one-time Railway pre-deploy hooks have been cleared; do not attach them permanently.
