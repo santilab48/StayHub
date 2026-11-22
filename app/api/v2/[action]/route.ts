@@ -55,6 +55,21 @@ export async function GET(req:NextRequest,{params}:Params){
       const r=await postgresQuery('SELECT id,name FROM stayhub.units WHERE property_id=$1 AND active=true ORDER BY name LIMIT 500',[propertyId])
       return reply({items:r.rows})
     }
+    if(action==='invites'){
+      const propertyId=req.nextUrl.searchParams.get('propertyId')
+      if(!validId(propertyId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
+      const r=await postgresQuery(`SELECT id,created_at,expires_at,use_count,max_uses,revoked_at,unit_id
+        FROM stayhub.invites WHERE property_id=$1 ORDER BY created_at DESC LIMIT 100`,[propertyId])
+      return reply({items:r.rows})
+    }
+    if(action==='my-requests'){
+      const r=await postgresQuery(`SELECT r.id,r.status,r.created_at,p.name AS property_name,
+        u.name AS unit_name FROM stayhub.join_requests r
+        JOIN stayhub.properties p ON p.id=r.property_id
+        LEFT JOIN stayhub.units u ON u.id=r.unit_id AND u.property_id=r.property_id
+        WHERE r.account_id=$1 ORDER BY r.created_at DESC LIMIT 50`,[account.id])
+      return reply({items:r.rows})
+    }
     if(action==='requests'){
       const propertyId=req.nextUrl.searchParams.get('propertyId')
       if(!validId(propertyId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
@@ -132,11 +147,37 @@ export async function POST(req:NextRequest,{params}:Params){
         if(!u.rowCount)return reply({error:'Unit outside property'},403)
       }
       const raw=newToken()
-      await postgresQuery(`INSERT INTO stayhub.invites(property_id,created_by,token_hash,unit_id,expires_at,max_uses)
-        VALUES($1,$2,$3,$4,now()+interval '7 days',100)`,[propertyId,account.id,hashToken(raw),unitId||null])
+      const created=await withPostgresTransaction(async client=>{
+        // Cap outstanding invitations per property, using a property row lock.
+        await client.query('SELECT id FROM stayhub.properties WHERE id=$1 FOR UPDATE',[propertyId])
+        const count=await client.query(`SELECT count(*)::integer AS n FROM stayhub.invites
+          WHERE property_id=$1 AND revoked_at IS NULL AND expires_at>now()
+          AND use_count<max_uses`,[propertyId])
+        if(count.rows[0].n>=20)return null
+        const r=await client.query<{id:string}>(`INSERT INTO stayhub.invites(property_id,created_by,token_hash,unit_id,expires_at,max_uses)
+          VALUES($1,$2,$3,$4,now()+interval '7 days',100) RETURNING id`,
+          [propertyId,account.id,hashToken(raw),unitId||null])
+        return r.rows[0].id
+      })
+      if(!created)return reply({error:'Too many active invitations; revoke an unused QR first'},409)
       const url=new URL('/join',req.nextUrl.origin)
       url.searchParams.set('token',raw)
-      return reply({url:url.toString(),svg:await QRCode.toString(url.toString(),{type:'svg',margin:2,width:260})},201)
+      return reply({id:created,url:url.toString(),svg:await QRCode.toString(url.toString(),{type:'svg',margin:2,width:260})},201)
+    }
+    if(action==='revoke-invite'){
+      if(!validId(propertyId)||!validId(body.inviteId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
+      const r=await postgresQuery(`UPDATE stayhub.invites SET revoked_at=now()
+        WHERE id=$1 AND property_id=$2 AND revoked_at IS NULL RETURNING id`,
+        [body.inviteId,propertyId])
+      return r.rowCount?reply({status:'revoked'}):reply({error:'Invite not found or already revoked'},404)
+    }
+    if(action==='reject'){
+      if(!validId(propertyId)||!validId(body.requestId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
+      const r=await postgresQuery(`UPDATE stayhub.join_requests
+        SET status='rejected',reviewed_by=$1,reviewed_at=now()
+        WHERE id=$2 AND property_id=$3 AND status='pending' RETURNING id`,
+        [account.id,body.requestId,propertyId])
+      return r.rowCount?reply({status:'rejected'}):reply({error:'Request not pending'},409)
     }
     if(action==='join'){
       const token=body.token
