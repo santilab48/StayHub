@@ -39,6 +39,7 @@ export default function CloudBillingPage(){
   const [busy,setBusy]=useState(false)
   const [notice,setNotice]=useState('')
   const [error,setError]=useState('')
+  const billListRequest=useRef(0)
   const billReplay=useRef<{payload:string;key:string}|null>(null)
   const paymentReplay=useRef<{payload:string;key:string}|null>(null)
   function stableKey(ref:{current:{payload:string;key:string}|null},payload:Record<string,unknown>){
@@ -51,13 +52,18 @@ export default function CloudBillingPage(){
   const month=period+'-01'
 
   const loadBills=useCallback(async(p:string,pageNumber:number)=>{
+    const requestId=++billListRequest.current
     const params=new URLSearchParams({limit:'20',page:String(pageNumber)})
     if(p)params.set('propertyId',p)
     const result=await request<{items:Bill[];hasMore:boolean}>('/api/v2/bills?'+params)
+    if(requestId!==billListRequest.current)return
     setBills(result.items);setHasMore(result.hasMore)
     if(p){
-      try{setSummary(await request<Summary>('/api/v2/bills/summary?propertyId='+encodeURIComponent(p)))}catch{setSummary(null)}
-    }else setSummary(null)
+      try{
+        const next=await request<Summary>('/api/v2/bills/summary?propertyId='+encodeURIComponent(p))
+        if(requestId===billListRequest.current)setSummary(next)
+      }catch{if(requestId===billListRequest.current)setSummary(null)}
+    }else if(requestId===billListRequest.current)setSummary(null)
   },[])
   const loadDetail=useCallback(async(bill:Bill)=>{
     setSelectedBill(await request<BillDetail>('/api/v2/bills/'+encodeURIComponent(bill.id)+'?propertyId='+encodeURIComponent(bill.property_id)))
@@ -79,13 +85,16 @@ export default function CloudBillingPage(){
   },[])
   useEffect(()=>{
     let alive=true
+    // Invalidate old property/page responses before starting the new request.
+    ++billListRequest.current
+    setBills([]);setHasMore(false);setSummary(null)
     async function load(){
       setSelectedBill(null);setLeaseId('');setLeases([])
       try{
         const params=propertyId?'?propertyId='+encodeURIComponent(propertyId):''
         const list=await request<{items:Lease[]}>('/api/v2/leases'+params).catch(()=>({items:[]}))
         if(alive){setLeases(list.items.filter(l=>l.status==='active'));setLeaseId(list.items.find(l=>l.status==='active')?.id||'')}
-        await loadBills(propertyId,page)
+        if(alive)await loadBills(propertyId,page)
       }catch(e){if(alive)setError(e instanceof Error?e.message:'โหลดข้อมูลบิลไม่สำเร็จ')}
     }
     void load()
