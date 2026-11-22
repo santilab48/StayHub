@@ -28,12 +28,14 @@ async function main(){
  assert.equal(h.data?.database,'ready')
  const anon=expect(await request('/api/v2/me'),401,'anonymous denied')
  assert.equal(anon.data?.error,'Please sign in')
+ expect(await request('/api/v2/register',{method:'POST',body:{email:email('weak'),password:'123'}}),400,'weak registration password denied')
  const alice=await register('alice')
  const bob=await register('bob')
  const tenant=await register('tenant')
  expect(await request('/api/v2/login',{method:'POST',body:{email:email('alice'),password:'wrong'}}),401,'wrong credentials denied')
  const prop=expect(await request('/api/v2/property',{method:'POST',body:{name:'CI Test Property '+tag,type:'apartment'},cookie:alice}),201,'owner creates property').data.id
  assert.match(prop,/^[0-9a-f-]{36}$/)
+ expect(await request('/api/v2/register',{method:'POST',body:{email:email('alice'),password}}),409,'duplicate account denied')
  const unit=expect(await request('/api/v2/unit',{method:'POST',body:{propertyId:prop,name:'CI-101'},cookie:alice}),201,'owner creates unit').data.id
  expect(await request('/api/v2/units?propertyId='+prop,{cookie:alice}),200,'owner lists units')
  expect(await request('/api/v2/units?propertyId='+prop,{cookie:bob}),403,'other owner denied units')
@@ -69,6 +71,7 @@ async function main(){
  }
  await reading('water','10')
  await reading('electric','20')
+ expect(await request('/api/v2/meter-readings',{method:'POST',cookie:alice,body:{propertyId:prop,unitId:unit,period:'2026-11',meterType:'water',initialReading:'0',currentReading:'10',unitRate:'10'}}),409,'duplicate monthly meter reading denied')
  const billKey='p26-bill-'+tag+'-nov'
  const billBody={propertyId:prop,leaseId:lease,period:'2026-11',otherAmount:'50.00',otherLabel:'CI other'}
  const bill=expect(await request('/api/v2/bills',{method:'POST',cookie:alice,
@@ -78,6 +81,8 @@ async function main(){
  const replay=expect(await request('/api/v2/bills',{method:'POST',cookie:alice,
     extraHeaders:{'idempotency-key':billKey},body:billBody}),200,'replay same bill key')
  assert.equal(replay.data.id,billId)
+ expect(await request('/api/v2/bills',{method:'POST',cookie:alice,extraHeaders:{'idempotency-key':billKey},body:{...billBody,otherAmount:'60.00'}}),409,'bill key reused with different payload denied')
+ expect(await request('/api/v2/bills',{method:'POST',cookie:alice,extraHeaders:{'idempotency-key':'p26-duplicate-'+tag},body:billBody}),409,'duplicate monthly bill denied')
  expect(await request('/api/v2/bills/'+billId+'?propertyId='+prop,{cookie:tenant}),200,'tenant can view own bill')
  expect(await request('/api/v2/bills/'+billId+'?propertyId='+prop,{cookie:bob}),404,'other owner cannot read tenant bill')
  expect(await request('/api/v2/bills/'+billId+'/payments',{method:'POST',cookie:tenant,
@@ -89,6 +94,9 @@ async function main(){
    body:{propertyId:prop,amount:'1500.00',method:'cash'}}),201,'partial bill payment')
  assert.equal(firstPay.data.status,'partial')
  assert.equal(firstPay.data.outstanding,'2850.00')
+ const replayPay=expect(await request(paymentPath,{method:'POST',cookie:alice,extraHeaders:{'idempotency-key':'p26-partial-'+tag},body:{propertyId:prop,amount:'1500.00',method:'cash'}}),200,'payment replay idempotent')
+ assert.equal(replayPay.data.paymentId,firstPay.data.paymentId)
+ expect(await request(paymentPath,{method:'POST',cookie:alice,extraHeaders:{'idempotency-key':'p26-partial-'+tag},body:{propertyId:prop,amount:'1501.00',method:'cash'}}),409,'payment replay with changed amount rejected')
  const competing=await Promise.all([
    request(paymentPath,{method:'POST',cookie:alice,
      extraHeaders:{'idempotency-key':'p26-final-a-'+tag},
@@ -107,6 +115,12 @@ async function main(){
  assert.equal(finalBill.data.paid,'4350.00')
  assert.equal(finalBill.data.payments.length,2)
  expect(await request('/api/v2/bills?propertyId='+prop,{cookie:tenant}),200,'tenant bill history')
+ expect(await request('/api/v2/bills/'+billId+'?propertyId='+prop,{cookie:tenant}),200,'tenant bill remains readable after settlement')
+ expect(await request('/api/v2/checkout',{method:'POST',cookie:alice,body:{propertyId:prop,stayId}}),409,'checkout blocked with active lease')
+ expect(await request('/api/v2/leases',{method:'POST',cookie:alice,body:{action:'terminate',propertyId:prop,leaseId:lease}}),200,'owner terminates lease')
+ expect(await request('/api/v2/checkout',{method:'POST',cookie:alice,body:{propertyId:prop,stayId}}),200,'owner checks tenant out')
+ expect(await request('/api/v2/bills/'+billId+'?propertyId='+prop,{cookie:tenant}),200,'tenant can read historical bill after checkout')
+ expect(await request('/api/v2/bills/'+billId+'/payments?propertyId='+prop,{cookie:tenant}),200,'tenant can read payment balance after checkout')
  // Verified logout must revoke the cookie on the server, not just clear browser state.
  expect(await request('/api/v2/logout',{method:'POST',cookie:bob,body:{}}),200,'logout bob')
  expect(await request('/api/v2/me',{cookie:bob}),401,'revoked session denied')
