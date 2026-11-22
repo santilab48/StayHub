@@ -16,12 +16,14 @@
     "next": "^15.5.0",
     "pdf-lib": "1.17.1",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "pg": "^8.16.3"
   },
   "devDependencies": {
     "typescript": "^5.9.0",
     "@types/node": "^24.0.0",
     "@types/react": "^19.1.0",
-    "@types/react-dom": "^19.1.0"
+    "@types/react-dom": "^19.1.0",
+    "@types/pg": "^8.15.5"
   }
 }
