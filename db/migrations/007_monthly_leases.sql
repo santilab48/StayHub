@@ -1,5 +1,8 @@
 -- StayHub P2.3: monthly leases remain linked to the verified stay and its property.
 -- Legal documents, signatures, billing and deposits settlement are later features.
+ALTER TABLE stayhub.stays
+  ADD CONSTRAINT stays_lease_identity_scope UNIQUE(property_id,id,account_id,unit_id);
+
 CREATE TABLE IF NOT EXISTS stayhub.leases (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   property_id uuid NOT NULL,
@@ -21,8 +24,8 @@ CREATE TABLE IF NOT EXISTS stayhub.leases (
   ),
   CONSTRAINT lease_unit_scope FOREIGN KEY(property_id,unit_id)
     REFERENCES stayhub.units(property_id,id),
-  CONSTRAINT lease_stay_scope FOREIGN KEY(property_id,stay_id)
-    REFERENCES stayhub.stays(property_id,id)
+  CONSTRAINT lease_stay_identity_scope FOREIGN KEY(property_id,stay_id,account_id,unit_id)
+    REFERENCES stayhub.stays(property_id,id,account_id,unit_id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS leases_one_active_per_stay
   ON stayhub.leases(stay_id) WHERE status='active';
