@@ -87,7 +87,15 @@ export async function POST(req:NextRequest){
           [propertyId,idempotency])
         if(existing.rowCount)return {status:'existing',item:existing.rows[0]}
         const check=await preflight(client,propertyId,unitId,arrival,departure)
-        if(check!=='ok')return {status:check}
+        if(check!=='ok'){
+          // When an identical request races the first insert, the unit lock
+          // makes its committed idempotency record visible now.
+          const replay=await client.query(`SELECT id,unit_id,arrival_date,departure_date,total_amount,status
+            FROM stayhub.reservations WHERE property_id=$1 AND idempotency_key=$2`,
+            [propertyId,idempotency])
+          if(replay.rowCount)return {status:'existing',item:replay.rows[0]}
+          return {status:check}
+        }
         const created=await client.query(`INSERT INTO stayhub.reservations
           (property_id,unit_id,arrival_date,departure_date,status,total_amount,idempotency_key)
           VALUES($1,$2,$3,$4,'confirmed',$5,$6) RETURNING id`,
