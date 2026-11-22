@@ -12,6 +12,8 @@ export default function ResidentRepairCenter(){
  const [category,setCategory]=useState('ไฟฟ้า'),[detail,setDetail]=useState(''),[files,setFiles]=useState<File[]>([]),[tickets,setTickets]=useState<Ticket[]>([])
  const [status,setStatus]=useState('กำลังโหลด...'),[saving,setSaving]=useState(false),[changeAt,setChangeAt]=useState<Record<string,string>>({})
  const load=async()=>{
+  // Never display or write another account's locally cached draft after a session change.
+  setDraftReady(false);setDraftScope(null);setDetail('');setCategory('ไฟฟ้า')
   const {data:{user}}=await supabase.auth.getUser(); if(!user){setStatus('กรุณาเข้าสู่ระบบ');return}
   const {data:p}=await supabase.from('profiles').select('id,tenant_id').eq('auth_user_id',user.id).maybeSingle(); if(!p){setStatus('ไม่พบข้อมูลผู้เช่า');return}
   setDraftReady(false)
