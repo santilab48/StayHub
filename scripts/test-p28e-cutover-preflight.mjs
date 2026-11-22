@@ -7,6 +7,7 @@ const root=fileURLToPath(new URL('../',import.meta.url))
 const script='scripts/migrate-production.mjs'
 const source=readFileSync(new URL(script,`file://${root}`),'utf8')
 const app=readFileSync(new URL('lib/db/postgres.ts',`file://${root}`),'utf8')
+const transport=readFileSync(new URL('app/api/health/db/transport/route.ts',`file://${root}`),'utf8')
 const base={...process.env,RAILWAY_PROJECT_ID:'a8a5a434-4d18-438f-b4ea-ece072094595',
   RAILWAY_ENVIRONMENT_ID:'c9c4b13a-9041-4ae6-bd50-2d02b546b053',
   RAILWAY_ENVIRONMENT_NAME:'production',STAYHUB_DB_PROVIDER:'neon-production',
@@ -28,4 +29,6 @@ assert.match(source,/applied\.length!==migrations\.length/)
 assert.match(source,/client\.connection\.stream\.authorized!==true/)
 assert.match(app,/usingNeonProduction/)
 assert.match(app,/url\.searchParams\.set\('sslmode', 'verify-full'\)/)
+assert.match(transport,/STAYHUB_DB_PROVIDER === 'neon-production'/)
+assert.match(transport,/stream\.authorized === true/)
 console.log('PASS Neon production cutover preflight guards (dry-run only)')

@@ -3,13 +3,17 @@ import { getPostgresPool } from '../../../../../lib/db/postgres'
 
 export const dynamic = 'force-dynamic'
 
-/** Staging-only transport probe. No host, database name or credential is returned. */
+/** Transport probe enabled only for the explicitly bound Neon environments. */
 export async function GET() {
   const headers = { 'Cache-Control': 'no-store' }
+  const staging = process.env.RAILWAY_ENVIRONMENT_ID === 'ced39691-4fe7-4707-bba7-6d0e801f1ff8' &&
+    process.env.RAILWAY_ENVIRONMENT_NAME === 'staging' &&
+    process.env.STAYHUB_DB_PROVIDER === 'neon-staging'
+  const production = process.env.RAILWAY_ENVIRONMENT_ID === 'c9c4b13a-9041-4ae6-bd50-2d02b546b053' &&
+    process.env.RAILWAY_ENVIRONMENT_NAME === 'production' &&
+    process.env.STAYHUB_DB_PROVIDER === 'neon-production'
   if (process.env.RAILWAY_PROJECT_ID !== 'a8a5a434-4d18-438f-b4ea-ece072094595' ||
-      process.env.RAILWAY_ENVIRONMENT_ID !== 'ced39691-4fe7-4707-bba7-6d0e801f1ff8' ||
-      process.env.RAILWAY_ENVIRONMENT_NAME !== 'staging' ||
-      process.env.STAYHUB_DB_PROVIDER !== 'neon-staging') {
+      (!staging && !production)) {
     return NextResponse.json({ status: 'unavailable' }, { status: 404, headers })
   }
   try {
