@@ -38,6 +38,12 @@ export async function GET(req:NextRequest,{params}:Params){
         WHERE m.account_id=$1 ORDER BY p.created_at DESC`,[account.id])
       return reply({items:r.rows})
     }
+    if(action==='units'){
+      const propertyId=req.nextUrl.searchParams.get('propertyId')
+      if(!validId(propertyId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
+      const r=await postgresQuery('SELECT id,name FROM stayhub.units WHERE property_id=$1 AND active=true ORDER BY name LIMIT 500',[propertyId])
+      return reply({items:r.rows})
+    }
     if(action==='requests'){
       const propertyId=req.nextUrl.searchParams.get('propertyId')
       if(!validId(propertyId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
@@ -126,7 +132,8 @@ export async function POST(req:NextRequest,{params}:Params){
           FOR UPDATE OF i`,[hashToken(token)])
         if(!r.rowCount)return 'invalid'
         const item=r.rows[0]
-        if(item.created_by===account.id)return 'owner'
+        const owner=await client.query('SELECT 1 FROM stayhub.property_memberships WHERE account_id=$1 AND property_id=$2 AND role=ANY($3::text[])',[account.id,item.property_id,roles])
+        if(owner.rowCount)return 'owner'
         const existing=await client.query('SELECT id FROM stayhub.join_requests WHERE property_id=$1 AND account_id=$2',[item.property_id,account.id])
         if(existing.rowCount)return 'existing'
         await client.query('INSERT INTO stayhub.join_requests(invite_id,property_id,account_id,unit_id) VALUES($1,$2,$3,$4)',[item.id,item.property_id,account.id,item.unit_id])
@@ -143,6 +150,8 @@ export async function POST(req:NextRequest,{params}:Params){
         if(!r.rowCount||r.rows[0].status!=='pending')return 'not_pending'
         const unit=await client.query('SELECT id FROM stayhub.units WHERE id=$1 AND property_id=$2 AND active=true',[body.unitId,propertyId])
         if(!unit.rowCount)return 'invalid_unit'
+        const membership=await client.query('SELECT role FROM stayhub.property_memberships WHERE property_id=$1 AND account_id=$2',[propertyId,r.rows[0].account_id])
+        if(membership.rows.some(row=>!['resident','guest'].includes(row.role)))return 'reserved_role'
         await client.query(`INSERT INTO stayhub.stays(property_id,unit_id,account_id,join_request_id)
           VALUES($1,$2,$3,$4)`,[propertyId,body.unitId,r.rows[0].account_id,body.requestId])
         await client.query(`INSERT INTO stayhub.property_memberships(property_id,account_id,role)
