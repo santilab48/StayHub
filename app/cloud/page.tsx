@@ -1,6 +1,18 @@
 'use client'
 import {FormEvent,useEffect,useState} from 'react'
+import {accommodationTypes,isAccommodationType,type AccommodationType} from '../../lib/accommodation-types'
 type Property={id:string;name:string;property_type:string;role:string}
+type OnboardingScreen='loading'|'choose'|'auth'|'dashboard'
+const ONBOARDING_KEY='stayhub_owner_preferred_type_v1'
+const typeIcons:Record<AccommodationType,string>={
+  apartment:'🏢',guesthouse:'🛎️',daily:'🛏️',homestay:'🏡'
+}
+const typeDescriptions:Record<AccommodationType,string>={
+  apartment:'หอพัก ห้องเช่ารายเดือน และอพาร์ตเมนต์',
+  guesthouse:'ห้องพักสำหรับผู้เดินทางและเกสต์เฮาส์',
+  daily:'ที่พักรายวันและห้องพักแบบคิดต่อคืน',
+  homestay:'บ้านพักและโฮมสเตย์'
+}
 type RequestItem={id:string;email:string;status:string;unit_name:string|null}
 type Unit={id:string;name:string}
 type InviteItem={id:string;created_at:string;expires_at:string;use_count:number;max_uses:number;revoked_at:string|null;unit_id:string|null}
@@ -15,7 +27,10 @@ export default function CloudOwnerPage(){
   const [email,setEmail]=useState('')
   const [password,setPassword]=useState('')
   const [name,setName]=useState('')
-  const [type,setType]=useState('apartment')
+  const [type,setType]=useState<AccommodationType>('apartment')
+  const [screen,setScreen]=useState<OnboardingScreen>('loading')
+  const [authMode,setAuthMode]=useState<'register'|'login'>('register')
+  const [showCreate,setShowCreate]=useState(false)
   const [properties,setProperties]=useState<Property[]>([])
   const [selected,setSelected]=useState('')
   const [unit,setUnit]=useState('')
@@ -27,37 +42,126 @@ export default function CloudOwnerPage(){
   const [message,setMessage]=useState('')
   const [busy,setBusy]=useState(false)
   const load=async()=>{
-    try{
-      const a=await api('me');setAccount(a)
-      const p=await api('properties');setProperties(p.items)
-    }catch{setAccount(null)}
+    const a=await api('me')
+    const p=await api('properties')
+    setAccount(a)
+    setProperties(p.items)
+    setScreen('dashboard')
+    // The server's actual property type takes priority over any device draft.
+    if(p.items.length && isAccommodationType(p.items[0].property_type)){
+      setType(p.items[0].property_type)
+      try{localStorage.setItem(ONBOARDING_KEY,p.items[0].property_type)}catch{}
+    }
+    return p.items as Property[]
   }
-  useEffect(()=>{void load()},[])
+  useEffect(()=>{
+    let active=true
+    const init=async()=>{
+      let saved:AccommodationType|null=null
+      try{
+        const stored=localStorage.getItem(ONBOARDING_KEY)
+        if(isAccommodationType(stored))saved=stored
+      }catch{}
+      try{
+        const a=await api('me')
+        const p=await api('properties')
+        if(!active)return
+        setAccount(a);setProperties(p.items)
+        if(p.items.length && isAccommodationType(p.items[0].property_type)){
+          setType(p.items[0].property_type)
+          try{localStorage.setItem(ONBOARDING_KEY,p.items[0].property_type)}catch{}
+        }else if(saved){setType(saved)}
+        setScreen('dashboard')
+      }catch{
+        if(!active)return
+        setAccount(null)
+        const isTenantReturn=new URLSearchParams(window.location.search).get('return')?.startsWith('/join?token=')
+        if(saved)setType(saved)
+        setScreen(saved||isTenantReturn?'auth':'choose')
+      }
+    }
+    void init()
+    return()=>{active=false}
+  },[])
+  function chooseType(next:AccommodationType){
+    setType(next)
+    try{localStorage.setItem(ONBOARDING_KEY,next)}catch{}
+    setAuthMode('register')
+    setScreen('auth')
+  }
+  function changeType(){
+    try{localStorage.removeItem(ONBOARDING_KEY)}catch{}
+    setScreen('choose')
+  }
   async function run(fn:()=>Promise<void>){setBusy(true);setMessage('');try{await fn()}catch(e){setMessage(e instanceof Error?e.message:'เกิดข้อผิดพลาด')}finally{setBusy(false)}}
   async function sign(e:{preventDefault:()=>void},action:'register'|'login'){e.preventDefault();await run(async()=>{await api(action,{email,password});setPassword('');await load();setMessage('เข้าสู่ระบบสำเร็จ');const target=new URLSearchParams(window.location.search).get('return');if(target?.startsWith('/join?token='))window.location.assign(target)})}
-  async function create(e:FormEvent){e.preventDefault();await run(async()=>{const p=await api('property',{name,type});await load();setSelected(p.id);setMessage('สร้างที่พักแล้ว');await loadUnits(p.id);await loadInvites(p.id)})}
+  async function create(e:FormEvent){e.preventDefault();await run(async()=>{const p=await api('property',{name,type});await load();setShowCreate(false);setSelected(p.id);setMessage('สร้างที่พักแล้ว');await loadUnits(p.id);await loadInvites(p.id)})}
   async function loadUnits(id:string){const r=await fetch('/api/v2/units?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setUnits(data.items)}
   async function loadInvites(id:string){const r=await fetch('/api/v2/invites?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setInvites(data.items)}
   async function loadRequests(id:string){await run(async()=>{const r=await fetch('/api/v2/requests?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setRequests(data.items)})}
   return <main className="wrap" style={{maxWidth:900}}>
     <a href="/">← StayHub</a><h1>StayHub Cloud · เจ้าของที่พัก</h1>
     <p className="muted">ทดสอบระบบผูกบัญชีและ QR เฉพาะ Staging ยังไม่ใช่ระบบสำหรับข้อมูลผู้เช่าจริง</p>
-    {!account?<section className="card section"><h2>สมัคร / เข้าสู่ระบบ</h2>
-      <form className="list" onSubmit={e=>void sign(e,'login')}>
-        <label>อีเมล<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label>
-        <label>รหัสผ่าน (อย่างน้อย 12 ตัวอักษร)<input type="password" minLength={12} value={password} onChange={e=>setPassword(e.target.value)} required/></label>
-        <div className="flow"><button type="button" disabled={busy} className="btn" onClick={e=>void sign(e,'register')}>สมัครบัญชีทดลอง</button>
-          <button type="submit" disabled={busy} className="btn secondary">เข้าสู่ระบบ</button></div>
+    {screen==='loading'&&<section className="card section" aria-live="polite"><p>กำลังตรวจสอบบัญชีของคุณ...</p></section>}
+    {screen==='choose'&&<section className="card section">
+      <span className="badge">เริ่มต้น StayHub</span>
+      <h2>คุณดูแลที่พักประเภทไหน?</h2>
+      <p className="lead">เลือกประเภทที่พักก่อนสมัครสมาชิก เพื่อให้ระบบเตรียมการตั้งค่าที่เหมาะกับคุณ</p>
+      <div className="ownerTypeGrid">
+        {(Object.keys(accommodationTypes) as AccommodationType[]).map(key=>
+          <button type="button" className="ownerTypeTile" key={key} onClick={()=>chooseType(key)}>
+            <span className="ownerTypeIcon" aria-hidden="true">{typeIcons[key]}</span>
+            <strong>{accommodationTypes[key].label}</strong>
+            <small>{typeDescriptions[key]}</small>
+            <span className="ownerTypeNext">เลือกประเภทนี้ →</span>
+          </button>
+        )}
+      </div>
+      <p className="muted">มีบัญชีเจ้าของอยู่แล้ว? <button type="button" className="ownerTextButton" onClick={()=>{setAuthMode('login');setScreen('auth')}}>เข้าสู่ระบบ</button></p>
+    </section>}
+    {screen==='auth'&&!account&&<section className="card section">
+      <span className="badge">ขั้นตอนที่ 2 · บัญชีเจ้าของ</span>
+      <h2>{authMode==='register'?'สมัครสมาชิกเจ้าของที่พัก':'เข้าสู่ระบบ StayHub'}</h2>
+      {authMode==='register'&&<div className="ownerChoiceSummary">
+        <span aria-hidden="true">{typeIcons[type]}</span>
+        <div><strong>{accommodationTypes[type].label}</strong><small>ประเภทที่เลือกไว้สำหรับที่พักแรก</small></div>
+        <button type="button" className="ownerTextButton" onClick={changeType}>เปลี่ยน</button>
+      </div>}
+      <form className="list" onSubmit={e=>void sign(e,authMode)}>
+        <label>อีเมล<input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label>
+        <label>รหัสผ่าน (อย่างน้อย 12 ตัวอักษร)<input type="password" autoComplete={authMode==='register'?'new-password':'current-password'} minLength={12} value={password} onChange={e=>setPassword(e.target.value)} required/></label>
+        <button type="submit" disabled={busy} className="btn">{authMode==='register'?'สมัครสมาชิกและดำเนินการต่อ':'เข้าสู่ระบบ'}</button>
       </form>
-    </section>:<>
-      <section className="card section"><div className="toolbar"><strong>เข้าสู่ระบบ: {account.email}</strong><button type="button" className="btn secondary" disabled={busy} onClick={()=>void run(async()=>{await api('logout',{});setAccount(null);setProperties([]);setSelected('');setInvite(null)})}>ออกจากระบบ</button></div><h2>สร้างที่พัก</h2>
-        <form className="list" onSubmit={create}>
-          <label>ชื่อที่พัก<input required maxLength={120} value={name} onChange={e=>setName(e.target.value)}/></label>
-          <label>ประเภทที่พัก<select value={type} onChange={e=>setType(e.target.value)}>
-            <option value="apartment">หอพัก/อพาร์ตเมนต์</option><option value="guesthouse">เกสต์เฮาส์</option>
-            <option value="daily">ที่พักรายวัน</option><option value="homestay">โฮมสเตย์</option>
-          </select></label><button disabled={busy} className="btn">สร้างที่พัก</button>
-        </form>
+      <p className="muted">{authMode==='register'?'มีบัญชีแล้ว?':'ยังไม่มีบัญชี?'} <button type="button" className="ownerTextButton" onClick={()=>setAuthMode(authMode==='register'?'login':'register')}>{authMode==='register'?'เข้าสู่ระบบ':'สมัครสมาชิก'}</button></p>
+    </section>}
+    {screen==='dashboard'&&account&&<>
+      <section className="card section">
+        <div className="toolbar">
+          <div><strong>เจ้าของที่พัก · {account.email}</strong><p className="muted">ประเภทที่พักและสิทธิ์ของแต่ละแห่งอ้างอิงจากบัญชี Cloud</p></div>
+          <button type="button" className="btn secondary" disabled={busy} onClick={()=>void run(async()=>{
+            await api('logout',{});setAccount(null);setProperties([]);setSelected('');setInvite(null);setScreen('auth');setAuthMode('login')
+          })}>ออกจากระบบ</button>
+        </div>
+        {properties.length>0&&!showCreate&&<div className="list">
+          <h2>ที่พักของฉัน</h2>
+          {properties.filter(p=>['owner','admin'].includes(p.role)).map(p=>
+            <div key={p.id} className="row"><strong>{p.name}</strong><span className="muted">{isAccommodationType(p.property_type)?accommodationTypes[p.property_type].label:'ที่พัก'}</span></div>
+          )}
+          <button type="button" className="btn secondary" onClick={()=>setShowCreate(true)}>+ เพิ่มที่พักอีกแห่ง</button>
+        </div>}
+        {(properties.length===0||showCreate)&&<>
+          <h2>{properties.length===0?'ตั้งค่าที่พักแรกของคุณ':'เพิ่มที่พักใหม่'}</h2>
+          <p className="muted">ประเภทที่พัก: <strong>{accommodationTypes[type].label}</strong></p>
+          <form className="list" onSubmit={create}>
+            <label>ชื่อที่พัก<input required maxLength={120} value={name} onChange={e=>setName(e.target.value)} placeholder="เช่น บ้านสวน เรสซิเดนซ์"/></label>
+            {properties.length>0&&<label>ประเภทสำหรับที่พักแห่งใหม่<select value={type} onChange={e=>setType(e.target.value as AccommodationType)}>
+              {(Object.keys(accommodationTypes) as AccommodationType[]).map(key=><option key={key} value={key}>{accommodationTypes[key].label}</option>)}
+            </select></label>}
+            <div className="flow"><button disabled={busy} className="btn" type="submit">บันทึกที่พัก</button>
+              {properties.length>0&&<button type="button" className="btn secondary" onClick={()=>setShowCreate(false)}>ยกเลิก</button>}
+            </div>
+          </form>
+        </>}
       </section>
       <section className="card section"><h2>QR เชิญผู้เช่า</h2>
         <label>เลือกที่พัก<select value={selected} onChange={e=>{setSelected(e.target.value);setInvite(null);setRequests([]);setInvites([]);setApproveUnit('');if(e.target.value){void loadUnits(e.target.value);void loadInvites(e.target.value)}}}>
