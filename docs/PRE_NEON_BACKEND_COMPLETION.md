@@ -52,3 +52,18 @@ No `main` merge. No Railway Production change. Run reviewed migrations against d
 - Prior Staging deployment `b2eacee7-c09b-4713-bffc-3494dda9b111` reported **SUCCESS** with guarded migration command.
 - Both temporary deployment commands were removed afterward; current `preDeployCommand` is `[]`.
 - This is not an independently observed HTTP E2E run or raw database schema inspection. Keep public real-user onboarding restricted until those are verified.
+
+## P2.3 — Reservation and monthly lease backend (2026-11-22)
+
+The backend is still on Railway Postgres Staging; **no Neon cutover** and no UI redesign.
+
+- `/api/v2/reservations` GET/POST: owner/admin-only property-scoped reservations; create with valid arrival/departure dates, maximum 365 nights, explicit `Idempotency-Key`, pessimistic unit row lock and database exclusion constraint for overlapping confirmed reservations; cancel before check-in. The same key + same payload returns the previous booking, including concurrent requests after the unit lock.
+- A reservation cannot be created for an inactive, currently occupied, or blocked room; the existing conservative rule prevents future bookings for rooms with indefinite current stays. No guest account or billing credentials are accepted from caller.
+- `db/migrations/007_monthly_leases.sql`: an active agreement ties `property_id,stay_id,account_id,unit_id` through a composite foreign key to a verified Stay. One active lease per stay. Records monthly rent/deposit and effective dates but is **not** a signed legal contract or invoice.
+- `/api/v2/leases`: owner/admin-only list, create lease for active authorized Stay, and terminate lease. The API derives tenant identity and unit from Stay, not user-provided IDs.
+- Checkout and room transfer now reject active leases until the owner explicitly terminates the lease, preventing an accidental reassignment while a lease remains active.
+- CI static contract and transaction-only PostgreSQL tests extend property isolation to leases and booking conflicts.
+- Railway Staging deployment with guarded migration 007 completed SUCCESS; separate staging deployment including `db:staging:check` and `test:id-binding:db` completed SUCCESS. Logs shown through the connector did **not** include granular individual assertion output, so this is not a claim of fully verified HTTP end-to-end behavior.
+- Temporary pre-deploy commands were removed after those deployments. The Production service remains untouched.
+
+**P2.3 limitations:** manual reservation entry only; online tenant check-in, linking reservation to Stay, automatic checkout/reservation status reconciliation, monthly rent invoice generation, payment collection and signed documents are not yet built. Do not load real guests or money into Staging.
