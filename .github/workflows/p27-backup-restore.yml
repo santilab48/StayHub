@@ -5,6 +5,7 @@ on:
     branches: ['feat/stayhub-p26-readiness']
     paths:
       - 'scripts/p27-ci-restore-smoke.mjs'
+      - 'scripts/p27-ci-compare-restored.mjs'
       - '.github/workflows/p27-backup-restore.yml'
   workflow_dispatch:
 
@@ -59,3 +60,17 @@ jobs:
         run: node scripts/p26-ci-migrate.mjs
       - name: Dump, restore, and compare all tables, constraints and migrations
         run: node scripts/p27-ci-restore-smoke.mjs
+      - name: Verify source and restore match across 20 tables and finances
+        run: node scripts/p27-ci-compare-restored.mjs
+      - name: Prove mismatch fails closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -d stayhub_p27_restore \
+            -v ON_ERROR_STOP=1 -c "INSERT INTO stayhub.accounts(email) VALUES ('p27-mismatch@example.invalid')"
+          if node scripts/p27-ci-compare-restored.mjs > /tmp/p27-negative.log 2>&1; then
+            echo 'ERROR: mismatch was not detected'
+            exit 1
+          fi
+          grep -q 'REFUSED: restored database is not identical' /tmp/p27-negative.log
+          echo 'PASS comparator rejects a tampered destination'
