@@ -41,3 +41,13 @@
 - [Build, TypeScript and auth/billing PostgreSQL E2E on commit 904b12a](https://github.com/santilab48/StayHub/actions/runs/45023647574) passed.
 
 **Not yet completed:** the exact CLI-based `neon init` / `neon deploy` flow (CLI install/network unavailable), copy or synchronization of existing Railway staging/production data, or a Production cutover. The Neon project default `production` branch remains untouched. No Railway Production secrets or data were changed.
+
+## Live Billing E2E on actual Neon staging (2026-11-22)
+
+- [GitHub Actions — Neon LIVE Billing HTTP E2E: SUCCESS](https://github.com/santilab48/StayHub/actions/runs/45024115101), job completed with success.
+- Test code: `scripts/p26-neon-live-billing.mjs` (guarded to CI + exact Railway staging HTTPS URL).
+- Workflow: `.github/workflows/p26-neon-live-billing.yml`.
+- Real end-to-end scenarios passed: signup, session/logout, property/unit, QR invitation/tenant request/approval, monthly lease, water and electricity readings, duplicate meter rejection, bill issue 4,350.00 THB, issue idempotency replay/conflict, partial payment 1,500.00 THB, payment replay/conflict, concurrent remaining-payment requests (one 201, one 409), fully paid bill, cross-account isolation, lease termination, checkout, historical bill read after checkout.
+- Independent SQL verification on Neon **staging** (read-only): 3 synthetic `p26-neon-billing-...` test accounts; 1 test property; 1 paid bill for 4,350.00 THB; 2 payment rows; schema migrations 11/11.
+- Test records are deliberately synthetic but persist in Neon staging. No cleanup deletion was performed. Do not delete records by broad selectors; target only the verified test property/account IDs with explicit authorization and a transaction-safe plan.
+- This verifies the deployed Railway staging app writing/reading the real Neon branch, but does NOT migrate Railway's pre-existing data. Neon production has not been cut over or modified.
