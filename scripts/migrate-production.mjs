@@ -27,6 +27,19 @@ if(env.RAILWAY_PROJECT_ID !== EXPECTED_PROJECT) {
   throw new Error('REFUSED: incorrect Railway project id')
 }
 if (!env.DATABASE_URL) throw new Error('REFUSED: DATABASE_URL is missing')
+const neonProduction = env.STAYHUB_DB_PROVIDER === 'neon-production'
+let connectionString = env.DATABASE_URL
+if (neonProduction) {
+  const url = new URL(connectionString)
+  if (!env.STAYHUB_NEON_PRODUCTION_HOST ||
+      !url.hostname.endsWith('.neon.tech') ||
+      url.hostname !== env.STAYHUB_NEON_PRODUCTION_HOST ||
+      url.pathname !== '/neondb' ||
+      !['postgres:','postgresql:'].includes(url.protocol))
+    throw new Error('REFUSED: Neon production endpoint identity mismatch')
+  url.searchParams.set('sslmode','verify-full')
+  connectionString = url.toString()
+}
 
 const dirname = resolve('db/migrations')
 const files = readdirSync(dirname).filter(x=>/^\d{3}_[\w-]+\.sql$/.test(x)).sort()
@@ -43,13 +56,19 @@ if(dryRun){
   process.exit(0)
 }
 
-const pool = new pg.Pool({connectionString:env.DATABASE_URL,max:1,connectionTimeoutMillis:10000})
+const pool = new pg.Pool({connectionString,max:1,connectionTimeoutMillis:10000})
 const client=await pool.connect()
 try {
   // Read-only preflight; never disclose connection string.
   const db = await client.query("SELECT current_database() AS name, current_user AS db_user")
   if(env.STAYHUB_DATABASE_ROLE!=='production') throw new Error('REFUSED: production database role flag missing')
-  if(db.rows[0].name!=='railway') throw new Error('REFUSED: unexpected production database name')
+  if(db.rows[0].name!==(neonProduction?'neondb':'railway'))
+    throw new Error('REFUSED: unexpected production database name')
+  if(neonProduction && db.rows[0].db_user!=='neondb_owner')
+    throw new Error('REFUSED: unexpected Neon production database role')
+  if(neonProduction && (client.connection.stream.encrypted!==true ||
+      client.connection.stream.authorized!==true))
+    throw new Error('REFUSED: Neon production TLS certificate not verified')
   const addr=await client.query("SELECT inet_server_addr()::text AS address")
   if(!addr.rows[0]?.address) throw new Error('REFUSED: database server address not verified')
   console.log('Production DB environment and identity verified (no credentials disclosed)')
@@ -70,6 +89,15 @@ try {
       }
       await client.query('ROLLBACK')
       process.exitCode=0
+    }else if(neonProduction) {
+      // Cutover is a checksum-only preflight. Never apply or repair schema on
+      // Neon Production as an automatic side effect of deploying the app.
+      const applied=(await client.query('SELECT filename,checksum FROM stayhub.schema_migrations ORDER BY filename')).rows
+      if(applied.length!==migrations.length || migrations.some(m=>
+        !applied.some(row=>row.filename===m.name && row.checksum===m.checksum)))
+        throw new Error('REFUSED: Neon production migration history mismatch or pending migration')
+      console.log('Neon production migration history verified; no migration executed')
+      await client.query('COMMIT')
     }else {
       await client.query('CREATE SCHEMA IF NOT EXISTS stayhub')
       await client.query(`CREATE TABLE IF NOT EXISTS stayhub.schema_migrations (
