@@ -11,7 +11,8 @@
     "test:structure": "node scripts/verify-structure.mjs",
     "test:migration": "node scripts/test-migration-contract.mjs",
     "db:staging:check": "node scripts/migrate-staging.mjs --check",
-    "db:staging:migrate": "node scripts/migrate-staging.mjs"
+    "db:staging:migrate": "node scripts/migrate-staging.mjs",
+    "test:id-binding": "node scripts/test-id-binding-contract.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",
