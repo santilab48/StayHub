@@ -1,18 +1,17 @@
 'use client'
 
-import {FormEvent,useMemo,useState} from 'react'
+import {FormEvent,useState} from 'react'
 import {createSupabaseBrowser} from '../../lib/supabase-browser'
 
 const tenantSlug='stayhub-demo'
 
 export default function SetupOwnerPage(){
-  const supabase=useMemo(()=>createSupabaseBrowser(),[])
   const [email,setEmail]=useState('')
   const [password,setPassword]=useState('')
   const [status,setStatus]=useState('ใช้บัญชีที่สมัครไว้ เข้าหลังบ้านได้ทันที ไม่ต้องรออีเมล')
   const [busy,setBusy]=useState(false)
 
-  const openAdmin=async()=>{
+  const openAdmin=async(supabase:ReturnType<typeof createSupabaseBrowser>)=>{
     const {data:{user}}=await supabase.auth.getUser()
     if(!user){setStatus('กรุณาเข้าสู่ระบบก่อน');return false}
 
@@ -39,9 +38,11 @@ export default function SetupOwnerPage(){
     e.preventDefault()
     if(!email||!password){setStatus('กรอกอีเมลและรหัสผ่าน');return}
     setBusy(true);setStatus('กำลังเข้าสู่หลังบ้าน...')
+    let supabase:ReturnType<typeof createSupabaseBrowser>
+    try { supabase=createSupabaseBrowser() } catch { setBusy(false);setStatus('ระบบเข้าสู่ระบบเดิมยังไม่เปิดใช้ใน Staging');return }
     const {error}=await supabase.auth.signInWithPassword({email,password})
     if(error){setBusy(false);setStatus(`เข้าสู่ระบบไม่สำเร็จ: ${error.message}`);return}
-    await openAdmin()
+    await openAdmin(supabase)
     setBusy(false)
   }
 

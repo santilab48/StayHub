@@ -2,14 +2,35 @@
   "name": "stayhub",
   "version": "0.1.0",
   "private": true,
-  "scripts": {"dev": "next dev", "build": "next build", "start": "next start"},
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "audit:p1": "node scripts/p1-audit.mjs",
+    "test:structure": "node scripts/verify-structure.mjs",
+    "test:migration": "node scripts/test-migration-contract.mjs",
+    "db:staging:check": "node scripts/migrate-staging.mjs --check",
+    "db:staging:migrate": "node scripts/migrate-staging.mjs",
+    "test:id-binding": "node scripts/test-id-binding-contract.mjs",
+    "test:id-binding:db": "node scripts/test-id-binding-db.mjs"
+  },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.57.0",
     "next": "^15.5.0",
     "pdf-lib": "1.17.1",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "pg": "^8.16.3",
+    "qrcode": "^1.5.4"
   },
-  "devDependencies": {"typescript": "^5.9.0", "@types/node": "^24.0.0", "@types/react": "^19.1.0", "@types/react-dom": "^19.1.0"}
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@types/pg": "^8.15.5",
+    "@types/qrcode": "^1.5.6"
+  }
 }
