@@ -45,8 +45,15 @@ export function checkOrigin(req:NextRequest){
     return u.host===host && ['http:','https:'].includes(u.protocol)
   }catch{return false}
 }
+/** Cloud APIs are enabled only for the explicitly approved StayHub environments. */
 export function stagingAuthEnabled(){
-  return process.env.RAILWAY_ENVIRONMENT_NAME==='staging' &&
-    process.env.RAILWAY_ENVIRONMENT_ID==='ced39691-4fe7-4707-bba7-6d0e801f1ff8' &&
-    process.env.STAYHUB_ENABLE_TEST_SIGNUP==='1'
+  const env=process.env
+  const staging=env.RAILWAY_ENVIRONMENT_NAME==='staging' &&
+    env.RAILWAY_ENVIRONMENT_ID==='ced39691-4fe7-4707-bba7-6d0e801f1ff8' &&
+    env.STAYHUB_ENABLE_TEST_SIGNUP==='1'
+  const production=env.RAILWAY_ENVIRONMENT_NAME==='production' &&
+    env.RAILWAY_ENVIRONMENT_ID==='c9c4b13a-9041-4ae6-bd50-2d02b546b053' &&
+    env.RAILWAY_PROJECT_ID==='a8a5a434-4d18-438f-b4ea-ece072094595' &&
+    env.STAYHUB_ENABLE_PRODUCTION_AUTH==='1'
+  return staging || production
 }
