@@ -3,8 +3,8 @@ export default function Home(){
     <section className="hero card" style={{padding:32}}>
       <span className="badge">StayHub</span>
       <h1>จัดการที่พักได้ง่าย ในแอปเดียว</h1>
-      <p className="lead">ไม่ต้องมี LINE OA เปิดเว็บ ตั้งค่าหอพัก เกสต์เฮาส์ ที่พักรายวัน หรือโฮมสเตย์ และเริ่มจัดการข้อมูลบนเครื่องของคุณได้ทันที</p>
-      <div className="flow"><a className="btn" href="/start">เริ่มต้นใช้งานฟรีบนเครื่องนี้</a><a className="btn secondary" href="/workspace">เปิดพื้นที่ของฉัน</a><a className="btn secondary" href="/cloud">Cloud / QR เจ้าของ (Staging)</a><a className="btn secondary" href="/my">แผงผู้เช่า</a></div>
+      <p className="lead">เลือกประเภทที่พักก่อน สมัครสมาชิก แล้วเริ่มสร้างที่พักและ QR ให้ผู้เช่าได้จากบัญชีเจ้าของ ไม่ต้องใช้ LINE OA</p>
+      <div className="flow"><a className="btn" href="/cloud">เริ่มต้นสำหรับเจ้าของที่พัก</a><a className="btn secondary" href="/cloud">เข้าสู่ระบบเจ้าของ</a><a className="btn secondary" href="/start">โหมดทดลองในเครื่อง</a><a className="btn secondary" href="/my">แผงผู้เช่า</a></div>
       <p className="footnote">Cloud และ QR เป็นระบบทดลองเฉพาะ Staging เท่านั้น ยังไม่รองรับผู้เช่าจริงหรือข้อมูลการเงิน ข้อมูลในเครื่องและ Cloud แยกกันจนกว่าระบบซิงก์จะพร้อม</p>
     </section>
     <section className="section grid">
