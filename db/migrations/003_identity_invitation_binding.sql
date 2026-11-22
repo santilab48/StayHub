@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS stayhub.invites (
   use_count integer NOT NULL DEFAULT 0 CHECK(use_count >= 0),
   revoked_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(property_id,id),
   CONSTRAINT invite_unit_scope FOREIGN KEY(property_id,unit_id)
     REFERENCES stayhub.units(property_id,id)
 );
@@ -41,6 +42,9 @@ CREATE TABLE IF NOT EXISTS stayhub.join_requests (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT request_unit_scope FOREIGN KEY(property_id,unit_id)
     REFERENCES stayhub.units(property_id,id),
+  CONSTRAINT request_invite_scope FOREIGN KEY(property_id,invite_id)
+    REFERENCES stayhub.invites(property_id,id),
+  UNIQUE(property_id,id),
   UNIQUE(property_id,account_id)
 );
 CREATE INDEX IF NOT EXISTS join_requests_pending_idx
@@ -57,6 +61,8 @@ CREATE TABLE IF NOT EXISTS stayhub.stays (
   ends_at timestamptz,
   CONSTRAINT stay_unit_scope FOREIGN KEY(property_id,unit_id)
     REFERENCES stayhub.units(property_id,id),
+  CONSTRAINT stay_request_scope FOREIGN KEY(property_id,join_request_id)
+    REFERENCES stayhub.join_requests(property_id,id),
   CONSTRAINT stay_date_check CHECK(ends_at IS NULL OR ends_at>starts_at)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS stays_one_active_account_property_idx
