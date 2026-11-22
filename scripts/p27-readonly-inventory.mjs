@@ -54,6 +54,24 @@ try {
     const count = await client.query(`SELECT count(*)::bigint AS n FROM stayhub."${row.table_name}"`)
     counts[row.table_name] = count.rows[0].n
   }
+  // Billing amounts are aggregates only; no customer, owner or bank data.
+  const billingTableNames=['billing_bills','billing_payments']
+  const available=new Set(tables.rows.map(row=>row.table_name))
+  const hasBilling=billingTableNames.every(name=>available.has(name))
+  if(available.size>=20 && !hasBilling)
+    throw new Error('REFUSED: expected production billing tables are missing')
+  const billing=hasBilling ? {
+    bills:(await client.query(`SELECT count(*)::bigint AS rows,
+      coalesce(sum(total),0)::text AS total_amount,
+      count(*) FILTER(WHERE status='paid')::bigint AS paid_rows
+      FROM stayhub.billing_bills`)).rows[0],
+    payments:(await client.query(`SELECT count(*)::bigint AS rows,
+      coalesce(sum(amount),0)::text AS total_amount
+      FROM stayhub.billing_payments`)).rows[0],
+  } : null
+  const extensions=(await client.query(
+    "SELECT extname,extversion FROM pg_extension ORDER BY extname"
+  )).rows
   await client.query('COMMIT')
   inTransaction = false
   const result = {
@@ -62,6 +80,8 @@ try {
     tables: tables.rowCount,
     migrations: migrations.rows,
     rowCounts: counts,
+    billingAggregates: billing,
+    installedExtensions: extensions,
     capturedAt: new Date().toISOString(),
   }
   console.log(JSON.stringify(result,null,2))
