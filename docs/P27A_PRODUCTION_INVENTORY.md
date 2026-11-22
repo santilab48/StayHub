@@ -42,3 +42,14 @@ The exact Railway environment variables must be available to the process; this c
 **NO-GO for production cutover or data copy.** First obtain production table counts and an approved, recoverable snapshot/backup. Then compare exact migration checksums on the source/target, use a temporary Neon branch (not the empty production branch or the existing live E2E staging branch), perform a rehearsed data transfer with verified row counts, foreign keys, payments and session handling, and confirm rollback.
 
 No production variables or databases were modified and no Railway volume was deleted.
+
+## Inventory script verified in CI (2026-11-22)
+
+- Workflow: `.github/workflows/p27-inventory-contract.yml`.
+- Test fixture: `scripts/p27-test-readonly-inventory.mjs`.
+- [GitHub Actions: SUCCESS](https://github.com/santilab48/StayHub/actions/runs/45024711585).
+- Disposable PostgreSQL 16 in CI with database named `railway` (an intentional **mock** of the Railway Production database name, not a connection to Railway).
+- Passed: exact per-table counts and migration history; no account emails printed; missing opt-in refused; wrong environment refused; staging role refused; fixture data unchanged after audit.
+- The initial `npm ci` workflow failed because the repository has no committed lockfile; fixed to `npm install --no-audit --no-fund` and reran successfully.
+
+**Important:** A PASS here proves the inventory command's behavior and guardrails on a disposable database. It does **not** establish the row counts in the real Railway Production PostgreSQL. The real inventory is still pending an approved trusted execution path with the existing Production DATABASE_URL.
