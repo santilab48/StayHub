@@ -86,15 +86,28 @@ async function main(){
  expect(await request('/api/v2/meter-readings',{method:'POST',cookie:alice,body:{propertyId:prop,unitId:unit,period:'2026-11',meterType:'water',initialReading:'0',currentReading:'10',unitRate:'10'}}),409,'duplicate monthly meter reading denied')
  const billKey='p26-bill-'+tag+'-nov'
  const billBody={propertyId:prop,leaseId:lease,period:'2026-11',otherAmount:'50.00',otherLabel:'CI other'}
- const bill=expect(await request('/api/v2/bills',{method:'POST',cookie:alice,
-    extraHeaders:{'idempotency-key':billKey},body:billBody}),201,'issue monthly bill')
+ const billRequests=await Promise.all([
+   request('/api/v2/bills',{method:'POST',cookie:alice,
+     extraHeaders:{'idempotency-key':billKey},body:billBody}),
+   request('/api/v2/bills',{method:'POST',cookie:alice,
+     extraHeaders:{'idempotency-key':'p28e-competing-'+tag},body:billBody}),
+ ])
+ assert.deepEqual(billRequests.map(r=>r.status).sort((a,b)=>a-b),[201,409],
+   `concurrent monthly issue must create one bill: ${JSON.stringify(billRequests)}`)
+ const bill=expect(billRequests.find(r=>r.status===201),201,'one concurrent monthly bill issued')
+ console.log('PASS concurrent monthly issue: one created, one rejected')
  assert.equal(bill.data.total,'4350.00')
  const billId=bill.data.id
+ const winningKey=billRequests[0].status===201?billKey:'p28e-competing-'+tag
+ const losingKey=billRequests[0].status===409?billKey:'p28e-competing-'+tag
  const replay=expect(await request('/api/v2/bills',{method:'POST',cookie:alice,
-    extraHeaders:{'idempotency-key':billKey},body:billBody}),200,'replay same bill key')
+    extraHeaders:{'idempotency-key':winningKey},body:billBody}),200,'replay same bill key')
  assert.equal(replay.data.id,billId)
- expect(await request('/api/v2/bills',{method:'POST',cookie:alice,extraHeaders:{'idempotency-key':billKey},body:{...billBody,otherAmount:'60.00'}}),409,'bill key reused with different payload denied')
- expect(await request('/api/v2/bills',{method:'POST',cookie:alice,extraHeaders:{'idempotency-key':'p26-duplicate-'+tag},body:billBody}),409,'duplicate monthly bill denied')
+ expect(await request('/api/v2/bills',{method:'POST',cookie:alice,extraHeaders:{'idempotency-key':winningKey},body:{...billBody,otherAmount:'60.00'}}),409,'bill key reused with different payload denied')
+ expect(await request('/api/v2/bills',{method:'POST',cookie:alice,extraHeaders:{'idempotency-key':losingKey},body:billBody}),409,'losing concurrent key cannot create duplicate')
+ const listed=expect(await request('/api/v2/bills?propertyId='+prop+'&period=2026-11',{cookie:alice}),200,'owner lists concurrent bill month')
+ assert.equal(listed.data.items.filter(x=>x.lease_id===lease || x.leaseId===lease).length,1,
+   'there must be exactly one monthly bill for the lease')
  expect(await request('/api/v2/bills/'+billId+'?propertyId='+prop,{cookie:tenant}),200,'tenant can view own bill')
  expect(await request('/api/v2/bills/'+billId+'?propertyId='+prop,{cookie:bob}),404,'other owner cannot read tenant bill')
  expect(await request('/api/v2/bills/'+billId+'?propertyId='+prop,{cookie:otherTenant}),404,'other tenant cannot read bill')
