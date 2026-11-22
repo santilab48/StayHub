@@ -30,9 +30,7 @@ jobs:
         with:
           node-version: '24'
       - name: Verify Neon transport configuration
-        run: |
-          npm ci
-          node scripts/test-p28cd-neon-transport.mjs
+        run: node scripts/test-p28cd-neon-transport.mjs
       - name: Wait for staging TLS probe from this branch
         shell: bash
         run: |
