@@ -9,7 +9,7 @@ const date=(v:unknown):v is string=>{
   const d=new Date(v+'T00:00:00Z')
   return !Number.isNaN(d.getTime())&&d.toISOString().slice(0,10)===v
 }
-const money=(v:unknown)=>typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=100000000&&Math.round(v*100)===v*100
+const money=(v:unknown)=>typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=100000000&&Math.abs(Math.round(v*100)-v*100)<1e-7
 async function ownerOf(accountId:string,propertyId:string){
   const r=await postgresQuery(`SELECT 1 FROM stayhub.property_memberships
     WHERE account_id=$1 AND property_id=$2 AND role IN ('owner','admin')`,[accountId,propertyId])
