@@ -1,6 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server'
 import {accountFromSession,checkOrigin,stagingAuthEnabled} from '../../../../lib/cloud-identity'
 import {postgresQuery,withPostgresTransaction} from '../../../../lib/db/postgres'
+import {endStay} from '../../../../lib/stay-lifecycle'
 
 export const dynamic='force-dynamic'
 const reply=(value:unknown,status=200)=>NextResponse.json(value,{status,headers:{'Cache-Control':'no-store'}})
@@ -47,8 +48,9 @@ export async function GET(req:NextRequest){
   const propertyId=req.nextUrl.searchParams.get('propertyId')
   if(!uuid(propertyId)||!await canManage(account.id,propertyId))return reply({error:'Forbidden'},403)
   const r=await postgresQuery(`SELECT r.id,r.unit_id,u.name AS unit_name,
-    r.arrival_date,r.departure_date,r.status,r.total_amount,r.created_at
+    r.arrival_date,r.departure_date,r.status,r.total_amount,r.created_at,st.id AS stay_id
     FROM stayhub.reservations r JOIN stayhub.units u ON u.id=r.unit_id AND u.property_id=r.property_id
+    LEFT JOIN stayhub.stays st ON st.reservation_id=r.id AND st.property_id=r.property_id
     WHERE r.property_id=$1 ORDER BY r.arrival_date DESC LIMIT 300`,[propertyId])
   return reply({items:r.rows})
 }
@@ -112,6 +114,104 @@ export async function POST(req:NextRequest){
         return reply({id:previous.id,status:previous.status,replayed:true})
       }
       return result.status==='created'?reply(result,201):reply({error:result.status},409)
+    }
+    if(data.action==='check-in'){
+      if(!uuid(data.reservationId)||!uuid(data.joinRequestId))return reply({error:'Valid reservation and QR join request required'},400)
+      const reservationId=data.reservationId,joinRequestId=data.joinRequestId
+      const result=await withPostgresTransaction(async client=>{
+        // Lock the physical room first; other admissions and booking creation
+        // also lock this row, serializing capacity decisions across requests.
+        const seed=await client.query<{unit_id:string}>(`
+          SELECT unit_id FROM stayhub.reservations
+          WHERE id=$1 AND property_id=$2`,[reservationId,propertyId])
+        if(!seed.rowCount)return {status:'not_found'}
+        const lock=await client.query(`SELECT id FROM stayhub.units
+          WHERE id=$1 AND property_id=$2 AND active=true FOR UPDATE`,[seed.rows[0].unit_id,propertyId])
+        if(!lock.rowCount)return {status:'inactive_unit'}
+        const reservation=await client.query<{id:string;unit_id:string;status:string;guest_account_id:string|null;arrival_date:string;departure_date:string}>(`
+          SELECT id,unit_id,status,guest_account_id,arrival_date,departure_date
+          FROM stayhub.reservations WHERE id=$1 AND property_id=$2 FOR UPDATE`,
+          [reservationId,propertyId])
+        if(!reservation.rowCount||reservation.rows[0].unit_id!==seed.rows[0].unit_id)return {status:'reservation_changed'}
+        const item=reservation.rows[0]
+        if(item.status!=='confirmed')return {status:'not_confirmed'}
+        const day=await client.query<{today:string}>(`SELECT to_char(now() AT TIME ZONE 'Asia/Bangkok','YYYY-MM-DD') AS today`)
+        const today=day.rows[0].today
+        if(new Date(item.arrival_date).toISOString().slice(0,10)>today||
+           new Date(item.departure_date).toISOString().slice(0,10)<=today)return {status:'outside_stay_dates'}
+        const qr=await client.query<{id:string;account_id:string;unit_id:string|null;status:string}>(`
+          SELECT id,account_id,unit_id,status FROM stayhub.join_requests
+          WHERE id=$1 AND property_id=$2 FOR UPDATE`,[joinRequestId,propertyId])
+        if(!qr.rowCount||qr.rows[0].status!=='pending')return {status:'request_not_pending'}
+        if(qr.rows[0].unit_id&&qr.rows[0].unit_id!==item.unit_id)return {status:'wrong_room'}
+        const guest=qr.rows[0].account_id
+        const role=await client.query<{role:string}>(`SELECT role FROM stayhub.property_memberships
+          WHERE property_id=$1 AND account_id=$2`,[propertyId,guest])
+        if(role.rows.some(x=>!['resident','guest'].includes(x.role)))return {status:'privileged_role'}
+        const blocked=await client.query(`SELECT 1 FROM stayhub.unit_blocks
+          WHERE property_id=$1 AND unit_id=$2 AND starts_at<=now() AND ends_at>now() LIMIT 1`,[propertyId,item.unit_id])
+        if(blocked.rowCount)return {status:'blocked'}
+        const cleaning=await client.query(`SELECT 1 FROM stayhub.housekeeping_tasks
+          WHERE property_id=$1 AND unit_id=$2 AND status IN ('pending','in_progress') LIMIT 1`,[propertyId,item.unit_id])
+        if(cleaning.rowCount)return {status:'cleaning'}
+        const occupancy=await client.query<{n:number;capacity:number}>(`
+          SELECT (SELECT count(*)::integer FROM stayhub.stays
+            WHERE property_id=$1 AND unit_id=$2 AND starts_at<=now()
+            AND (ends_at IS NULL OR ends_at>now())) AS n, capacity
+          FROM stayhub.units WHERE property_id=$1 AND id=$2`,[propertyId,item.unit_id])
+        if(occupancy.rows[0].n>=occupancy.rows[0].capacity)return {status:'full'}
+        const existing=await client.query(`SELECT 1 FROM stayhub.stays
+          WHERE property_id=$1 AND account_id=$2 AND (ends_at IS NULL OR ends_at>now())
+          LIMIT 1`,[propertyId,guest])
+        if(existing.rowCount)return {status:'guest_already_checked_in'}
+        await client.query(`UPDATE stayhub.reservations
+          SET status='checked_in',guest_account_id=$3 WHERE id=$1 AND property_id=$2`,[reservationId,propertyId,guest])
+        const stay=await client.query<{id:string}>(`INSERT INTO stayhub.stays
+          (property_id,unit_id,account_id,join_request_id,reservation_id)
+          VALUES($1,$2,$3,$4,$5) RETURNING id`,
+          [propertyId,item.unit_id,guest,joinRequestId,reservationId])
+        await client.query(`INSERT INTO stayhub.property_memberships(property_id,account_id,role)
+          VALUES($1,$2,'guest') ON CONFLICT(property_id,account_id) DO UPDATE SET role='guest'
+          WHERE stayhub.property_memberships.role IN ('guest','resident')`,[propertyId,guest])
+        await client.query(`UPDATE stayhub.join_requests SET status='approved',unit_id=$3,
+          reviewed_by=$4,reviewed_at=now() WHERE id=$1 AND property_id=$2`,
+          [joinRequestId,propertyId,item.unit_id,account.id])
+        await client.query(`INSERT INTO stayhub.stay_events
+          (property_id,stay_id,account_id,actor_account_id,event_type,to_unit_id)
+          VALUES($1,$2,$3,$4,'approved',$5)`,[propertyId,stay.rows[0].id,guest,account.id,item.unit_id])
+        return {status:'checked_in',stayId:stay.rows[0].id}
+      })
+      return result.status==='checked_in'?reply(result,201):reply({error:result.status},409)
+    }
+    if(data.action==='check-out'){
+      if(!uuid(data.reservationId))return reply({error:'Invalid reservation ID'},400)
+      const reservationId=data.reservationId
+      const result=await withPostgresTransaction(async client=>{
+        const seed=await client.query<{unit_id:string}>(`SELECT unit_id FROM stayhub.reservations
+          WHERE id=$1 AND property_id=$2`,[reservationId,propertyId])
+        if(!seed.rowCount)return 'not_found'
+        await client.query('SELECT id FROM stayhub.units WHERE property_id=$1 AND id=$2 FOR UPDATE',
+          [propertyId,seed.rows[0].unit_id])
+        const record=await client.query<{status:string;unit_id:string}>(`
+          SELECT status,unit_id FROM stayhub.reservations
+          WHERE id=$1 AND property_id=$2 FOR UPDATE`,[reservationId,propertyId])
+        if(!record.rowCount||record.rows[0].unit_id!==seed.rows[0].unit_id||
+           record.rows[0].status!=='checked_in')return 'not_checked_in'
+        const stay=await client.query<{id:string}>(`SELECT id FROM stayhub.stays
+          WHERE property_id=$1 AND reservation_id=$2 AND (ends_at IS NULL OR ends_at>now())
+          FOR UPDATE`,[propertyId,reservationId])
+        if(stay.rowCount!==1)return 'stay_missing'
+        const activeLease=await client.query(`SELECT 1 FROM stayhub.leases
+          WHERE property_id=$1 AND stay_id=$2 AND status='active' LIMIT 1`,
+          [propertyId,stay.rows[0].id])
+        if(activeLease.rowCount)return 'terminate_lease_first'
+        const ended=await endStay(client,propertyId,stay.rows[0].id,account.id)
+        if(!ended)return 'stay_not_active'
+        await client.query(`UPDATE stayhub.reservations SET status='checked_out'
+          WHERE property_id=$1 AND id=$2`,[propertyId,reservationId])
+        return 'checked_out'
+      })
+      return result==='checked_out'?reply({status:result}):reply({error:result},409)
     }
     if(data.action==='cancel'){
       if(!uuid(data.reservationId))return reply({error:'Invalid reservation ID'},400)
