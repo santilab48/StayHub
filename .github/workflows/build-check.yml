@@ -27,6 +27,8 @@ jobs:
           node-version: 24
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Routing and architecture structure test
+        run: npm run test:structure
       - name: Static P1 audit
         run: npm run audit:p1
       - name: Type check
