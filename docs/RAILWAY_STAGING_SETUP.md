@@ -45,3 +45,19 @@ One GitHub repo `santilab48/StayHub`; one Next.js web/API service per environmen
 - The staging patch has **7 non-destructive pending changes** and was **not committed/deployed**. The production environment's separate staged patch has not been touched.
 - Before deploying staging: verify correct branch/region, add only test-specific Supabase variables if legacy pages require them, ensure Next.js build can start; do not substitute live production credentials or hard-coded dummy endpoints for real authentication.
 - PostgreSQL migrations have not been applied. The shared modules still call Supabase; replacing those calls and implementing secure authorization remain prerequisites for a usable staging pilot.
+
+## P1.5 migration runner — prepared, not applied (2026-11-22)
+
+- `db/migrations/001_stayhub_core.sql`: proposed StayHub core schema, isolated under `stayhub`.
+- `db/migrations/002_reservation_conflict_guard.sql`: adds a PostgreSQL exclusion constraint against overlapping confirmed / checked-in bookings for the **same** unit. It does not yet handle whole-property vs constituent rooms.
+- `scripts/migrate-staging.mjs`: versioned SQL migrations, SHA-256 checksums, transaction/advisory lock, and explicit Railway project + staging environment ID guards. `--check` checks what is applied without writing.
+- CI checks structure and the migration runner's guardrails with `npm run test:migration`; it does not connect to Railway Postgres or execute schema changes.
+
+**Run procedure on a secure, authorized Railway staging shell** (not from a public Next.js route and not as an auto-deploy/predeploy command):
+
+1. Confirm the shell receives `RAILWAY_ENVIRONMENT_NAME=staging`, `RAILWAY_ENVIRONMENT_ID=ced39691-4fe7-4707-bba7-6d0e801f1ff8`, and `RAILWAY_PROJECT_ID=a8a5a434-4d18-438f-b4ea-ece072094595` from Railway; ensure `DATABASE_URL` references the staging-only `Postgres` service.
+2. Verify the target database's host/name independently, then run `npm run db:staging:check` (read-only).
+3. Review both migration SQL files, take a staging backup/snapshot if existing records are present, then execute `npm run db:staging:migrate` **once** within that same Staging context.
+4. Repeat `npm run db:staging:check`, and verify schema objects, isolation, and booking overlap constraint using dedicated staging test users.
+
+**Current state:** no migration has been run; this connection cannot execute SQL in the live Railway Postgres instance through a general-purpose query tool. The scripts are deliberately NOT invoked during web deploy, because web auto-deploy must never mutate the database implicitly. Auth provider and user credential/session/verification implementation are a separate P2 gate.
