@@ -26,7 +26,7 @@ Date: 2026-11-22. Decision: do NOT initiate any Neon migration now. Existing Rai
 
 ### DB schema
 - 001 core, 002 overlap guard, 003 QR binding, 004 attempt throttle, 005 stay-account match are in Staging.
-- 006 room lifecycle: `unit_blocks`, `housekeeping_tasks`, `stay_events` and property-scoped composite foreign keys. Must be checked against Staging and applied once before these endpoints work.
+- 006 room lifecycle: `unit_blocks`, `housekeeping_tasks`, `stay_events` and property-scoped composite foreign keys. Guarded one-time migration command and the read-only migration check + transaction-only ID binding tests were run via Railway staging deployment hooks, with each deployment marked SUCCESS. The Railway connector did not expose all command-level output, so schema ledger and case-by-case assertion evidence still need independent confirmation.
 
 ### Not done; keep blocked before serving real residents
 - Independent cross-account HTTP E2E tests including owner A vs B, tenant A vs B, expired/revoked QR, transfer/checkout and housekeeping.
@@ -44,3 +44,11 @@ Only after backend contracts settle, design mobile-first owner dashboard (proper
 ## Operational restrictions
 
 No `main` merge. No Railway Production change. Run reviewed migrations against dedicated Staging only, never as a persistent preDeploy hook.
+
+## Latest Staging verification
+
+- Commit `52debc9d8a0a931b23e4925f7260fe0ff6ce87a1` GitHub workflow completed **success** (build, TypeScript, security/structure checks).
+- Railway Staging deployment `76f36e6c-b5c9-4ea3-9277-75e92b28fae3` reported **SUCCESS** after the guarded `db:staging:check && test:id-binding:db` pre-deploy command was attached for that deployment.
+- Prior Staging deployment `b2eacee7-c09b-4713-bffc-3494dda9b111` reported **SUCCESS** with guarded migration command.
+- Both temporary deployment commands were removed afterward; current `preDeployCommand` is `[]`.
+- This is not an independently observed HTTP E2E run or raw database schema inspection. Keep public real-user onboarding restricted until those are verified.
