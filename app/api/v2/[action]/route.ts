@@ -250,6 +250,7 @@ export async function POST(req:NextRequest,{params}:Params){
     if(action==='transfer'){
       if(!validId(propertyId)||!validId(body.stayId)||!validId(body.unitId)||
          !await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
+      const targetUnitId=body.unitId as string
       const result=await withPostgresTransaction(async client=>{
         const existing=await client.query<{id:string;account_id:string;unit_id:string}>(`
           SELECT id,account_id,unit_id FROM stayhub.stays
@@ -257,17 +258,17 @@ export async function POST(req:NextRequest,{params}:Params){
             AND (ends_at IS NULL OR ends_at>now()) FOR UPDATE`,[body.stayId,propertyId])
         if(!existing.rowCount)return {status:'not_active'}
         const previous=existing.rows[0]
-        if(previous.unit_id===body.unitId)return {status:'same_unit'}
-        const availability=await ensureUnitCanAccept(client,propertyId,body.unitId)
+        if(previous.unit_id===targetUnitId)return {status:'same_unit'}
+        const availability=await ensureUnitCanAccept(client,propertyId,targetUnitId)
         if(availability!=='ok')return {status:availability}
         await client.query('UPDATE stayhub.stays SET ends_at=now() WHERE id=$1',[previous.id])
         const next=await client.query<{id:string}>(`
           INSERT INTO stayhub.stays(property_id,unit_id,account_id)
-          VALUES($1,$2,$3) RETURNING id`,[propertyId,body.unitId,previous.account_id])
+          VALUES($1,$2,$3) RETURNING id`,[propertyId,targetUnitId,previous.account_id])
         await client.query(`INSERT INTO stayhub.stay_events
           (property_id,stay_id,account_id,actor_account_id,event_type,from_unit_id,to_unit_id)
           VALUES($1,$2,$3,$4,'transferred',$5,$6)`,
-          [propertyId,next.rows[0].id,previous.account_id,account.id,previous.unit_id,body.unitId])
+          [propertyId,next.rows[0].id,previous.account_id,account.id,previous.unit_id,targetUnitId])
         const remaining=await client.query(`SELECT 1 FROM stayhub.stays
           WHERE property_id=$1 AND unit_id=$2 AND starts_at<=now()
             AND (ends_at IS NULL OR ends_at>now()) LIMIT 1`,[propertyId,previous.unit_id])
@@ -284,7 +285,7 @@ export async function POST(req:NextRequest,{params}:Params){
     if(action==='checkout'){
       if(!validId(propertyId)||!validId(body.stayId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
       const result=await withPostgresTransaction(async client=>{
-        const previous=await endStay(client,propertyId,body.stayId,account.id)
+        const previous=await endStay(client,propertyId,body.stayId as string,account.id)
         return previous?'checked_out':'not_active'
       })
       return result==='checked_out'?reply({status:result}):reply({error:result},409)
