@@ -1,5 +1,6 @@
 'use client'
 import {useEffect,useState} from 'react'
+import PwaInstall from '../../components/PwaInstall'
 type Stay={id:string;property_name:string;unit_name:string;property_type:string}
 const tiles=[
   ['🏠','ห้องของฉัน','ข้อมูลห้องและการเข้าพัก'],
@@ -20,6 +21,7 @@ export default function MyStayPage(){
   return <main className="wrap" style={{maxWidth:900}}>
     <a href="/">← StayHub</a><h1>แผงผู้เข้าพัก</h1>
     <p className="muted">ที่พักและห้องบนแผงนี้ต้องผูกกับ Account ID และ Stay ID ที่เจ้าของอนุมัติแล้วเท่านั้น</p>
+    <PwaInstall/>
     {state&&<p role="status" className="card">{state} <a href="/cloud">เข้าสู่ระบบ</a></p>}
     {!state&&!stays.length&&<section className="card"><h2>ยังไม่มีห้องที่อนุมัติ</h2><p>สแกน QR ของเจ้าของแล้วส่งคำขอเข้าร่วม หรือรอเจ้าของอนุมัติห้องก่อน</p></section>}
     {stays.map(stay=><section key={stay.id} className="card section">
