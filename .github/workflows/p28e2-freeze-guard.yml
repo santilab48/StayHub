@@ -1,0 +1,33 @@
+name: StayHub P2.8-E2 freeze guard review
+
+on:
+  push:
+    branches: ['feat/stayhub-p26-readiness']
+    paths:
+      - 'middleware.ts'
+      - 'lib/db/postgres.ts'
+      - 'app/api/health/db/freeze/route.ts'
+      - 'scripts/test-p28e2-write-freeze.mjs'
+      - '.github/workflows/p28e2-freeze-guard.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate maintenance and pool contracts
+        run: node scripts/test-p28e2-write-freeze.mjs
+      - name: Install dependencies
+        run: npm install --ignore-scripts --no-save --package-lock=false
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
+        run: npm run build
