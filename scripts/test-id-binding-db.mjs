@@ -1,0 +1,46 @@
+#!/usr/bin/env node
+// Transaction-only PostgreSQL isolation checks. No test rows persist.
+import {randomUUID,randomBytes} from 'node:crypto'
+import pg from 'pg'
+const env=process.env
+if(env.RAILWAY_ENVIRONMENT_NAME!=='staging' ||
+   env.RAILWAY_PROJECT_ID!=='a8a5a434-4d18-438f-b4ea-ece072094595' ||
+   env.RAILWAY_ENVIRONMENT_ID!=='ced39691-4fe7-4707-bba7-6d0e801f1ff8' ||
+   !env.DATABASE_URL) throw Error('REFUSED: must run against authorized StayHub staging')
+const pool=new pg.Pool({connectionString:env.DATABASE_URL,max:1,connectionTimeoutMillis:10000})
+const c=await pool.connect()
+const email=(prefix)=>prefix+'+'+randomUUID()+'@example.invalid'
+async function expectConstraint(label,run,code='23503'){
+  await c.query('SAVEPOINT tenant_isolation_case')
+  let rejected=false
+  try{await run()}catch(e){if(e.code===code)rejected=true;else throw e}
+  await c.query('ROLLBACK TO SAVEPOINT tenant_isolation_case')
+  await c.query('RELEASE SAVEPOINT tenant_isolation_case')
+  if(!rejected)throw Error('Tenant isolation failed: '+label)
+  console.log('PASS',label)
+}
+try{
+  await c.query('BEGIN')
+  const ownerA=(await c.query("INSERT INTO stayhub.accounts(email) VALUES($1) RETURNING id",[email('owner-a')])).rows[0].id
+  const ownerB=(await c.query("INSERT INTO stayhub.accounts(email) VALUES($1) RETURNING id",[email('owner-b')])).rows[0].id
+  const tenant=(await c.query("INSERT INTO stayhub.accounts(email) VALUES($1) RETURNING id",[email('tenant')])).rows[0].id
+  const a=(await c.query("INSERT INTO stayhub.properties(owner_account_id,name,property_type) VALUES($1,'Isolation A','apartment') RETURNING id",[ownerA])).rows[0].id
+  const b=(await c.query("INSERT INTO stayhub.properties(owner_account_id,name,property_type) VALUES($1,'Isolation B','homestay') RETURNING id",[ownerB])).rows[0].id
+  const unitA=(await c.query("INSERT INTO stayhub.units(property_id,name) VALUES($1,'Test A') RETURNING id",[a])).rows[0].id
+  const unitB=(await c.query("INSERT INTO stayhub.units(property_id,name) VALUES($1,'Test B') RETURNING id",[b])).rows[0].id
+  const invite=(await c.query("INSERT INTO stayhub.invites(property_id,created_by,token_hash,unit_id,expires_at) VALUES($1,$2,$3,$4,now()+interval '1 day') RETURNING id",[a,ownerA,randomBytes(32).toString('hex'),unitA])).rows[0].id
+  await expectConstraint('Invitation cannot bind to other property',()=>c.query("INSERT INTO stayhub.join_requests(invite_id,property_id,account_id) VALUES($1,$2,$3)",[invite,b,tenant]))
+  const request=(await c.query('INSERT INTO stayhub.join_requests(invite_id,property_id,account_id,unit_id) VALUES($1,$2,$3,$4) RETURNING id',[invite,a,tenant,unitA])).rows[0].id
+  await expectConstraint('Stay cannot use a room from other property',()=>c.query('INSERT INTO stayhub.stays(property_id,unit_id,account_id,join_request_id) VALUES($1,$2,$3,$4)',[a,unitB,tenant,request]))
+  await expectConstraint('Stay cannot use join request from other property',()=>c.query('INSERT INTO stayhub.stays(property_id,unit_id,account_id,join_request_id) VALUES($1,$2,$3,$4)',[b,unitB,tenant,request]))
+  const before=await c.query('SELECT 1 FROM stayhub.property_memberships WHERE property_id=$1 AND account_id=$2',[a,tenant])
+  if(before.rowCount)throw Error('QR join request unexpectedly gave tenant membership')
+  console.log('PASS Pending QR join does not grant membership')
+  await c.query("INSERT INTO stayhub.reservations(property_id,unit_id,arrival_date,departure_date,status) VALUES($1,$2,'2027-01-01','2027-01-04','confirmed')",[a,unitA])
+  await expectConstraint('Active reservations cannot overlap',()=>c.query("INSERT INTO stayhub.reservations(property_id,unit_id,arrival_date,departure_date,status) VALUES($1,$2,'2027-01-03','2027-01-05','confirmed')",[a,unitA]),'23P01')
+  await c.query('ROLLBACK')
+  console.log('All staging database ID-binding checks passed; all temporary data rolled back.')
+}catch(e){
+  try{await c.query('ROLLBACK')}catch{}
+  throw e
+}finally{c.release();await pool.end()}
