@@ -30,3 +30,14 @@
 - Production data migration from Railway to Neon has NOT been performed.
 - Backend auth/billing E2E on isolated PostgreSQL already passed; Neon staging SQL writes/rollback passed. A fresh HTTP health and authenticated E2E verification through deployed Railway staging is a separate release gate.
 - Rollback for Railway staging is to omit/clear `STAYHUB_DB_PROVIDER` (while retaining Railway's original `DATABASE_URL`), then redeploy.
+
+## Live Railway → Neon proof (2026-11-22)
+
+- Railway staging has `STAYHUB_DB_PROVIDER=neon-staging` and a server-only `STAYHUB_NEON_STAGING_URL`; its original Railway `DATABASE_URL` remains untouched for rollback.
+- [Live Neon authenticated Staging E2E: SUCCESS](https://github.com/santilab48/StayHub/actions/runs/45023907764). It exercised actual HTTPS calls to the deployed Railway app: `GET /api/health/db` → 200, anonymous `GET /api/v2/me` → 401, `POST /api/v2/register` → 201, authenticated `GET /api/v2/me` → 200, `POST /api/v2/logout` → 200, revoked session `GET /api/v2/me` → 401.
+- Neon staging SQL independently confirmed the disposable email account in `stayhub.accounts` and its session in `stayhub.sessions`. This confirms the app's HTTPS registration wrote to the intended Neon branch.
+- A disposable test account with prefix `p26-neon-live-` remains in Neon staging. **No SQL deletion was performed**. Remove only with separately approved cleanup and explicit target verification.
+- [Read-only staging HTTP smoke: SUCCESS](https://github.com/santilab48/StayHub/actions/runs/45023844732).
+- [Build, TypeScript and auth/billing PostgreSQL E2E on commit 904b12a](https://github.com/santilab48/StayHub/actions/runs/45023647574) passed.
+
+**Not yet completed:** the exact CLI-based `neon init` / `neon deploy` flow (CLI install/network unavailable), copy or synchronization of existing Railway staging/production data, or a Production cutover. The Neon project default `production` branch remains untouched. No Railway Production secrets or data were changed.
