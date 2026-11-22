@@ -39,13 +39,13 @@ try{
     (property_id,stay_id,account_id,unit_id,starts_on,monthly_rent,created_by)
     VALUES($1,$2,$3,$4,'2026-11-22',8000,$5) RETURNING id`,
     [a,stay,tenant,unitA,ownerA])).rows[0].id
+  await c.query("UPDATE stayhub.leases SET status='terminated',terminated_at=now() WHERE id=$1",[lease])
   await expectConstraint('Lease cannot impersonate another account',()=>c.query(`INSERT INTO stayhub.leases
     (property_id,stay_id,account_id,unit_id,starts_on,monthly_rent,created_by)
     VALUES($1,$2,$3,$4,'2026-11-22',8000,$5)`,[a,stay,ownerB,unitA,ownerA]))
   await expectConstraint('Lease cannot reference a room from another property',()=>c.query(`INSERT INTO stayhub.leases
     (property_id,stay_id,account_id,unit_id,starts_on,monthly_rent,created_by)
     VALUES($1,$2,$3,$4,'2026-11-22',8000,$5)`,[a,stay,tenant,unitB,ownerA]))
-  await c.query("UPDATE stayhub.leases SET status='terminated',terminated_at=now() WHERE id=$1",[lease])
   console.log('PASS Lease terminated independently of stay')
   await expectConstraint('Housekeeping stay cannot belong to another property',
     ()=>c.query("INSERT INTO stayhub.housekeeping_tasks(property_id,unit_id,triggered_by_stay_id) VALUES($1,$2,$3)",[b,unitB,stay]))
