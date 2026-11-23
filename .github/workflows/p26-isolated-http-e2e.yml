@@ -8,6 +8,7 @@ on:
       - 'lib/**'
       - 'db/migrations/**'
       - 'scripts/p26-*.mjs'
+      - 'scripts/p53-browser-e2e.mjs'
       - 'tests/p2b-sync.test.ts'
       - '.github/workflows/p26-isolated-http-e2e.yml'
   pull_request:
@@ -17,6 +18,7 @@ on:
       - 'lib/**'
       - 'db/migrations/**'
       - 'scripts/p26-*.mjs'
+      - 'scripts/p53-browser-e2e.mjs'
       - 'tests/p2b-sync.test.ts'
       - '.github/workflows/p26-isolated-http-e2e.yml'
   workflow_dispatch:
@@ -31,7 +33,7 @@ concurrency:
 jobs:
   isolated-http-e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     services:
       postgres:
         image: postgres:16
@@ -77,6 +79,12 @@ jobs:
           exit 1
       - name: Test registration, session, QR and authorization over HTTP
         run: node scripts/p26-http-e2e.mjs
+      - name: Install Chromium for isolated browser E2E
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Test two independent browser contexts with offline conflict
+        run: node scripts/p53-browser-e2e.mjs
       - name: Print web logs on failure
         if: failure()
         run: tail -120 /tmp/stayhub-p26-next.log || true
