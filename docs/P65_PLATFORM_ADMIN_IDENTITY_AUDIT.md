@@ -71,3 +71,20 @@ This step resolves the previously confirmed missing `stayhub_identity_reader` ro
 - No Production variables, service, role, database or membership data were modified. No real Super Admin was created, no operator signatures applied, and P6.6 was not started.
 
 **Updated verdict:** Railway Staging identity-reader **creation and authenticated least-privilege tests PASSED**. Completion of the *entire* P6.5 authorized administrator workflow still requires approval and verification of two real human signers, their protected signing keys and a controlled Staging grant/revoke acceptance, without automatically changing Production rights.
+
+
+## Addendum — User authorization and live signer readiness (2026-11-23)
+
+The owner has explicitly authorized continuing the Staging P6.5 approval test. This authorization allows a controlled test **but does not establish that two separate individuals own, have verified and have signed with two separate approver keys**. An operator must not fabricate independent human signers or present generated test keys as human approvals.
+
+Read-only verification in the connected environment:
+
+- GitHub remote HEAD `7038eec251d58f1e5fca203fc74854e80c57c88e` before this documentation update.
+- Railway Staging app and PostgreSQL both online with no warning/critical issue. Latest app deploy `2bab518d-0dc1-4fc1-9a54-d1eec9dd0046`: **SUCCESS**.
+- Read-only predeploy check confirms `stayhub_identity_reader` is limited to Railway `stayhub.accounts.id` with no operational writes.
+- GitHub Build/Security `45171135833` and isolated HTTP/Chromium E2E `45171135972`: **SUCCESS**.
+- Neon Staging `br-fancy-sky-a1n96vul`: **0 active platform admins**, no real administrator created.
+- Railway Staging service configuration contains no `STAYHUB_P64_APPROVER_A_ACCOUNT_ID`, `STAYHUB_P64_APPROVER_B_ACCOUNT_ID`, `STAYHUB_P64_APPROVER_A_SPKI_B64`, `STAYHUB_P64_APPROVER_B_SPKI_B64`, `STAYHUB_MEMBERSHIP_ADMIN_DATABASE_URL` or `STAYHUB_P64_RAILWAY_READONLY_URL` names. The app environment is not configured as a privileged operator.
+- No Staging or Production Grant/Revoke was performed in this pass; no synthetic signer was represented as a real person. Neither Neon Production nor Railway Production was changed.
+
+**Final P6.5 acceptance gate remains OPEN ONLY for real human two-party approval and a controlled operator grant/revoke.** Technical test fixtures and Staging schema/read-only privileges pass, but an owner giving consent cannot substitute for two independently verified and protected approver keys. Before any real grant, identify two distinct authorized Railway account UUIDs, verify independent human ownership, register their public keys, keep private keys outside web/app/CI, and use separately approved target identity. Do not put a Neon privileged writer URL on the customer-facing Staging app merely to satisfy this acceptance criterion.
