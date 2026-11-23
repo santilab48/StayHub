@@ -3,6 +3,7 @@
 // Neon membership table is simulated in a DIFFERENT localhost PostgreSQL CI database.
 import assert from 'node:assert/strict'
 import {randomBytes} from 'node:crypto'
+import {execFileSync} from 'node:child_process'
 import pg from 'pg'
 
 const base=process.env.P26_E2E_BASE
@@ -52,9 +53,16 @@ try {
     VALUES('priority_support'),('advanced_reports')`)
   await client.query(`INSERT INTO stayhub_membership.plan_entitlements(plan_code,entitlement_code)
     VALUES('pro','priority_support'),('pro','advanced_reports')`)
-  await client.query(`INSERT INTO stayhub_membership.memberships
-    (railway_account_id,plan_code,status,starts_at,ends_at,updated_by)
-    VALUES ($1,'pro','active',now()-interval '1 day',now()+interval '30 days','CI administrator')`,[owner.id])
+  execFileSync(process.execPath,['scripts/p60-membership-provision.mjs',
+    '--account='+owner.id,'--plan=pro','--status=active',
+    '--starts=2026-11-01T00:00:00.000Z','--ends=2027-01-01T00:00:00.000Z',
+    '--actor=CI administrator','--reason=approved isolated test fixture'],{
+    env:{...process.env,STAYHUB_MEMBERSHIP_PROVISION_APPROVED:'YES',
+      STAYHUB_MEMBERSHIP_ADMIN_DATABASE_URL:member},stdio:'pipe',
+  })
+  const audit=await client.query('SELECT actor,reason FROM stayhub_membership.membership_events WHERE railway_account_id=$1',[owner.id])
+  assert.equal(audit.rowCount,1,'provisioning creates one audit record')
+  assert.equal(audit.rows[0].actor,'CI administrator')
   const active=await query(owner.cookie)
   assert.equal(active.status,200)
   assert.deepEqual(active.body.membership.entitlements,['advanced_reports','priority_support'])
