@@ -56,6 +56,7 @@ export default function WorkspacePage() {
   }
 
   useEffect(() => {
+    if ('serviceWorker' in navigator) void navigator.serviceWorker.register('/sw.js').catch(() => {})
     const status = () => setOnline(navigator.onLine)
     status()
     window.addEventListener('online', status)

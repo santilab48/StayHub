@@ -20,7 +20,10 @@ export default function BackupPage() {
     setSummary(await localStorageSummary())
     setLastSaved(await lastBackupSaved())
   }
-  useEffect(() => { void refresh().catch(failure => setError(String(failure))) }, [])
+  useEffect(() => {
+    if ('serviceWorker' in navigator) void navigator.serviceWorker.register('/sw.js').catch(() => {})
+    void refresh().catch(failure => setError(String(failure)))
+  }, [])
   async function run(action: () => Promise<void>) {
     setBusy(true)
     setError('')
