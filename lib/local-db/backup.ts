@@ -106,7 +106,7 @@ function validateSnapshot(snapshot: Snapshot): void {
         continue
       }
       if (name === 'workspaces') {
-        if (typeof entry.key !== 'string' || !(/^(active-workspace|workspace:[0-9a-f-]+|(?:backup-)?server-property:[0-9a-f-]+|backup-meta:last-saved)$/.test(entry.key))) throw Error('Workspace key ไม่ถูกต้อง')
+        if (typeof entry.key !== 'string' || !(/^(active-workspace|workspace:[0-9a-f-]+|(?:backup-)?server-property:[0-9a-f-]+|sync-room:[0-9a-f-]+:[0-9a-f-]+|backup-meta:last-saved)$/.test(entry.key))) throw Error('Workspace key ไม่ถูกต้อง')
         continue
       }
       const record = entry.value as Record<string, unknown>
