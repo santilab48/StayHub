@@ -27,6 +27,13 @@ try{
         has_schema_privilege(r.oid,'stayhub','USAGE') AS schema_usage,
         has_column_privilege(r.oid,'stayhub.accounts','id','SELECT') AS account_id_select,
         has_column_privilege(r.oid,'stayhub.accounts','email','SELECT') AS email_select,
+        EXISTS(SELECT 1 FROM pg_class c
+          JOIN pg_namespace n ON n.oid=c.relnamespace
+          JOIN pg_attribute a ON a.attrelid=c.oid
+          WHERE n.nspname='stayhub' AND c.relkind IN ('r','p','v','m','f')
+            AND a.attnum>0 AND NOT a.attisdropped
+            AND NOT (c.relname='accounts' AND a.attname='id')
+            AND has_column_privilege(r.oid,c.oid,a.attname,'SELECT')) AS can_read_other_data,
         has_table_privilege(r.oid,'stayhub.accounts','INSERT') AS can_insert_accounts,
         EXISTS(SELECT 1 FROM pg_auth_members m WHERE m.member=r.oid) AS inherits_roles,
         EXISTS(SELECT 1 FROM pg_tables t WHERE t.schemaname='stayhub' AND
@@ -39,7 +46,8 @@ try{
     if(!x)throw Error('BLOCKED P6.5: stayhub_identity_reader does not exist on Railway Staging')
     if(!x.rolcanlogin||x.rolsuper||x.rolcreatedb||x.rolcreaterole||
        x.rolreplication||x.rolbypassrls||x.inherits_roles||!x.schema_usage||
-       !x.account_id_select||x.email_select||x.can_insert_accounts||x.can_write)
+       !x.account_id_select||x.email_select||x.can_read_other_data||
+       x.can_insert_accounts||x.can_write)
       throw Error('BLOCKED P6.5: Railway staging identity reader has incorrect privileges')
     await db.query('ROLLBACK')
     console.log('PASS P6.5 Railway Staging stayhub_identity_reader role: account UUID SELECT only and no operational writes')
