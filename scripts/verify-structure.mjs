@@ -7,7 +7,7 @@ assert.ok(home.includes("'/cloud?type='"),'Homepage must route selected accommod
 assert.ok(!home.includes('href="/start"'),'Homepage must not allow onboarding bypass via local-only workspace')
 assert.ok(!/Rich Menu 6 ช่อง|Multi-OA ready|ทุกเรื่องของหอพัก อยู่ใน LINE ที่เดียว/.test(home),'Homepage must not promote LINE-dependent navigation')
 const local=readFileSync('lib/local-workspace.ts','utf8')
-assert.ok(local.includes('indexedDB.open('),'Onboarding must persist to IndexedDB')
+assert.ok(local.includes('withTransaction(') && local.includes('WORKSPACES'),'Onboarding must persist through shared IndexedDB transactions')
 assert.ok(!local.includes('service_role'),'No service credential in local onboarding')
 assert.ok(!existsSync('app/t/[tenantSlug]/menu/[action]/page.tsx'),'Legacy OA menu route should be removed')
 const types=readFileSync('lib/accommodation-types.ts','utf8')

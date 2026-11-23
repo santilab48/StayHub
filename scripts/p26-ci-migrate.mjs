@@ -19,7 +19,7 @@ try{
   await client.query(`CREATE TABLE IF NOT EXISTS stayhub.schema_migrations
     (filename text PRIMARY KEY,checksum text NOT NULL,applied_at timestamptz NOT NULL DEFAULT now())`)
   const files=readdirSync('db/migrations').filter(x=>/^\d{3}_[\w-]+\.sql$/.test(x)).sort()
-  if(files.length!==13)throw new Error('Expected exactly 13 reviewed migrations; found '+files.length)
+  if(files.length!==14)throw new Error('Expected exactly 14 reviewed migrations; found '+files.length)
   for(const name of files){
     const sql=readFileSync(join('db/migrations',name),'utf8')
     await client.query(sql)
@@ -29,7 +29,7 @@ try{
   }
   await client.query('COMMIT')
   const count=await client.query('SELECT count(*)::integer AS n FROM stayhub.schema_migrations')
-  if(count.rows[0].n!==13)throw new Error('Migration history incomplete')
-  console.log('CI database migration history: 13/13')
+  if(count.rows[0].n!==14)throw new Error('Migration history incomplete')
+  console.log('CI database migration history: 14/14')
 }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error}
 finally{await client.end()}
