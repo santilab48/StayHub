@@ -10,19 +10,21 @@ const P='00000000-0000-4000-8000-000000000001'
 const U='00000000-0000-4000-8000-000000000002'
 const STAY='00000000-0000-4000-8000-000000000003'
 const LEASE='00000000-0000-4000-8000-000000000004'
-const state={writes:[]}
+const state={writes:[],signupMode:false}
 const owner={items:[{id:P,name:'Staging Browser Test',role:'owner'}]}
 const resident={items:[{stay_id:STAY,unit_id:U,unit_name:'A101',email:'tenant@example.invalid',starts_at:'2026-11-01',ends_at:null}]}
 const leases={items:[{id:LEASE,stay_id:STAY,unit_id:U,unit_name:'A101',monthly_rent:'4000.00',security_deposit:'0.00',starts_on:'2026-11-01',status:'active'}]}
 function response(path,method,body,headers){
  if(method==='POST'){
   state.writes.push({path,body,headers})
+  if(path==='/api/v2/register'){state.signupMode=false;return {ok:true}}
   if(path==='/api/v2/unit')return {id:U}
   if(path==='/api/v2/leases')return {id:LEASE,status:'created'}
   if(path==='/api/v2/bills')return {id:'00000000-0000-4000-8000-000000000005',total:'4000.00'}
   return {ok:true}
  }
  if(path==='/api/v2/properties')return owner
+ if(path==='/api/v2/me'&&state.signupMode)return {error:'Please sign in'}
  if(path==='/api/v2/me')return {id:'00000000-0000-4000-8000-000000000010',email:'owner@example.invalid'}
  if(path==='/api/v2/my-stays')return {items:[]}
  if(path==='/api/v2/occupancy')return {items:[]}
@@ -43,9 +45,29 @@ await page.route('**/api/v2/**',async route=>{
  const req=route.request(),url=new URL(req.url())
  const body=req.method()==='POST'?JSON.parse(req.postData()||'{}'):null
  const result=response(url.pathname,req.method(),body,req.headers())
- await route.fulfill({status:req.method()==='POST'?201:200,contentType:'application/json',body:JSON.stringify(result)})
+ await route.fulfill({status:req.method()==='POST'?201:(url.pathname==='/api/v2/me'&&state.signupMode?401:200),contentType:'application/json',body:JSON.stringify(result)})
 })
 try{
+ state.signupMode=true
+ await page.goto(BASE+'/')
+ await page.getByRole('heading',{name:'เลือกประเภทที่พักของคุณ'}).waitFor()
+ assert.equal(await page.locator('.welcomeChoice').count(),4)
+ await page.getByRole('button',{name:/หอพัก \/ อพาร์ตเมนต์/}).click()
+ await page.waitForURL(/\/cloud\?type=apartment/)
+ await page.getByRole('heading',{name:'สมัครสมาชิกเจ้าของที่พัก'}).waitFor()
+ const passwordField=page.getByLabel('รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)')
+ assert.equal(await passwordField.getAttribute('minlength'),'6')
+ await passwordField.fill('123456')
+ await page.getByRole('button',{name:'แสดงรหัสผ่าน'}).click()
+ assert.equal(await passwordField.getAttribute('type'),'text')
+ await page.getByRole('button',{name:'ซ่อนรหัสผ่าน'}).click()
+ assert.equal(await passwordField.getAttribute('type'),'password')
+ await page.getByLabel('อีเมล').fill('onboarding@example.invalid')
+ await page.getByRole('button',{name:'สมัครสมาชิกและดำเนินการต่อ'}).click()
+ await page.getByText('เข้าสู่ระบบสำเร็จ').waitFor()
+ assert.ok(state.writes.some(x=>x.path==='/api/v2/register'&&x.body.password==='123456'))
+ console.log('PASS browser: four large categories, mandatory registration, 6-character password and reveal/hide')
+
  await page.goto(BASE+'/cloud/rooms')
  await page.getByPlaceholder('เช่น A101').fill('A102')
  await page.getByRole('button',{name:'+ เพิ่มห้อง'}).click()
