@@ -3,15 +3,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { accountFromSession, checkOrigin } from '../../../../lib/cloud-identity'
 import { withPostgresTransaction } from '../../../../lib/db/postgres'
 import { canManageProperty, uuid } from '../../../../lib/db/billing-request'
+import { localSyncEnabled } from '../../../../lib/db/local-sync-environment'
 
 export const dynamic = 'force-dynamic'
 const reply = (value: unknown, status = 200) => NextResponse.json(value, { status, headers: { 'Cache-Control': 'no-store' } })
 
 export async function POST(req: NextRequest) {
-  if (!(process.env.NODE_ENV !== 'production' && process.env.STAYHUB_LOCAL_SYNC_TEST === '1') &&
-      (process.env.STAYHUB_DB_PROVIDER !== 'neon-staging' ||
-      process.env.RAILWAY_ENVIRONMENT_NAME !== 'staging' ||
-      process.env.RAILWAY_ENVIRONMENT_ID !== 'ced39691-4fe7-4707-bba7-6d0e801f1ff8')) return reply({ result: 'rejected' }, 503)
+  if (!localSyncEnabled()) return reply({ result: 'rejected' }, 503)
   if (!checkOrigin(req)) return reply({ result: 'rejected' }, 403)
   if (Number(req.headers.get('content-length') || 0) > 8192) return reply({ result: 'rejected' }, 413)
   const account = await accountFromSession()
