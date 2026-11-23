@@ -30,6 +30,7 @@ export default function CloudOwnerPage(){
   const [account,setAccount]=useState<{email:string}|null>(null)
   const [email,setEmail]=useState('')
   const [password,setPassword]=useState('')
+  const [showPassword,setShowPassword]=useState(false)
   const [name,setName]=useState('')
   const [type,setType]=useState<AccommodationType>('apartment')
   const [screen,setScreen]=useState<OnboardingScreen>('loading')
@@ -61,6 +62,9 @@ export default function CloudOwnerPage(){
   useEffect(()=>{
     let active=true
     const init=async()=>{
+      const entry=new URLSearchParams(window.location.search)
+      const requestedType=entry.get('type')
+      const wantsLogin=entry.get('login')==='1'
       let saved:AccommodationType|null=null
       try{
         const stored=localStorage.getItem(ONBOARDING_KEY)
@@ -86,8 +90,19 @@ export default function CloudOwnerPage(){
         }
         setAccount(null)
         const isTenantReturn=new URLSearchParams(window.location.search).get('return')?.startsWith('/join?token=')
-        if(saved)setType(saved)
-        setScreen(saved||isTenantReturn?'auth':'choose')
+        if(isAccommodationType(requestedType)){
+          setType(requestedType)
+          try{localStorage.setItem(ONBOARDING_KEY,requestedType)}catch{}
+          setAuthMode('register')
+          setScreen('auth')
+        }else if(wantsLogin||isTenantReturn){
+          if(saved)setType(saved)
+          setAuthMode('login')
+          setScreen('auth')
+        }else{
+          if(saved)setType(saved)
+          setScreen('choose')
+        }
       }
     }
     void init()
@@ -104,14 +119,13 @@ export default function CloudOwnerPage(){
     setScreen('choose')
   }
   async function run(fn:()=>Promise<void>){setBusy(true);setMessage('');try{await fn()}catch(e){setMessage(e instanceof Error?e.message:'เกิดข้อผิดพลาด')}finally{setBusy(false)}}
-  async function sign(e:{preventDefault:()=>void},action:'register'|'login'){e.preventDefault();await run(async()=>{await api(action,{email,password});setPassword('');await load();setMessage('เข้าสู่ระบบสำเร็จ');const target=new URLSearchParams(window.location.search).get('return');if(target?.startsWith('/join?token='))window.location.assign(target)})}
+  async function sign(e:{preventDefault:()=>void},action:'register'|'login'){e.preventDefault();await run(async()=>{await api(action,{email,password});setPassword('');setShowPassword(false);await load();setMessage('เข้าสู่ระบบสำเร็จ');const target=new URLSearchParams(window.location.search).get('return');if(target?.startsWith('/join?token='))window.location.assign(target)})}
   async function create(e:FormEvent){e.preventDefault();await run(async()=>{const p=await api('property',{name,type});await load();setShowCreate(false);setSelected(p.id);setMessage('สร้างที่พักแล้ว');await loadUnits(p.id);await loadInvites(p.id)})}
   async function loadUnits(id:string){const r=await fetch('/api/v2/units?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setUnits(data.items)}
   async function loadInvites(id:string){const r=await fetch('/api/v2/invites?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setInvites(data.items)}
   async function loadRequests(id:string){await run(async()=>{const r=await fetch('/api/v2/requests?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setRequests(data.items)})}
-  return <main className="wrap" style={{maxWidth:900}}>
-    <a href="/">← StayHub</a><h1>StayHub Cloud · เจ้าของที่พัก</h1>
-    <p className="muted">ระบบ Cloud และ QR อยู่ระหว่างตรวจสอบความพร้อมก่อนเปิดใช้งานจริง กรุณาอย่าใช้ข้อมูลส่วนบุคคลหรือข้อมูลการเงินจริงระหว่างทดสอบ</p>
+  return <main className={screen==='choose'?'wrap ownerEntryPage':screen==='auth'?'wrap ownerAuthPage':'wrap'} style={{maxWidth:screen==='choose'?1240:900}}>
+    {screen==='dashboard'?<><a href="/">← StayHub</a><h1>StayHub Cloud · เจ้าของที่พัก</h1></>:<a className="ownerBackLink" href="/">← กลับหน้าเลือกประเภทที่พัก</a>}
     {screen==='loading'&&<section className="card section" aria-live="polite"><p>กำลังตรวจสอบบัญชีของคุณ...</p></section>}
     {screen==='unavailable'&&<section className="card section" role="alert"><h2>ระบบบัญชียังไม่พร้อมใช้งาน</h2><p>ไม่สามารถตรวจสอบเซสชันหรือการเชื่อมต่อเซิร์ฟเวอร์ได้ โปรดลองใหม่ภายหลัง</p><button type="button" className="btn secondary" onClick={()=>window.location.reload()}>ลองใหม่</button></section>}
     {screen==='choose'&&<section className="card section">
@@ -140,7 +154,7 @@ export default function CloudOwnerPage(){
       </div>}
       <form className="list" onSubmit={e=>void sign(e,authMode)}>
         <label>อีเมล<input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label>
-        <label>รหัสผ่าน (อย่างน้อย 12 ตัวอักษร)<input type="password" autoComplete={authMode==='register'?'new-password':'current-password'} minLength={12} value={password} onChange={e=>setPassword(e.target.value)} required/></label>
+        <label>รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)<span className="ownerPasswordField"><input type={showPassword?'text':'password'} autoComplete={authMode==='register'?'new-password':'current-password'} minLength={6} maxLength={128} value={password} onChange={e=>setPassword(e.target.value)} required/><button type="button" className="ownerPasswordToggle" aria-label={showPassword?'ซ่อนรหัสผ่าน':'แสดงรหัสผ่าน'} aria-pressed={showPassword} onClick={()=>setShowPassword(v=>!v)}>{showPassword?'ซ่อน':'แสดง'}</button></span></label>
         <button type="submit" disabled={busy} className="btn">{authMode==='register'?'สมัครสมาชิกและดำเนินการต่อ':'เข้าสู่ระบบ'}</button>
       </form>
       <p className="muted">{authMode==='register'?'มีบัญชีแล้ว?':'ยังไม่มีบัญชี?'} <button type="button" className="ownerTextButton" onClick={()=>setAuthMode(authMode==='register'?'login':'register')}>{authMode==='register'?'เข้าสู่ระบบ':'สมัครสมาชิก'}</button></p>
