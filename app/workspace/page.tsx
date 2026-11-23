@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { getActiveWorkspace, type DeviceWorkspace } from '../../lib/local-workspace'
 import { accommodationLabel } from '../../lib/accommodation-types'
 import type { LocalRecord } from '../../lib/local-db'
+import { getPropertyLink, savePropertyLink, type PropertyLink } from '../../lib/local-db/property-link'
+import { listSyncQueue, resolveSyncConflict, syncNow, type SyncOperation } from '../../lib/local-db/sync'
 import { getBillItems, listAllLocal, removeRoom, saveBillDraft, saveMeter, saveRoom } from '../../lib/local-db/offline'
 
 type Room = LocalRecord<'units'>
@@ -12,6 +14,13 @@ type Bill = LocalRecord<'bills'>
 
 export default function WorkspacePage() {
   const [workspace, setWorkspace] = useState<DeviceWorkspace | null>(null)
+  const [link, setLink] = useState<PropertyLink | null>(null)
+  const [serverProperties, setServerProperties] = useState<{ id: string; name: string }[]>([])
+  const [serverAccountId, setServerAccountId] = useState('')
+  const [selectedProperty, setSelectedProperty] = useState('')
+  const [queue, setQueue] = useState<SyncOperation[]>([])
+  const [showQueue, setShowQueue] = useState(false)
+  const [showConflicts, setShowConflicts] = useState(false)
   const [rooms, setRooms] = useState<Room[]>([])
   const [meters, setMeters] = useState<Meter[]>([])
   const [bills, setBills] = useState<Bill[]>([])
@@ -38,6 +47,7 @@ export default function WorkspacePage() {
     const [nextRooms, nextMeters, nextBills] = await Promise.all([
       listAllLocal('units', id), listAllLocal('meter_readings', id), listAllLocal('bills', id),
     ])
+    setQueue(await listSyncQueue(id))
     setRooms(nextRooms)
     setMeters(nextMeters)
     setBills(nextBills)
@@ -52,13 +62,26 @@ export default function WorkspacePage() {
     window.addEventListener('offline', status)
     getActiveWorkspace().then(async found => {
       setWorkspace(found)
-      if (found) await refresh(found.id)
+      if (found) {
+        await refresh(found.id)
+        setLink(await getPropertyLink(found.id) ?? null)
+      }
     }).catch(failure => setError(String(failure))).finally(() => setLoading(false))
     return () => {
       window.removeEventListener('online', status)
       window.removeEventListener('offline', status)
     }
   }, [])
+
+  async function loadServerProperties() {
+    try {
+      const response = await fetch('/api/v2/sync/properties', { credentials: 'same-origin' })
+      if (!response.ok) throw new Error('กรุณาเข้าสู่ระบบ Staging ก่อนเชื่อมที่พัก')
+      const data = await response.json()
+      setServerProperties(data.properties)
+      setServerAccountId(data.accountId)
+    } catch (failure) { setError(failure instanceof Error ? failure.message : 'โหลดที่พักไม่สำเร็จ') }
+  }
 
   async function commit(action: () => Promise<unknown>) {
     if (!workspace || saving) return
@@ -85,6 +108,37 @@ export default function WorkspacePage() {
         <section className="card"><h1>{workspace.dormName}</h1><p className="muted">{accommodationLabel(workspace.accommodationType)} · ผู้ดูแล {workspace.ownerName}</p><span className="pill">บันทึกในเครื่อง</span></section>
         {error && <p role="alert">บันทึกไม่สำเร็จ · {error}</p>}
         {notice && <p role="status">{notice}</p>}
+        <section className="card section"><h2>สถานะการซิงก์</h2>
+          {!link && <p role="status">ต้องเชื่อมที่พักก่อนซิงก์</p>}
+          <button onClick={() => void loadServerProperties()}>เลือกที่พักจากบัญชี Staging</button>
+          {serverProperties.length > 0 && <><select value={selectedProperty} onChange={event => setSelectedProperty(event.target.value)}><option value="">เลือกที่พัก</option>{serverProperties.map(property => <option key={property.id} value={property.id}>{property.name}</option>)}</select><button disabled={!selectedProperty || saving} onClick={() => void commit(async () => {
+            if (!serverProperties.some(property => property.id === selectedProperty)) throw new Error('ที่พักไม่อยู่ในบัญชีนี้')
+            const checked = await fetch('/api/v2/sync/properties', { credentials: 'same-origin' })
+            if (!checked.ok) throw new Error('ตรวจสิทธิ์ที่พักไม่สำเร็จ')
+            const current = await checked.json()
+            if (current.accountId !== serverAccountId || !current.properties.some((property: { id: string }) => property.id === selectedProperty)) throw new Error('สิทธิ์ที่พักเปลี่ยนไป')
+            const next = { localPropertyId: workspace.id, serverPropertyId: selectedProperty, accountId: serverAccountId, linkedAt: new Date().toISOString() }
+            await savePropertyLink(next)
+            setLink(next)
+          })}>เชื่อมที่พัก</button></>}
+          <p>รอซิงก์ {queue.filter(item => item.status === 'pending').length} · กำลังซิงก์ {queue.filter(item => item.status === 'syncing').length} · ซิงก์สำเร็จ {queue.filter(item => item.status === 'synced').length} · มีข้อขัดแย้ง {queue.filter(item => item.status === 'conflict').length} · ซิงก์ไม่สำเร็จ {queue.filter(item => item.status === 'failed').length}</p>
+          <button disabled={saving || !online || !link} onClick={() => void commit(() => syncNow(workspace.id, async operation => {
+            if (!link) throw new Error('ต้องเชื่อมที่พักก่อนซิงก์')
+            const checked = await fetch('/api/v2/sync/properties', { credentials: 'same-origin' })
+            if (!checked.ok) throw new Error('กรุณาเข้าสู่ระบบ Staging')
+            const current = await checked.json()
+            if (current.accountId !== link.accountId || !current.properties.some((property: { id: string }) => property.id === link.serverPropertyId)) throw new Error('ไม่มีสิทธิ์ในที่พักที่เชื่อมไว้')
+            const response = await fetch('/api/v2/sync', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...operation, propertyId: link.serverPropertyId }) })
+            if (response.status >= 500) throw new Error('บริการซิงก์ยังไม่พร้อม')
+            const result = await response.json()
+            if (!['accepted', 'duplicate', 'conflict', 'rejected'].includes(result.result)) throw new Error('ผลตอบกลับไม่ถูกต้อง')
+            return result
+          }))}>ซิงก์ตอนนี้</button>{' '}
+          <button onClick={() => setShowQueue(!showQueue)}>ดูรายการรอซิงก์</button>{' '}
+          <button onClick={() => setShowConflicts(!showConflicts)}>ดูข้อขัดแย้ง</button>
+          {showQueue && <ul>{queue.filter(item => item.status !== 'synced' && item.status !== 'conflict').map(item => <li key={item.operationId}>{item.entityType} · {item.status} · {item.error}</li>)}</ul>}
+          {showConflicts && <ul>{queue.filter(item => item.status === 'conflict').map(item => <li key={item.operationId}>{item.entityType} · ข้อมูลในเครื่องและ Server แตกต่างกัน กรุณาตรวจสอบก่อนดำเนินการต่อ <button onClick={() => void commit(() => resolveSyncConflict(workspace.id, item.operationId, 'keep_local'))}>เก็บข้อมูลในเครื่อง</button> <button onClick={() => void commit(() => resolveSyncConflict(workspace.id, item.operationId, 'use_server'))}>ใช้ข้อมูลจาก Server</button> <button onClick={() => void commit(() => resolveSyncConflict(workspace.id, item.operationId, 'cancel'))}>ยกเลิกการซิงก์</button></li>)}</ul>}
+        </section>
         <section className="card section"><h2>ห้องพัก</h2>
           <form onSubmit={event => { event.preventDefault(); void commit(async () => { await saveRoom(workspace.id, roomName, editingRoom ?? undefined); setRoomName(''); setEditingRoom(null) }) }}>
             <label>ชื่อห้อง <input required value={roomName} onChange={event => setRoomName(event.target.value)} /></label>

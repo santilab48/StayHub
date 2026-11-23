@@ -1,5 +1,5 @@
 export const DATABASE_NAME = 'stayhub-device-v1'
-export const DATABASE_VERSION = 2
+export const DATABASE_VERSION = 3
 export const RECORD_SCHEMA_VERSION = 1
 export const WORKSPACES = 'workspaces'
 export const ACTIVE_WORKSPACE = 'active-workspace'

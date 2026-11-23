@@ -12,6 +12,10 @@ export function requestValue<T>(request: IDBRequest<T>): Promise<T> {
 
 function upgrade(db: IDBDatabase, tx: IDBTransaction, oldVersion: number, report: (error: unknown) => void) {
   if (oldVersion < 1) db.createObjectStore(WORKSPACES)
+  if (oldVersion < 3) {
+    const queue = db.createObjectStore('sync_queue', { keyPath: 'operationId' })
+    queue.createIndex('propertyId', 'propertyId')
+  }
   if (oldVersion >= 2) return
 
   for (const name of Object.keys(searchFields) as ReadStore[]) {

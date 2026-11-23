@@ -73,6 +73,7 @@ export interface LocalTransaction {
   put: <S extends Store>(store: S, input: RecordInput<S>, options?: WriteOptions) => Promise<LocalRecord<S>>
   delete: (store: Store, id: string, expectedRevision: number) => Promise<void>
   list: <S extends ReadStore>(store: S) => Promise<LocalRecord<S>[]>
+  enqueue: (entry: unknown) => Promise<void>
 }
 
 const stores = Object.keys(searchFields) as ReadStore[]
@@ -94,7 +95,7 @@ function sumMoney(rows: { amountMinor: number }[]) {
  * I/O outside the callback so the IndexedDB write lock is held only for local work.
  */
 export function runLocalTransaction<T>(propertyId: string, work: (tx: LocalTransaction) => Promise<T>): Promise<T> {
-  return withTransaction([...stores, WORKSPACES], 'readwrite', async tx => {
+  return withTransaction([...stores, WORKSPACES, 'sync_queue'], 'readwrite', async tx => {
     validateId(propertyId)
     const billsToCheck = new Set<string>()
     let working = true
@@ -187,6 +188,7 @@ export function runLocalTransaction<T>(propertyId: string, work: (tx: LocalTrans
         put: (store, input, options) => enqueue(() => put(store, input, options)),
         delete: (store, id, revision) => enqueue(() => remove(store, id, revision)),
         list: store => enqueue(() => requestValue(tx.objectStore(store).index('propertyId').getAll(propertyId))),
+        enqueue: entry => enqueue(async () => { await requestValue(tx.objectStore('sync_queue').add(entry)) }),
       })
       acceptingRequests = false
       await pending
