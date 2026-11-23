@@ -61,6 +61,12 @@ async function main(){
  const updatedSync=expect(await request('/api/v2/sync',{method:'POST',cookie:alice,body:{...syncBody,operationId:randomUUID(),baseRevision:1,payload:{name:'CI-Sync-102'}}}),200,'revision-aware sync updates room')
  assert.equal(updatedSync.data.result,'accepted')
  assert.equal(updatedSync.data.serverRecord.revision,2)
+ const pulled=expect(await request('/api/v2/sync?propertyId='+prop,{cookie:alice}),200,'owner pulls server room snapshot')
+ assert.ok(pulled.data.units.some(x=>x.id===syncUnit&&x.name==='CI-Sync-102'&&x.revision===2))
+ expect(await request('/api/v2/sync?propertyId='+prop,{cookie:bob}),403,'other owner cannot pull room snapshot')
+ expect(await request('/api/v2/sync?propertyId='+prop),401,'anonymous cannot pull room snapshot')
+ expect(await request('/api/v2/sync?propertyId='+prop+'&after=bad',{cookie:alice}),400,'invalid page cursor denied')
+
  const noDelete=expect(await request('/api/v2/sync',{method:'POST',cookie:alice,body:{...syncBody,operationId:randomUUID(),action:'delete',baseRevision:2,payload:null}}),200,'unreviewed room deletion is rejected')
  assert.equal(noDelete.data.result,'rejected')
  expect(await request('/api/v2/sync',{method:'POST',cookie:alice,body:{...syncBody,operationId:randomUUID(),entityType:'bills'}}),400,'bill drafts cannot be issued via sync')
