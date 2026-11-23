@@ -31,6 +31,7 @@ function response(path,method,body,headers){
  if(path==='/api/v2/units')return {items:[{id:U,name:'A101'}]}
  if(path==='/api/v2/leases')return leases
  if(path==='/api/v2/bills')return {items:[{id:'00000000-0000-4000-8000-000000000005',property_id:P,unit_name:'A101',period:'2026-11-01',total:'4000.00',paid:'0.00',outstanding:'4000.00',status:'unpaid'}],hasMore:false}
+ if(path==='/api/v2/bills/00000000-0000-4000-8000-000000000005')return {bill:{id:'00000000-0000-4000-8000-000000000005',property_id:P,unit_name:'A101',period:'2026-11-01',created_at:'2026-11-05',total:'4000.00',status:'paid'},items:[{label:'ค่าเช่า',quantity:'1',unitRate:'4000.00',amount:'4000.00'}],paid:'4000.00',outstanding:'0.00',payments:[]}
  if(path==='/api/v2/bills/summary')return {billCount:1,billedTotal:'4000.00',paidTotal:'0.00',outstandingTotal:'4000.00',unpaidCount:1}
  if(path==='/api/v2/operations')return {owner:true,items:[]}
  if(path==='/api/v2/repairs')return {owner:true,items:[{id:'00000000-0000-4000-8000-000000000009',unit_name:'A101',title:'Leaking Tap',detail:'Staging mock',status:'submitted',appointment_at:null,appointment_reply:null,created_at:'2026-11-01'}]}
@@ -78,6 +79,43 @@ try{
  await page.getByRole('status').getByText('บันทึกสำเร็จ').waitFor()
  assert.ok(state.writes.some(x=>x.path==='/api/v2/repairs'&&x.body.action==='transition'&&x.body.status==='accepted'))
  console.log('PASS browser: accept repair')
+
+ await page.goto(BASE+'/cloud/operations?kind=parcels')
+ await page.getByLabel('บริษัทขนส่ง').fill('Test Express')
+ await page.getByRole('button',{name:'บันทึก พัสดุ'}).click()
+ await page.getByRole('status').getByText('บันทึกสำเร็จ').waitFor()
+ assert.ok(state.writes.some(x=>x.path==='/api/v2/operations'&&x.body.action==='parcel-add'&&x.body.unitId===U))
+ console.log('PASS browser: receive parcel')
+
+ await page.goto(BASE+'/cloud/operations?kind=vehicles')
+ await page.getByLabel('ทะเบียนรถ').fill('กก-1234')
+ await page.getByLabel('ประเภทรถ').fill('car')
+ await page.getByRole('button',{name:'บันทึก รถของห้อง'}).click()
+ await page.getByRole('status').getByText('บันทึกสำเร็จ').waitFor()
+ assert.ok(state.writes.some(x=>x.path==='/api/v2/operations'&&x.body.action==='vehicle-add'))
+ console.log('PASS browser: add vehicle')
+
+ await page.goto(BASE+'/cloud/operations?kind=drivers')
+ await page.getByLabel('ชื่อคนขับ').fill('ทดสอบคนขับ')
+ await page.getByLabel('เบอร์โทร').fill('0000000000')
+ await page.getByLabel('ประเภทรถ').fill('car')
+ await page.getByRole('button',{name:'บันทึก คนขับ'}).click()
+ await page.getByRole('status').getByText('บันทึกสำเร็จ').waitFor()
+ assert.ok(state.writes.some(x=>x.path==='/api/v2/operations'&&x.body.action==='driver-add'))
+ console.log('PASS browser: add driver')
+
+ await page.goto(BASE+'/cloud/operations?kind=documents')
+ await page.getByLabel('หัวข้อเอกสาร').fill('กฎอาคาร')
+ await page.getByLabel('ข้อความที่ผู้พักเห็น').fill('กฎทดสอบ')
+ await page.getByRole('button',{name:'บันทึก เอกสารข้อความ'}).click()
+ await page.getByRole('status').getByText('บันทึกสำเร็จ').waitFor()
+ assert.ok(state.writes.some(x=>x.path==='/api/v2/operations'&&x.body.action==='document-add'))
+ console.log('PASS browser: save document text')
+
+ await page.goto(BASE+'/cloud/receipts/00000000-0000-4000-8000-000000000005?propertyId='+P)
+ await page.getByRole('heading',{name:'ใบรับชำระเงิน'}).waitFor()
+ await page.getByRole('button',{name:'พิมพ์ / บันทึกเป็น PDF'}).waitFor()
+ console.log('PASS browser: paid receipt has PDF print control')
 
  await page.goto(BASE+'/cloud/reports')
  await page.getByRole('button',{name:'ส่งออก CSV'}).waitFor()
