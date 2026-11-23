@@ -23,7 +23,7 @@ Continues the user-approved Neon → Railway PostgreSQL cutover on branch `feat/
 
 - Staging deployment **SUCCESS** at commit `366bbbd4a1ef4f3934eddc50f5bc1f826df76178`, ID `e4a615c4-622d-4ef1-87e6-83602fd75b9a`.
 - Production code and migration deployment **SUCCESS** at same pinned commit, ID `fd405ca4-2111-4037-8ad0-6a1d26fa2256`. `/api/health/db` Health Check succeeded, which under this code requires 14 applied migrations.
-- `STAYHUB_LOCAL_SYNC_ENABLED=1` applied as a separate Railway Production environment patch after healthy schema deployment. The follow-up deployment ID is `dfcdc09f-7f9c-43ad-a77d-1a6f7d701493`; consult Railway status for its final outcome.
+- `STAYHUB_LOCAL_SYNC_ENABLED=1` applied as a separate Railway Production environment patch after healthy schema deployment. Follow-up deployment **SUCCESS**: `dfcdc09f-7f9c-43ad-a77d-1a6f7d701493`. The pre-deploy migration script verified and **SKIPPED 001–014**, the `/api/health/db` healthcheck **succeeded (1/1)**, Railway App is **Online (1/1 replica)**, and PostgreSQL service is Online with its existing persistent volume. No production resource was deleted.
 - Production application source is pinned to commit `366bbbd4`: subsequent documentation/branch commits do **not** automatically deploy Production until explicitly promoted.
 
 ## Limitations and remaining verification
