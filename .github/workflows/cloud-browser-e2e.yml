@@ -12,7 +12,7 @@ permissions:
   contents: read
 jobs:
   browser-clicks:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       CI: 'true'
