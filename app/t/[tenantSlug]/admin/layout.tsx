@@ -1,9 +1,5 @@
-import { ReactNode } from 'react'
-import AdminAuthGate from '../../../../components/AdminAuthGate'
-import { requireTenantAdmin } from '../../../../lib/server-auth'
-
-export default async function AdminLayout({children,params}:{children:ReactNode;params:Promise<{tenantSlug:string}>}){
-  const {tenantSlug}=await params
-  await requireTenantAdmin(tenantSlug)
-  return <AdminAuthGate tenantSlug={tenantSlug}>{children}</AdminAuthGate>
-}
+import {redirect} from 'next/navigation'
+// All legacy tenant-admin screens depend on the old Supabase project.
+// They must never load or create records alongside the Neon Cloud database.
+// /cloud verifies the StayHub session and property membership before operations.
+export default function AdminLayout(){redirect('/cloud')}

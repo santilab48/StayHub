@@ -174,6 +174,8 @@ export default function CloudOwnerPage(){
           </form>
         </>}
       </section>
+      <section className="card section"><h2>ห้องพักและผู้พัก</h2><p className="muted">เพิ่มห้อง ดูสถานะห้อง ย้ายห้อง และจัดการย้ายออก ผ่านฐานข้อมูล Cloud</p><a className="btn" href="/cloud/rooms">จัดการห้องพัก</a></section>
+      <section className="card section"><h2>รายงาน</h2><p className="muted">รายรับ ยอดค้าง และสถานะห้อง พร้อมส่งออก CSV</p><a className="btn secondary" href="/cloud/reports">เปิดรายงาน</a></section>
       <section className="card section"><h2>จัดการสัญญาเช่า</h2><p className="muted">ผูกผู้เช่าที่อนุมัติแล้วเข้ากับสัญญาเช่า ก่อนจดมิเตอร์และออกบิล</p><a className="btn" href="/cloud/leases">เปิดจัดการสัญญาเช่า</a></section>
       <section className="card section"><h2>ระบบบิลรายเดือน</h2><p className="muted">จดมิเตอร์ ออกบิล ดูยอดค้าง และรับเงินสด/โอน</p><a className="btn" href="/cloud/billing">เปิดระบบบิล</a></section>
       <section className="card section"><h2>QR เชิญผู้เช่า</h2>
