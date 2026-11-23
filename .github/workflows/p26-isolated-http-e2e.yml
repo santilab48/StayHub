@@ -9,6 +9,7 @@ on:
       - 'db/migrations/**'
       - 'scripts/p26-*.mjs'
       - 'scripts/p53-browser-e2e.mjs'
+      - 'scripts/p57-receipt-browser-e2e.mjs'
       - 'tests/p2b-sync.test.ts'
       - '.github/workflows/p26-isolated-http-e2e.yml'
   pull_request:
@@ -19,6 +20,7 @@ on:
       - 'db/migrations/**'
       - 'scripts/p26-*.mjs'
       - 'scripts/p53-browser-e2e.mjs'
+      - 'scripts/p57-receipt-browser-e2e.mjs'
       - 'tests/p2b-sync.test.ts'
       - '.github/workflows/p26-isolated-http-e2e.yml'
   workflow_dispatch:
@@ -85,6 +87,8 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Test two independent browser contexts with offline conflict
         run: node scripts/p53-browser-e2e.mjs
+      - name: Test paid receipt access and Chromium printed PDF
+        run: node scripts/p57-receipt-browser-e2e.mjs
       - name: Print web logs on failure
         if: failure()
         run: tail -120 /tmp/stayhub-p26-next.log || true
