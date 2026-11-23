@@ -49,3 +49,37 @@ The repository contains migration 001–014, and no migration changed between th
 4. Inspect new deployment logs, migration check results, `/api/health/db`, app and database status. On failure, stop promotion and restore the previously verified deployment/configuration. Do not infer success from a build alone.
 
 No UI/UX, business logic, database, Production variable, Production deployment or PR merge was changed in this task. This report documents a blocked release, not a successful Production rollout.
+
+---
+
+## P5.4 follow-up: Railway Management Connector verification and successful promotion (2026-11-23)
+
+**Updated status: DEPLOYED — Railway Production SUCCESS.** The BLOCKED status above records an earlier execution environment with no Railway access; it is historical, not the final outcome.
+
+### Verified live before promotion
+
+- Project `a8a5a434-4d18-438f-b4ea-ece072094595`, Production environment `c9c4b13a-9041-4ae6-bd50-2d02b546b053`.
+- Existing app `StayHub` and PostgreSQL `Postgres-PDqf`: both **Online**, 1/1 replicas running, 0 warnings, 0 critical issues.
+- Previous app deployment `dfcdc09f-7f9c-43ad-a77d-1a6f7d701493`: **SUCCESS**, source commit `366bbbd4a1ef4f3934eddc50f5bc1f826df76178` before promotion.
+- Configured health check is `/api/health/db`; pre-deploy command is `node scripts/migrate-production.mjs`.
+- Railway management returned the existing environment variables by **name** (including `DATABASE_URL`, `STAYHUB_DB_PROVIDER`, `STAYHUB_LOCAL_SYNC_ENABLED`); values were intentionally **redacted by OAuth**. No new database, secret, or variable was created/changed, and no secret was exposed.
+- GitHub Actions runs `45136280389` (build/security/typecheck) and `45136280386` (isolated PostgreSQL HTTP and real Chromium 2-context E2E): **SUCCESS**.
+
+### Promotion operation
+
+- Staged exactly one non-destructive Railway app source change: `services.3af8aa8a-2678-47f5-bdf2-aea4fa78c17a.source.commitSha` from `366bbbd4` to `d163b4d167f8686e8015c8797d5eb0bdcc635c17`.
+- Verified staged patch: one service source update, **no variables, DB service or volumes changed**, no destructive changes.
+- Committed patch with Railway Production deployment workflow. **New deployment ID: `173c27ab-cd5a-4e04-a611-a6c8c1cf42f5`**.
+- Railway **source configuration after deployment** is pinned to `d163b4d167f8686e8015c8797d5eb0bdcc635c17`. **Deployment metadata**, however, reports Git commit `dd097dfb91f99545c477290094b8e6a97646e002` with the message `Document blocked P5.4 production release gate`. These are different values. The latter commit directly follows `d163b4d` and added only this documentation report per the earlier task; no migration or application changes were reported. Do **not** conflate configured source pin with deployment-metadata commit hash.
+- New deployment status: **SUCCESS**. Next.js compiled and built; Railway build-time Local-First contract and IndexedDB tests: **12 passed, 0 failed**.
+- Railway pre-deploy logs: `Production DB environment and identity verified (no credentials disclosed)`, and **SKIP 001–014** after checking existing migrations — none applied/rewritten.
+- Railway build logs: **`[1/1] Healthcheck succeeded!`**.
+- Railway runtime logs: Next.js **Ready**.
+- Final Railway Production environment status: both StayHub app and existing PostgreSQL **Online**, 1/1 replicas, 0 warnings and 0 critical issues.
+
+### Safety, rollback and remaining work
+
+- No merge of Draft PR #2, UI change, database deletion, secret change, data copy, new schema migration or new Railway service was performed.
+- Rollback reference remains the prior successful deployment **`dfcdc09f-7f9c-43ad-a77d-1a6f7d701493`** at commit `366bbbd4`; Railway now lists its status as **REMOVED** after the successful replacement (artifact `canRollback` was true before promotion). Restore the prior source commit and deploy a compatible image if rollback is needed.
+- The directly observed Railway `/api/health/db` **deployment healthcheck passed**. A separate public HTTPS check from the earlier execution environment was blocked by proxy `403`; that proxy status is not an application health failure.
+- Next task P5.5: run dedicated authorized room sync smoke tests on Production and verify authenticated Owner/Tenant roles without modifying real customer records. Real Production browser-based cross-device smoke has not been run in this release turn.
