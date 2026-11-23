@@ -5,7 +5,7 @@ let pool: Pool | undefined
 
 /** Server-only connection for the managed PostgreSQL instance on Railway. */
 export function getPostgresPool(): Pool {
-  // Opt-in staging-only Neon cutover. Keep Railway's DATABASE_URL intact for rollback.
+  // Opt-in Neon cutover. Preserve Railway DATABASE_URL intact for rollback.
   const usingNeonStaging = process.env.STAYHUB_DB_PROVIDER === 'neon-staging'
   const usingNeonProduction = process.env.STAYHUB_DB_PROVIDER === 'neon-production'
   const writeFreeze = process.env.STAYHUB_WRITE_FREEZE === 'YES'
@@ -24,7 +24,9 @@ export function getPostgresPool(): Pool {
   )) throw new Error('Neon production connection refused outside approved Railway production')
   let connectionString = usingNeonStaging
     ? process.env.STAYHUB_NEON_STAGING_URL
-    : process.env.DATABASE_URL
+    : usingNeonProduction
+      ? process.env.STAYHUB_NEON_PRODUCTION_URL
+      : process.env.DATABASE_URL
   if (!connectionString) throw new Error('PostgreSQL connection is not configured')
   if (usingNeonStaging || usingNeonProduction) {
     const url = new URL(connectionString)
