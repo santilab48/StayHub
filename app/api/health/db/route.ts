@@ -8,7 +8,7 @@ export async function GET(){
   const r=await postgresHealthQuery<{applied:number}>(
    'SELECT count(*)::integer AS applied FROM stayhub.schema_migrations'
   )
-  if(r.rows[0]?.applied!==12)return NextResponse.json({status:'unavailable'},{status:503,headers})
+  if(r.rows[0]?.applied!==13)return NextResponse.json({status:'unavailable'},{status:503,headers})
   return NextResponse.json({status:'ok',service:'stayhub',database:'ready'},{headers})
  }catch{return NextResponse.json({status:'unavailable'},{status:503,headers})}
 }
