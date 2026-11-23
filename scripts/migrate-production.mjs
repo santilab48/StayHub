@@ -44,7 +44,11 @@ if (neonProduction) {
 }
 
 const dirname = resolve('db/migrations')
-const files = readdirSync(dirname).filter(x=>/^\d{3}_[\w-]+\.sql$/.test(x)).sort()
+// Migration 014 is explicitly staging-only (local sync); Production health and schema
+// currently require migrations 001–013. Never auto-apply staging-only SQL in Production.
+const files = readdirSync(dirname)
+  .filter(x=>/^\d{3}_[\w-]+\.sql$/.test(x) && Number(x.slice(0,3)) <= 13)
+  .sort()
 if(!files.length) throw new Error('No migrations found')
 const migrations = files.map(name=>{
   const sql = readFileSync(join(dirname,name),'utf8')
