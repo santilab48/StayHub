@@ -58,3 +58,19 @@ The Railway Production app and PostgreSQL are healthy and the tested Two-Way **r
 **StayHub core Production is online and major regression suites pass; full operational handover remains conditional.** Production PostgreSQL backup/restore proof, Platform Super Admin implementation and approved Production write E2E are explicit open issues. It would be inaccurate to mark P5.4–P5.10 all 100% done. This document completes the **audit/reporting work** for P5.10, not the unresolved implementation and disaster-recovery gates.
 
 No app/DB/UI/volume/variable changes, Production redeploy, data destructive actions or Draft PR merge were performed during P5.10.
+
+---
+
+## Addendum — isolated PostgreSQL restore drill verified
+
+On 2026-11-23, a new **non-Production** PostgreSQL disaster-recovery rehearsal passed:
+
+- `scripts/p59-ci-postgres-restore.sh` refuses execution unless `CI=true`, the exact disposable database URL is `postgresql://postgres:postgres@127.0.0.1:5432/stayhub_p26_ci` and the test base is localhost. No Railway or Neon connection is possible in this workflow.
+- Test writes accumulated by isolated auth/QR/room-sync, billing, payment, PDF and Offline E2E are captured using `pg_dump --format=custom` with PostgreSQL **16** tooling matching the CI PostgreSQL 16 server.
+- Restore occurs only into a separate disposable `stayhub_p59_restore_ci` database; the test deletes that DB and temporary backup when finished.
+- Validates migration ledger **14/14**, checksums, property/room/bill/payment counts and bill/payment monetary aggregates, comparing the original fixture with the restored copy.
+- GitHub Actions isolated HTTP/Chromium/restore workflow: https://github.com/santilab48/StayHub/actions/runs/45147510212 — **SUCCESS**. Build/security workflow: https://github.com/santilab48/StayHub/actions/runs/45147510229 — **SUCCESS**.
+- Observed log: `PASS P5.9 isolated PostgreSQL custom-format pg_dump / pg_restore into independent database`; `PASS restored migration ledger 14/14, property/room/bill/payment counts and monetary aggregates match`.
+- Earlier drill attempts failed for a CI PostgreSQL client/server version mismatch and then a shell test typo; both were corrected and the last CI run passed. No application data, Production schema or production environment was modified.
+
+**The remaining Production backup gate is unchanged:** Railway Production PostgreSQL backup schedules, retained independent backups/PITR and a tested restoration of the **actual Production data** are still unverified. A CI fixture restore cannot prove those. No Platform Super Admin implementation or Production write E2E was introduced.
