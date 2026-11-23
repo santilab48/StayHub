@@ -123,6 +123,19 @@ async function main(){
  }
  await reading('water','10')
  await reading('electric','20')
+ // P5.7: invalid and decreasing meter inputs must not create new charges.
+ expect(await request('/api/v2/meter-readings',{method:'POST',cookie:alice,body:{
+  propertyId:prop,unitId:unit,period:'2026-12',meterType:'water',
+  currentReading:'9',unitRate:'10'
+ }}),409,'decreasing subsequent meter reading denied')
+ expect(await request('/api/v2/meter-readings',{method:'POST',cookie:alice,body:{
+  propertyId:prop,unitId:unit,period:'2026-12',meterType:'water',
+  currentReading:'11',unitRate:'not-money'
+ }}),400,'invalid unit rate denied')
+ expect(await request('/api/v2/meter-readings',{method:'POST',cookie:alice,body:{
+  propertyId:prop,unitId:unit,period:'2026-10',meterType:'electric',
+  initialReading:'0',currentReading:'8',unitRate:'10'
+ }}),409,'backdated meter reading after later period denied')
  expect(await request('/api/v2/meter-readings',{method:'POST',cookie:alice,body:{propertyId:prop,unitId:unit,period:'2026-11',meterType:'water',initialReading:'0',currentReading:'10',unitRate:'10'}}),409,'duplicate monthly meter reading denied')
  const billKey='p26-bill-'+tag+'-nov'
  const billBody={propertyId:prop,leaseId:lease,period:'2026-11',otherAmount:'50.00',otherLabel:'CI other'}
@@ -130,6 +143,20 @@ async function main(){
     extraHeaders:{'idempotency-key':billKey},body:billBody}),201,'issue monthly bill')
  assert.equal(bill.data.total,'4350.00')
  const billId=bill.data.id
+ const unpaid=expect(await request('/api/v2/bills/'+billId+'?propertyId='+prop,{cookie:alice}),200,'owner unpaid bill details')
+ assert.equal(unpaid.data.bill.status,'unpaid')
+ assert.deepEqual(unpaid.data.items.map(x=>x.feeCode).sort(),['electric','other','rent','water'])
+ assert.equal(unpaid.data.items.reduce((sum,x)=>sum+Math.round(Number(x.amount)*100),0),435000,'bill line item cents sum must match total')
+ assert.equal(unpaid.data.outstanding,'4350.00')
+ const unpaidSummary=expect(await request('/api/v2/bills/summary?propertyId='+prop,{cookie:alice}),200,'owner summary before payment')
+ assert.equal(unpaidSummary.data.billCount,1)
+ assert.equal(unpaidSummary.data.billedTotal,'4350.00')
+ assert.equal(unpaidSummary.data.paidTotal,'0.00')
+ assert.equal(unpaidSummary.data.outstandingTotal,'4350.00')
+ expect(await request('/api/v2/bills/summary?propertyId='+prop,{cookie:bob}),403,'unrelated owner forbidden summary')
+ expect(await request('/api/v2/bills/summary?propertyId='+prop,{cookie:tenant}),403,'tenant forbidden owner summary')
+ expect(await request('/api/v2/bills?propertyId='+prop+'&status=invalid',{cookie:alice}),400,'bill history rejects bad status')
+ expect(await request('/api/v2/bills?propertyId='+prop+'&page=0',{cookie:alice}),400,'bill history rejects invalid page')
  const replay=expect(await request('/api/v2/bills',{method:'POST',cookie:alice,
     extraHeaders:{'idempotency-key':billKey},body:billBody}),200,'replay same bill key')
  assert.equal(replay.data.id,billId)
@@ -146,6 +173,23 @@ async function main(){
    body:{propertyId:prop,amount:'1500.00',method:'cash'}}),201,'partial bill payment')
  assert.equal(firstPay.data.status,'partial')
  assert.equal(firstPay.data.outstanding,'2850.00')
+ const partial=expect(await request('/api/v2/bills/'+billId+'?propertyId='+prop,{cookie:alice}),200,'partial bill detail')
+ assert.equal(partial.data.bill.status,'partial')
+ assert.equal(partial.data.paid,'1500.00')
+ assert.equal(partial.data.outstanding,'2850.00')
+ const partialSummary=expect(await request('/api/v2/bills/summary?propertyId='+prop,{cookie:alice}),200,'partial bill summary')
+ assert.equal(partialSummary.data.billedTotal,'4350.00')
+ assert.equal(partialSummary.data.paidTotal,'1500.00')
+ assert.equal(partialSummary.data.outstandingTotal,'2850.00')
+ expect(await request(paymentPath,{method:'POST',cookie:alice,
+  extraHeaders:{'idempotency-key':'p57-overpay-'+tag},
+  body:{propertyId:prop,amount:'2850.01',method:'cash'}}),409,'overpayment of one satang denied')
+ expect(await request(paymentPath,{method:'POST',cookie:alice,
+  extraHeaders:{'idempotency-key':'p57-negative-'+tag},
+  body:{propertyId:prop,amount:'-1.00',method:'cash'}}),400,'negative payment denied')
+ expect(await request(paymentPath,{method:'POST',cookie:alice,
+  extraHeaders:{'idempotency-key':'p57-zero-'+tag},
+  body:{propertyId:prop,amount:'0.00',method:'cash'}}),400,'zero payment denied')
  const replayPay=expect(await request(paymentPath,{method:'POST',cookie:alice,extraHeaders:{'idempotency-key':'p26-partial-'+tag},body:{propertyId:prop,amount:'1500.00',method:'cash'}}),200,'payment replay idempotent')
  assert.equal(replayPay.data.paymentId,firstPay.data.paymentId)
  expect(await request(paymentPath,{method:'POST',cookie:alice,extraHeaders:{'idempotency-key':'p26-partial-'+tag},body:{propertyId:prop,amount:'1501.00',method:'cash'}}),409,'payment replay with changed amount rejected')
@@ -166,6 +210,22 @@ async function main(){
  assert.equal(finalBill.data.outstanding,'0.00')
  assert.equal(finalBill.data.paid,'4350.00')
  assert.equal(finalBill.data.payments.length,2)
+ const settledSummary=expect(await request('/api/v2/bills/summary?propertyId='+prop,{cookie:alice}),200,'paid bill summary')
+ assert.equal(settledSummary.data.billCount,1)
+ assert.equal(settledSummary.data.billedTotal,'4350.00')
+ assert.equal(settledSummary.data.paidTotal,'4350.00')
+ assert.equal(settledSummary.data.outstandingTotal,'0.00')
+ const settledOwnerHistory=expect(await request('/api/v2/bills?propertyId='+prop+'&status=paid',{cookie:alice}),200,'paid-only history filter')
+ assert.equal(settledOwnerHistory.data.items.length,1)
+ assert.equal(settledOwnerHistory.data.items[0].id,billId)
+ assert.equal(settledOwnerHistory.data.items[0].outstanding,'0.00')
+ expect(await request(paymentPath,{method:'POST',cookie:alice,
+   extraHeaders:{'idempotency-key':'p57-after-paid-'+tag},
+   body:{propertyId:prop,amount:'0.01',method:'cash'}}),409,'cannot add payment to settled bill')
+ const tenantReceiptData=expect(await request('/api/v2/bills/'+billId+'?propertyId='+prop,{cookie:tenant}),200,'settled tenant receipt data')
+ assert.equal(tenantReceiptData.data.bill.status,'paid')
+ assert.equal(tenantReceiptData.data.outstanding,'0.00')
+ assert.equal(tenantReceiptData.data.payments,undefined,'tenant receipt API must not expose owner payment ledger')
  expect(await request('/api/v2/bills?propertyId='+prop,{cookie:tenant}),200,'tenant bill history')
  expect(await request('/api/v2/bills/'+billId+'?propertyId='+prop,{cookie:tenant}),200,'tenant bill remains readable after settlement')
  expect(await request('/api/v2/checkout',{method:'POST',cookie:alice,body:{propertyId:prop,stayId}}),409,'checkout blocked with active lease')
