@@ -103,3 +103,21 @@ Repository มี migration `001`–`014` ครบตามลำดับไ�
 - ระบุ migration ที่ขาดจากผลเทียบจริง แล้วออกแบบแผน copy, verification, rollback และการรักษา UI/ฟังก์ชันเดิมในงาน P2 ที่ได้รับมอบหมายภายหลัง
 
 P1 รอบนี้ยังไม่ผ่านเกณฑ์ตรวจฐานต้นทางและปลายทางครบ เพราะข้อจำกัดการเข้าถึงข้างต้น ไม่มีการเขียนฐานข้อมูล รัน migration เปลี่ยน environment variable หรือ deploy
+
+---
+
+## P1.1 — Live connector verification (2026-11-23, Asia/Bangkok)
+
+This section supersedes the earlier **BLOCKED** classification specifically for **Neon Production**. The P1 audit above describes a different workspace that lacked database connectors. The new findings below came from the authenticated Neon and Railway connectors using read-only calls; no UI, migrations, runtime configuration or deployment was changed.
+
+**Neon Production identity VERIFIED:** project `late-darkness-78944075`, branch `br-snowy-tree-a1kt7omx` (default, production), database `neondb`, SQL role `neondb_owner`.
+
+**Neon exact COUNT(*) VERIFIED:** 28 base tables in schema `stayhub`, 13 applied migration ledger entries (001–013); migration 014 is not installed on Neon Production. The nonzero table counts are `accounts=1`, `auth_attempts=1`, `invites=1`, `properties=1`, `property_memberships=1`, `sessions=1`, `units=1`, `schema_migrations=13`. Every other table of the 28 (20 tables) has exactly zero rows, including all billing and payment tables. There are **seven business/operational tables with one row each** plus the migration ledger. These counts are live, not `pg_stat` estimates.
+
+**Railway Production service VERIFIED via connector:** project `a8a5a434-4d18-438f-b4ea-ece072094595`, environment `c9c4b13a-9041-4ae6-bd50-2d02b546b053`. App `StayHub` (service `3af8aa8a-2678-47f5-bdf2-aea4fa78c17a`) is online, deployed commit `fedc125761369ad61f874c754ae23ac049266b7a`. Railway database `Postgres-PDqf` (service `5aa5ca84-dc09-4448-8177-860bcab4ea43`) is online with its existing mounted production volume. The production app's current deployment logs state `Production DB environment and identity verified (no credentials disclosed)` and `Neon production migration history verified; no migration executed`. Thus the deployed **pre-deploy migration hook** selected and verified Neon Production. The connector returns runtime variable **names only**, not values, so the actual running app pool's destination is not independently established by this evidence; do not equate deployment-hook evidence with all live API connections.
+
+**Railway Production SQL STILL BLOCKED:** Railway's connected OAuth tooling lists services, variable names, logs and deployments, but does not expose a direct production SQL query/psql action or unredacted connection parameters. Exact Railway table counts, schema/index parity, migration ledger and data equality remain unverified. Previous Railway row-count evidence is historical, not current.
+
+**Migration difference:** repository contains 001–014; Neon Production ledger contains 001–013 (13), while `014_local_sync.sql` is not yet applied there. Railway's ledger remains unknown; do not infer it from app health or CI.
+
+**Decision: P1 PARTIAL / migration cutover BLOCKED** until exact Railway Production inventory and server destination verification can be obtained through an approved, authenticated read-only route. Do not delete/overwrite either database. No data copy, production environment change, migration or deploy occurred in this P1.1 update.
