@@ -1,0 +1,28 @@
+name: StayHub Operational Modules Live Staging E2E
+on:
+  push:
+    branches: ['feat/stayhub-p26-readiness']
+    paths:
+      - 'app/api/v2/operations/**'
+      - 'db/migrations/012_operational_modules.sql'
+      - 'scripts/ops-live-staging-e2e.mjs'
+      - '.github/workflows/operational-live-staging.yml'
+permissions:
+  contents: read
+concurrency:
+  group: stayhub-ops-staging
+  cancel-in-progress: true
+jobs:
+  live-ops:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Run synthetic staging only (guarded by exact URL)
+        run: node scripts/ops-live-staging-e2e.mjs
+        env:
+          CI: 'true'
+          STAYHUB_OPS_TEST_BASE: https://stayhub-fsd-staging.up.railway.app
