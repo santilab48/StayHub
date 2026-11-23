@@ -31,3 +31,25 @@ jobs:
         run: npm run typecheck
       - name: Build
         run: npm run build
+      - name: Exercise frozen HTTP gate on isolated CI server
+        shell: bash
+        run: |
+          STAYHUB_WRITE_FREEZE=YES PORT=3100 npm run start > /tmp/stayhub-freeze-ci.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 30); do
+            if curl --silent --output /dev/null http://127.0.0.1:3100/; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo 'CI HTTP server did not start'
+            exit 1
+          fi
+          for method in GET POST; do
+            status=$(curl -s -o /tmp/freeze-response.json -w '%{http_code}' -X "$method" http://127.0.0.1:3100/api/ci-noop)
+            test "$status" = '503'
+            node -e "const d=require('/tmp/freeze-response.json');if(d.status!=='maintenance')process.exit(1)"
+          done
+          status=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3100/api/health/db/freeze)
+          test "$status" = '404'
