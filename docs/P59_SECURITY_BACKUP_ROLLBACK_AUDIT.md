@@ -45,7 +45,7 @@ Added `tests/p59-backup.test.ts` executed in the ordinary Build/Security workflo
 
 - Tested changes: `30d3f19ce397b7b2f513e57c108d83a10fc9765d` (fix), `f901761b01fd252c3d2809c7cfbed031f39813ba` (test), `f1bacd732ccee206cdcccc9f454e56aa33a87b4b` (CI gate).
 - Build/Security CI `45145599809`: **SUCCESS**, explicitly including `Encrypted P5.9 backup and restore regression`, Type Check and Production Build (no deploy).
-- Isolated PostgreSQL HTTP/Chromium CI `45145599779`: see the run's latest conclusion; all application-level HTTP, two-context sync, receipt PDF and offline PWA job steps passed at time of report creation. This workflow has no Production DB access.
+- Isolated PostgreSQL HTTP/Chromium CI `45145599779`: **SUCCESS**. All application-level HTTP, two-context sync, receipt PDF and offline PWA steps passed. This workflow has no Production DB access.
 - https://github.com/santilab48/StayHub/actions/runs/45145599809
 - https://github.com/santilab48/StayHub/actions/runs/45145599779
 
