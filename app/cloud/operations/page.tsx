@@ -22,6 +22,7 @@ export default function OperationsPage(){
  const [owner,setOwner]=useState(false)
  const [units,setUnits]=useState<Unit[]>([])
  const [items,setItems]=useState<Item[]>([])
+ const [drivers,setDrivers]=useState<Item[]>([])
  const [unitId,setUnitId]=useState('')
  const [fields,setFields]=useState<Record<string,string>>({})
  const [pinned,setPinned]=useState(false)
@@ -54,6 +55,10 @@ export default function OperationsPage(){
  },[])
  useEffect(()=>{let active=true;setItems([]);setError('')
   void load(propertyId,kind).catch(e=>{if(active)setError(e instanceof Error?e.message:'โหลดรายการไม่สำเร็จ')})
+  if(kind==='rides'&&propertyId){
+   void api<{items:Item[]}>('/api/v2/operations?kind=drivers&propertyId='+encodeURIComponent(propertyId))
+    .then(r=>{if(active)setDrivers(r.items)}).catch(e=>{if(active)setError(e instanceof Error?e.message:'โหลดคนขับไม่สำเร็จ')})
+  }
   return()=>{active=false}
  },[propertyId,kind,load])
  useEffect(()=>{let active=true
@@ -114,7 +119,7 @@ export default function OperationsPage(){
   {error&&<p role="alert" className="card section" style={{color:'crimson'}}>{error}</p>}
   {notice&&<p role="status" className="card section">{notice}</p>}
   {propertyId&&<><section className="card section"><h2>{labels[kind]}</h2>
-   {(owner||['vehicles','rides'].includes(kind))&&<form onSubmit={e=>void submit(e)} className="list">
+   {(owner&&kind!=='rides'||!owner&&['vehicles','rides'].includes(kind))&&<form onSubmit={e=>void submit(e)} className="list">
     {['announcements','parcels','vehicles','rides','documents'].includes(kind)&&selector}
     {kind==='announcements'&&<>{input('title','หัวข้อ')}<label>รายละเอียด<textarea required maxLength={4000} value={fields.body||''} onChange={e=>update('body',e.target.value)}/></label>
      <label><input type="checkbox" checked={pinned} onChange={e=>setPinned(e.target.checked)}/> ปักหมุด</label></>}
@@ -122,7 +127,7 @@ export default function OperationsPage(){
     {kind==='vehicles'&&<>{input('plate','ทะเบียนรถ')}{input('vehicleType','ประเภทรถ')}</>}
     {kind==='drivers'&&<>{input('name','ชื่อคนขับ')}{input('phone','เบอร์โทร')}{input('vehicleType','ประเภทรถ')}</>}
     {kind==='rides'&&<><label>คนขับ (ไม่เลือกได้)<select value={fields.driverId||''} onChange={e=>update('driverId',e.target.value)}>
-     <option value="">เลือกทีหลัง</option>{items.filter(i=>i.active).map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label>
+     <option value="">เลือกทีหลัง</option>{drivers.filter(i=>i.active).map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label>
      {input('note','รายละเอียดการเดินทาง',false)}</>}
     {kind==='documents'&&<>{input('title','หัวข้อเอกสาร')}<label>ข้อความที่ผู้พักเห็น<textarea maxLength={4000} value={fields.description||''} onChange={e=>update('description',e.target.value)}/></label>
      <p className="muted">รองรับข้อความเท่านั้น ไม่รับอัปโหลดเอกสารส่วนบุคคลก่อนมี Storage ที่ตรวจสิทธิ์ครบ</p></>}

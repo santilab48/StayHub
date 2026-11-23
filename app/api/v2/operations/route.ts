@@ -12,9 +12,9 @@ async function getAccess(accountId:string,propertyId:string):Promise<Access|null
  JOIN stayhub.properties p ON p.id=m.property_id WHERE m.property_id=$1 AND m.account_id=$2
  AND p.status<>'suspended'`,[propertyId,accountId])
  const owner=a.rows.some(r=>r.role==='owner'||r.role==='admin')
- const stays=await postgresQuery<{unit_id:string}>(`SELECT unit_id FROM stayhub.stays
- WHERE property_id=$1 AND account_id=$2 AND starts_at<=now()
- AND (ends_at IS NULL OR ends_at>now())`,[propertyId,accountId])
+ const stays=await postgresQuery<{unit_id:string}>(`SELECT unit_id FROM stayhub.stays st JOIN stayhub.properties p ON p.id=st.property_id AND p.status<>'suspended'
+ WHERE st.property_id=$1 AND st.account_id=$2 AND st.starts_at<=now()
+ AND (st.ends_at IS NULL OR st.ends_at>now())`,[propertyId,accountId])
  const units=stays.rows.map(r=>r.unit_id)
  return owner||units.length?{owner,units}:null
 }
@@ -143,8 +143,11 @@ export async function POST(req:NextRequest){
     [propertyId,b.driverId||null,b.unitId,account.id,b.note||''])
   }else if(action==='ride-status'){
    if(!uuid(b.id)||!['accepted','on_the_way','arrived','completed','cancelled'].includes(String(b.status)))return send({error:'Invalid status'},400)
-   const r=await postgresQuery('UPDATE stayhub.ride_requests SET status=$3,updated_at=now() WHERE property_id=$1 AND id=$2 AND status<>\'completed\' RETURNING id',
-    [propertyId,b.id,b.status])
+   const from:Record<string,string>={accepted:'requested',on_the_way:'accepted',arrived:'on_the_way',completed:'arrived'}
+   const allowedPrevious=b.status==='cancelled'?'requested':from[b.status as string]
+   if(!allowedPrevious)return send({error:'Invalid transition'},409)
+   const r=await postgresQuery('UPDATE stayhub.ride_requests SET status=$3,updated_at=now() WHERE property_id=$1 AND id=$2 AND status=$4 RETURNING id',
+    [propertyId,b.id,b.status,allowedPrevious])
    if(!r.rowCount)return send({error:'Not found'},404)
   }else if(action==='document-add'){
    if(!uuid(b.unitId)||!await unitAllowed(propertyId,b.unitId,access)||!string(b.title,1,160)||!string(b.description||'',0,4000))
