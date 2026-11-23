@@ -19,7 +19,9 @@ export async function GET() {
     const client = await getPostgresPool().connect()
     try {
       await client.query('BEGIN READ ONLY')
-      const state = await client.query<{ read_only: string }>('SHOW transaction_read_only')
+      const state = await client.query<{ read_only: string }>(
+        "SELECT current_setting('transaction_read_only') AS read_only",
+      )
       await client.query('COMMIT')
       const readOnly = state.rows[0]?.read_only === 'on'
       return NextResponse.json(
