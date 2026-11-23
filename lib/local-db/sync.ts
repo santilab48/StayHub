@@ -71,8 +71,19 @@ export async function resolveSyncConflict(propertyId: string, operationId: strin
     const store = tx.objectStore('sync_queue')
     const operation: SyncOperation | undefined = await requestValue(store.get(operationId))
     if (!operation || operation.propertyId !== propertyId || operation.status !== 'conflict') throw new Error('Conflict not found')
+    const previousOperationId = operation.operationId
     if (choice === 'keep_local') {
-      operation.error = 'ข้อมูลในเครื่องยังอยู่ กรุณาตรวจ revision ของ Server ก่อนส่งอีกครั้ง'
+      const remoteRevision = (operation.serverRecord as { revision?: unknown } | null)?.revision
+      if (!Number.isSafeInteger(remoteRevision) || (remoteRevision as number) < 0)
+        throw new Error('Server revision is unavailable; local data has not been changed')
+      // A new operation ID is required: the server binds each ID to a request hash.
+      // Keep the local value intact, and retry against the exact server revision.
+      operation.operationId = crypto.randomUUID()
+      operation.baseRevision = remoteRevision as number
+      operation.attemptCount = 0
+      operation.status = 'pending'
+      operation.nextAttemptAt = undefined
+      operation.error = undefined
     } else if (choice === 'cancel') {
       operation.status = 'failed'
       operation.attemptCount = 5
@@ -86,6 +97,7 @@ export async function resolveSyncConflict(propertyId: string, operationId: strin
       operation.status = 'synced'
       operation.error = undefined
     }
+    if (operation.operationId !== previousOperationId) await requestValue(store.delete(previousOperationId))
     await requestValue(store.put(operation))
   })
 }
