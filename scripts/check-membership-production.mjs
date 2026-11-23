@@ -39,7 +39,7 @@ try{
       has_table_privilege(current_user,'stayhub_membership.memberships','SELECT') AS can_read_members,
       has_table_privilege(current_user,'stayhub_membership.plans','SELECT') AS can_read_plans,
       has_table_privilege(current_user,'stayhub_membership.memberships','INSERT') AS can_insert_members,
-      has_schema_privilege(current_user,'stayhub','USAGE') AS can_use_operational_schema`)
+      CASE WHEN to_regnamespace('stayhub') IS NULL THEN false ELSE has_schema_privilege(current_user,'stayhub','USAGE') END AS can_use_operational_schema`)
     const r=identity.rows[0]
     if(r.db!==(inCi?'stayhub_membership_ci':'neondb')||
        (!inCi&&r.role!=='stayhub_membership_reader')||
