@@ -20,3 +20,17 @@ For staging, the CLI now checks that the dedicated `stayhub_identity_reader` has
 Previous P6.4 evidence in `docs/P64_PLATFORM_ADMIN_DUAL_APPROVAL.md` identifies Neon Staging project `late-darkness-78944075`, branch `br-fancy-sky-a1n96vul`, database `neondb`, with migration 003 installed and zero audit events then. This environment has no Neon/Railway credentials or management connector, so the **current** Staging identity, role grants, schema, and database separation could not be independently queried in P6.5. Migration 004 was **not** applied to Staging. No staging grant/revoke was attempted.
 
 Before staging acceptance, independently verify project/branch/database and Railway staging environment, inspect existing migration history, install only missing migration 004, verify the narrow Railway reader role and Neon writer role, and approve two real human operators whose protected keys are bound to the configured Railway account UUIDs. A UUID and signature verify technical identity; they do not by themselves establish that two different humans controlled the keys. Run an authorized staging grant/revoke, check both audit events and revocation, then recheck reader isolation. No Production data, account rights, database, variables, or deployment were changed. No real admin was created. P6.6 was not started.
+
+
+## Addendum — Verified Neon Staging migration 004
+
+The original P6.5 report correctly documented that Staging was unavailable in that earlier isolated environment. **A later connected verification has now resolved that specific schema blocker.**
+
+- Connected Neon project `late-darkness-78944075`, branch `br-fancy-sky-a1n96vul`, database `neondb`.
+- Before migration, `platform_admin_events` existed with eight columns and **0 audit rows**; `platform_admins` contained **0 admins**.
+- Reviewed the exact `neon/membership/004_platform_admin_approvers.sql` from remote branch and applied the three intended statements **transactionally on Neon Staging only**: nullable approver UUID columns, approver validation function, idempotent BEFORE INSERT trigger.
+- Post-migration verified columns `approver_a_railway_account_id` and `approver_b_railway_account_id`, and triggers `platform_admin_events_approvers` (BEFORE INSERT) and `platform_admin_events_immutable` (BEFORE UPDATE/DELETE).
+- Verified Neon `stayhub_membership_reader` can SELECT the audit relation. Membership platform admin and audit row counts remain **0 / 0**.
+- No staging grant/revoke was performed, no real approval keys or admins were created, and nothing was changed on Neon or Railway Production.
+
+**P6.5 Neon Staging schema gate: PASSED.** The separate Railway Staging `stayhub_identity_reader` least-privilege role and real authorized two-person operator acceptance remain **UNVERIFIED**, so this report does not declare the whole P6.5 production-release process complete.
