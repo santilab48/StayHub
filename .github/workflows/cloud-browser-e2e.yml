@@ -1,0 +1,41 @@
+name: StayHub Cloud Browser Click E2E
+on:
+  push:
+    branches: ['feat/stayhub-p26-readiness']
+    paths:
+      - 'app/cloud/**'
+      - 'app/t/[tenantSlug]/admin/**'
+      - 'components/AdminShell.tsx'
+      - 'scripts/cloud-browser-e2e.mjs'
+      - '.github/workflows/cloud-browser-e2e.yml'
+permissions:
+  contents: read
+jobs:
+  browser-clicks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      STAYHUB_BROWSER_E2E: 'YES'
+      NEXT_PUBLIC_SUPABASE_URL: https://build-only.invalid
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: build-only-placeholder
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install --no-audit --no-fund
+      - run: npm install --no-save --no-audit --no-fund playwright@1.55.0
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Start isolated Next app
+        run: |
+          npm start >/tmp/stayhub-ui.log 2>&1 &
+          for i in {1..40}; do
+            if curl --silent --fail http://127.0.0.1:3000/cloud/rooms >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/stayhub-ui.log
+          exit 1
+      - run: node scripts/cloud-browser-e2e.mjs
