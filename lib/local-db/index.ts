@@ -72,6 +72,7 @@ export interface LocalTransaction {
   get: <S extends ReadStore>(store: S, id: string) => Promise<LocalRecord<S> | undefined>
   put: <S extends Store>(store: S, input: RecordInput<S>, options?: WriteOptions) => Promise<LocalRecord<S>>
   delete: (store: Store, id: string, expectedRevision: number) => Promise<void>
+  list: <S extends ReadStore>(store: S) => Promise<LocalRecord<S>[]>
 }
 
 const stores = Object.keys(searchFields) as ReadStore[]
@@ -185,6 +186,7 @@ export function runLocalTransaction<T>(propertyId: string, work: (tx: LocalTrans
         get: (store, id) => enqueue(() => read(store, id)),
         put: (store, input, options) => enqueue(() => put(store, input, options)),
         delete: (store, id, revision) => enqueue(() => remove(store, id, revision)),
+        list: store => enqueue(() => requestValue(tx.objectStore(store).index('propertyId').getAll(propertyId))),
       })
       acceptingRequests = false
       await pending
