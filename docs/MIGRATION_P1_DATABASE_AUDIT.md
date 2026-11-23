@@ -139,3 +139,38 @@ A direct Railway SSH session to production service `Postgres-PDqf` established a
 **Railway live row counts and live schema inventory remain BLOCKED.** The bulk row-count SQL provided to the operator failed with a syntax error near `[1]` (invalid array subscript syntax on the provided expression), aborting its read-only transaction. The later column/index/constraint query was not executed because that transaction was already aborted. The operator issued `ROLLBACK`, successfully ending the failed transaction. No data changes were made, and no row-count result may be inferred from this failure. Historical Railway empty-table evidence is not a current count.
 
 The SSH session was executed by the operator, not via this assistant's Railway connector. Database connection is proved by the operator's captured terminal output; application runtime `DATABASE_URL` remains unreadable through OAuth-linked variables, and the deployment-hook logs separately indicate Neon Production use. **P1 status remains PARTIAL / Cutover BLOCKED**, pending Railway exact counts/schema comparison and safe migration/data-transfer planning. No UI or backend files were modified in this P1.3 documentation update.
+
+## P1.4 — Railway exact per-table counts verified (2026-11-23)
+
+The operator used authenticated Railway SSH to the Production PostgreSQL service and executed an exact `COUNT(*)` per `stayhub` table via `psql`'s `\\gexec` facility. This is fresh, real Production data, not an estimate.
+
+Railway Production has exactly **20 StayHub tables**, **11 recorded migrations** (001–011), and **zero business rows in all 19 business tables**:
+
+| Table | Exact Railway Production COUNT(*) |
+|---|---:|
+| accounts | 0 |
+| auth_attempts | 0 |
+| billing_bill_items | 0 |
+| billing_bills | 0 |
+| billing_meter_readings | 0 |
+| billing_payments | 0 |
+| housekeeping_tasks | 0 |
+| invites | 0 |
+| join_requests | 0 |
+| leases | 0 |
+| notifications | 0 |
+| properties | 0 |
+| property_memberships | 0 |
+| reservations | 0 |
+| schema_migrations | 11 |
+| sessions | 0 |
+| stay_events | 0 |
+| stays | 0 |
+| unit_blocks | 0 |
+| units | 0 |
+
+Compare to the authenticated, directly queried Neon Production: 28 tables, 13 migration records (001–013), seven non-migration tables containing a single row each: `accounts`, `auth_attempts`, `invites`, `properties`, `property_memberships`, `sessions`, `units`. Neon has no billing bill or payment rows.
+
+**P1.4 conclusion:** Railway is demonstrably empty of business rows, while Neon is not; Production cutover without verified migration of those seven tables would lose user/account/property/unit continuity. Railway needs the reviewed 012–013 schema steps before transferring related operational data; migration 014 remains staging-only by its SQL comment and current API gating, so do not automatically apply it to Production. Exact cross-database indexes/constraints/columns and application runtime target remain unverified. P2 requires backup/restore verification and an ordered migration plan; P1 is now substantially more complete, but **full schema parity and Production runtime provider remain BLOCKED**.
+
+This update only documents observed evidence. No UI/UX, logic, schema, database data, environment variables or deployment was changed.
