@@ -33,6 +33,10 @@ jobs:
         run: npm run test:migration
       - name: Identity and QR property isolation contract check
         run: npm run test:id-binding
+      - name: Railway Local-First sync contract
+        run: node scripts/test-local-sync-contract.mjs
+      - name: IndexedDB sync queue and conflict tests
+        run: npx tsx --test tests/p2b-sync.test.ts
       - name: Static P1 audit
         run: npm run audit:p1
       - name: Type check
