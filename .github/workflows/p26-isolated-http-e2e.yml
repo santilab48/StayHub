@@ -8,6 +8,16 @@ on:
       - 'lib/**'
       - 'db/migrations/**'
       - 'scripts/p26-*.mjs'
+      - 'tests/p2b-sync.test.ts'
+      - '.github/workflows/p26-isolated-http-e2e.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'lib/**'
+      - 'db/migrations/**'
+      - 'scripts/p26-*.mjs'
+      - 'tests/p2b-sync.test.ts'
       - '.github/workflows/p26-isolated-http-e2e.yml'
   workflow_dispatch:
 
