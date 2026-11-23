@@ -82,12 +82,13 @@ test('pull: import remote room, keep pending local edits and refresh acknowledge
   const { listLocalRecords } = await import('../lib/local-db')
   const local = await createDeviceWorkspace('Device B', 'Shared property')
   const remoteId = crypto.randomUUID()
-  const first = await pullServerUnits(local.id, crypto.randomUUID(), async () => ({
+  const remoteProperty = crypto.randomUUID()
+  const first = await pullServerUnits(local.id, remoteProperty, async () => ({
     units: [{ id: remoteId, name: 'Room 101', revision: 1 }], nextCursor: null,
   }))
   assert.deepEqual(first, { imported: 1, updated: 0, protected: 0 })
   assert.equal((await getLocalRecord('units', local.id, remoteId))?.name, 'Room 101')
-  const fresh = await mergeServerUnits(local.id, [{ id: remoteId, name: 'Room 101 changed', revision: 2 }])
+  const fresh = await mergeServerUnits(local.id, remoteProperty, [{ id: remoteId, name: 'Room 101 changed', revision: 2 }])
   assert.equal(fresh.protected, 1, 'untracked local records are never overwritten')
   assert.equal((await getLocalRecord('units', local.id, remoteId))?.name, 'Room 101')
   const changed = await saveRoom(local.id, 'Offline edit', (await getLocalRecord('units', local.id, remoteId))!)
@@ -102,6 +103,10 @@ test('pull: import remote room, keep pending local edits and refresh acknowledge
   assert.equal(ack.updated, 1)
   assert.equal((await getLocalRecord('units', local.id, remoteId))?.name, 'Updated elsewhere')
   assert.equal((await listLocalRecords('units', local.id)).records.length, 1)
+  // Repeated remote updates work for rooms that were pulled, not only ones pushed.
+  const newest = await mergeServerUnits(local.id, remoteProperty, [{ id: remoteId, name: 'Another change', revision: 4 }])
+  assert.equal(newest.updated, 1)
+  assert.equal((await getLocalRecord('units',local.id,remoteId))?.name,'Another change')
 })
 
 test('pull: pagination, invalid page and cross-workspace ID never corrupt data', async () => {
@@ -119,12 +124,12 @@ test('pull: pagination, invalid page and cross-workspace ID never corrupt data',
   assert.equal(result.imported, 2)
   assert.deepEqual(cursors, [undefined, remoteA])
   await assert.rejects(
-    mergeServerUnits(a.id, [{ id: roomB.id, name: 'Other property', revision: 2 }]),
+    mergeServerUnits(a.id, crypto.randomUUID(), [{ id: roomB.id, name: 'Other property', revision: 2 }]),
     /another workspace/,
   )
   assert.equal((await getLocalRecord('units', b.id, roomB.id))?.name, 'B Private')
   await assert.rejects(
-    mergeServerUnits(a.id, [{ id: crypto.randomUUID(), name: '', revision: 1 }]),
+    mergeServerUnits(a.id, crypto.randomUUID(), [{ id: crypto.randomUUID(), name: '', revision: 1 }]),
     /Invalid remote unit/,
   )
   await assert.rejects(
