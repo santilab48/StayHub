@@ -33,6 +33,7 @@ function response(path,method,body,headers){
  if(path==='/api/v2/bills')return {items:[{id:'00000000-0000-4000-8000-000000000005',property_id:P,unit_name:'A101',period:'2026-11-01',total:'4000.00',paid:'0.00',outstanding:'4000.00',status:'unpaid'}],hasMore:false}
  if(path==='/api/v2/bills/summary')return {billCount:1,billedTotal:'4000.00',paidTotal:'0.00',outstandingTotal:'4000.00',unpaidCount:1}
  if(path==='/api/v2/operations')return {owner:true,items:[]}
+ if(path==='/api/v2/repairs')return {owner:true,items:[{id:'00000000-0000-4000-8000-000000000009',unit_name:'A101',title:'Leaking Tap',detail:'Staging mock',status:'submitted',appointment_at:null,appointment_reply:null,created_at:'2026-11-01'}]}
  return {items:[]}
 }
 const browser=await chromium.launch({headless:true})
@@ -71,6 +72,12 @@ try{
  await page.getByRole('status').getByText('บันทึกสำเร็จ').waitFor()
  assert.ok(state.writes.some(x=>x.path==='/api/v2/operations'&&x.body.action==='announcement-add'&&x.body.propertyId===P))
  console.log('PASS browser: save announcement')
+
+ await page.goto(BASE+'/cloud/repairs')
+ await page.getByRole('button',{name:'รับงาน'}).click()
+ await page.getByRole('status').getByText('บันทึกสำเร็จ').waitFor()
+ assert.ok(state.writes.some(x=>x.path==='/api/v2/repairs'&&x.body.action==='transition'&&x.body.status==='accepted'))
+ console.log('PASS browser: accept repair')
 
  await page.goto(BASE+'/cloud/reports')
  await page.getByRole('button',{name:'ส่งออก CSV'}).waitFor()
