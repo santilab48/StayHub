@@ -51,3 +51,31 @@ The isolated HTTP test verified anonymous denial, account-scoped property lists,
 ## Changes and next gate
 
 No product code, UI/UX, variables, CI, database provider, Production data or deployment was changed. No bug was found in the isolated tests, so no regression fix was added. A future authorized Production read-only check must confirm the current deployment, app/database Online status, `/api/health/db`, migration ledger and provider target. A Production write E2E requires an explicitly authorized dedicated account/property and must remain separate from real customer data.
+
+---
+
+## P5.5 live Railway management verification (2026-11-23 follow-up)
+
+**Updated status: PARTIAL — Production platform verified Online; no Production write E2E performed.** The earlier `BLOCKED` table above represents a prior execution environment where direct Railway management access was unavailable. It does not indicate that the platform is currently down.
+
+### Current direct Railway evidence
+
+Authorized Railway management connector (no public proxy required) returned:
+
+- Project `a8a5a434-4d18-438f-b4ea-ece072094595`, environment `c9c4b13a-9041-4ae6-bd50-2d02b546b053`, Production app `3af8aa8a-2678-47f5-bdf2-aea4fa78c17a`.
+- App `StayHub`: **Online**, active deployment `173c27ab-cd5a-4e04-a611-a6c8c1cf42f5` **SUCCESS**, replicas 1/1 running, zero crashed, zero critical issues and zero warnings.
+- Existing DB service `Postgres-PDqf`: **Online**, replicas 1/1 running, zero critical issues and zero warnings, existing volume preserved.
+- Railway source configuration: `santilab48/StayHub`, `feat/stayhub-p26-readiness`, pinned `d163b4d167f8686e8015c8797d5eb0bdcc635c17`. The deployment's reported metadata SHA is `dd097dfb91f99545c477290094b8e6a97646e002`, the subsequent documentation-only P5.4 report commit. These two metadata fields differ; do not treat them as the same SHA.
+- Deployment configuration: predeploy `node scripts/migrate-production.mjs`; healthcheck `/api/health/db`. The successful deployment **logs** show `Production DB environment and identity verified (no credentials disclosed)`, `SKIP 001–014`, Next.js ready, and `[1/1] Healthcheck succeeded!`.
+- Railway variable metadata includes `DATABASE_URL`, `STAYHUB_DB_PROVIDER`, `STAYHUB_LOCAL_SYNC_ENABLED`, `STAYHUB_DATABASE_ROLE`, `STAYHUB_WRITE_FREEZE` and other expected keys. **Variable values are redacted** by OAuth; a plaintext connection string or provider value was not independently read. Existing deployment's guarded DB identity/migration checks passed, which supports the release's database readiness but is not the same as a new direct ledger query.
+
+### Verification boundary
+
+- **Verified now:** Railway Production App and PostgreSQL Online, active deployment SUCCESS, operational replica counts/issues, configured production source and healthcheck settings; historical release logs demonstrate 14 migration checks and healthcheck success on the active image.
+- **Not verified now:** separate direct Production HTTPS request to `/api/health/db` or authenticated Sync endpoints (network proxy still blocks this execution path), live independent SQL read of migration ledger and variable values, or authorized Production two-device write E2E.
+- **Already proven on isolated Postgres:** 14/14 migrations, HTTP auth/ownership/room sync/Conflict checks, and Chromium two-context push-pull/offline-rebase/persistence.
+- No production writes, data changes, redeploys, variable edits or PR merges occurred in this P5.5 follow-up.
+
+### Result and next step
+
+P5.5 is **PARTIAL** only because a dedicated authorized Production test account/property and real authenticated Production HTTP/Browser E2E have not been exercised. The earlier reason “cannot read Railway Production status” is now resolved. Continue with safe read-only production validation and a strictly scoped, explicitly authorized test-property smoke if those credentials/context are supplied; do not create customer-facing test records or use existing customer properties casually. Rollback reference: `dfcdc09f-7f9c-43ad-a77d-1a6f7d701493` at `366bbbd4` (Railway lists the old deployment as removed after the successful replacement; previous source commit remains known).
