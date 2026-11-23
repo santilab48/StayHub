@@ -46,3 +46,35 @@ A complete real deployment has these remaining gates:
 Existing Railway Production app and PostgreSQL remain on the last successful deployment `173c27ab-cd5a-4e04-a611-a6c8c1cf42f5` until separately approved promotion. P5.10's missing verified **Production DB backup/restore** and **Production Write E2E** remain open; they were not solved by this membership code.
 
 Do not delete Neon, Railway Postgres, old schemas, or Draft PR #2; do not force-push or merge without approval.
+
+---
+
+## Live deployment addendum — verified 2026-11-23
+
+This addendum supersedes the earlier *not deployed* preflight status above.
+
+**GitHub tested code:** `b57fe3da3ee1cd3de1e977ff7b0e85b5382953c7`, `feat/stayhub-p26-readiness`. Build/Security GitHub Actions succeeded; isolated HTTP and two-PostgreSQL membership E2E passed on rerun for tested application code. Previously established room sync, billing/PDF, offline/PWA and isolated PostgreSQL restore regression passed again.
+
+### Neon verified and migrated
+
+- Connected Neon project: `late-darkness-78944075` (`stayhub-db`), database `neondb`.
+- Staging branch `br-fancy-sky-a1n96vul` and Production branch `br-snowy-tree-a1kt7omx`: ran exactly 12 additive SQL statements from `neon/membership/001_membership.sql` transactionally on each, without dropping/changing any `stayhub` operational tables. Five new tables exist in `stayhub_membership`: `plans`, `entitlements`, `plan_entitlements`, `memberships`, `membership_events`.
+- Before Neon Production migration, created recovery snapshot `snap-rough-firefly-a1w6x02f` (`stayhub-pre-membership-20261123`), expires **2026-12-07 UTC**.
+- Created `stayhub_membership_reader` on each Neon branch, **read_only**, scoped exclusively to `neondb.stayhub_membership`. Authorized SELECT against `stayhub_membership.memberships` passed and SELECT against old operational `stayhub.properties` was denied with SQLSTATE `42501` on both branches.
+- Production new membership tables contain **0 plans and 0 member rows** initially, intentionally. The old Neon `stayhub.accounts` table still has **1 record** and was not touched or assumed identical to a Railway login. There is no automatic paid grant or migration of old identities without a verified mapping.
+
+### Railway deployed successfully
+
+- Staging existing StayHub service `9274006f-7d9d-4ac1-bb3e-bc2b9e03b738`: deployed `d2aa8818-3cd6-4def-9ae6-924b5a844184`, **SUCCESS** with `STAYHUB_MEMBERSHIP_DATABASE_URL` and `STAYHUB_MEMBERSHIP_NEON_HOST` pointing to Neon Staging using the least-privileged read-only role.
+- Production existing StayHub app service `3af8aa8a-2678-47f5-bdf2-aea4fa78c17a`: staged one non-destructive source update pinned to **`b57fe3da3ee1cd3de1e977ff7b0e85b5382953c7`** and added the two Neon Production membership connection variables (secrets never emitted), then deployed **`7bc21577-726f-43e2-9ea3-748996a6ace3` — SUCCESS**.
+- Railway Production App and PostgreSQL `Postgres-PDqf`: both **Online, 1/1 replicas, zero warnings and zero critical issues** after rollout. Production Next.js compiled, all existing Local-First build-gate tests passed 12/12, guarded production database predeploy verified identity and **SKIP 001–014** (already installed), and Railway healthcheck returned `[1/1] Healthcheck succeeded!`.
+- Existing Railway operational `DATABASE_URL`, DB provider, PostgreSQL volume, room/bill/payment schema, UI/UX and Draft PR #2 were not modified by the membership deployment.
+- Previous app deployment `173c27ab-cd5a-4e04-a611-a6c8c1cf42f5` (old source pin `d163b4d`) is the release rollback reference; Neon pre-migration snapshot provides a separate rollback reference for the additive membership-schema change.
+
+### Verified scope and remaining business configuration
+
+**Operationally complete:** split-data schema and isolated read-only connection; authenticated membership API deployed to Railway; production app/DB healthy and test-proved membership identity/expiry/status behavior on isolated two-database CI; Neon read-only role restricted on both real branches.
+
+**Not yet configured:** actual subscription catalog/prices, verified historical Neon-account-to-Railway-account mapping, specific subscriber entitlements, and public Platform Super Admin management UI. No customer memberships were copied and no premium status is silently granted. Authorized authenticated Production HTTP membership read-through has not been exercised with a dedicated real test account; Railway's healthcheck only proves the primary Railway database, while independent Neon role SELECT checks prove Neon-side connectivity/permissions. Existing PostgreSQL production-backup/restore and end-to-end Production room-write gates from P5.10 remain separate.
+
+**Security rule:** the operator-only provisioning script uses a separate admin database secret and explicit approval; Railway application has only read-only Neon credentials. Never place the admin secret in public frontend variables.
