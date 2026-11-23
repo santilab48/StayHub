@@ -34,3 +34,18 @@ The original P6.5 report correctly documented that Staging was unavailable in th
 - No staging grant/revoke was performed, no real approval keys or admins were created, and nothing was changed on Neon or Railway Production.
 
 **P6.5 Neon Staging schema gate: PASSED.** The separate Railway Staging `stayhub_identity_reader` least-privilege role and real authorized two-person operator acceptance remain **UNVERIFIED**, so this report does not declare the whole P6.5 production-release process complete.
+
+
+## Addendum — Railway Staging live role verification (2026-11-23)
+
+A separate staging-only read-only diagnostic has now checked the actual Railway Staging PostgreSQL:
+
+- Diagnostic script: `scripts/p65-railway-identity-reader-check.mjs`, locked to StayHub Railway project `a8a5a434-4d18-438f-b4ea-ece072094595`, Staging environment `ced39691-4fe7-4707-bba7-6d0e801f1ff8` and database `railway`.
+- The script only runs `BEGIN READ ONLY` and catalog/privilege queries; it never creates users, changes grants or prints connection secrets.
+- **Observed actual Staging deployment log: `BLOCKED P6.5: stayhub_identity_reader does not exist on Railway Staging`.** Two diagnostic deploy attempts refused in predeploy, with no database changes.
+- The temporary diagnostic predeploy setting was then removed, returning it to `[]`. New Staging app deployment `37a75665-581a-43d4-9655-5e8ca6cf08e9` reached **SUCCESS**. No staged Railway changes remain.
+- The dedicated least-privilege Railway identity reader must be provisioned with a securely managed credential and column-level `SELECT` on `stayhub.accounts.id` only (not emails or business data), then rerun this exact preflight. A Railway application admin DB connection should never be substituted as the operator identity reader.
+- Separately, two negative INSERT tests against real Neon **Staging** `platform_admin_events` were rejected by `validate_platform_admin_event_approvers()` (SQLSTATE `P0001`): duplicate approver IDs and target=self-approver. No audit row was inserted.
+- No Production database or app was modified. No real Admin identity, approver signing keys or account privileges were created.
+
+**Updated P6.5 verdict:** Neon Staging migration and trigger validations PASS; Railway Staging `stayhub_identity_reader` is **confirmed missing**, so the end-to-end authorized two-person operator acceptance remains BLOCKED. This is a confirmed missing prerequisite, not merely a connectivity uncertainty. P6.6 was not started.
