@@ -12,6 +12,8 @@ on:
       - 'scripts/p57-receipt-browser-e2e.mjs'
       - 'scripts/p58-offline-pwa-e2e.mjs'
       - 'scripts/p59-ci-postgres-restore.sh'
+      - 'scripts/p60-membership-http-e2e.mjs'
+      - 'neon/membership/**'
       - 'tests/p2b-sync.test.ts'
       - '.github/workflows/p26-isolated-http-e2e.yml'
   pull_request:
@@ -25,6 +27,8 @@ on:
       - 'scripts/p57-receipt-browser-e2e.mjs'
       - 'scripts/p58-offline-pwa-e2e.mjs'
       - 'scripts/p59-ci-postgres-restore.sh'
+      - 'scripts/p60-membership-http-e2e.mjs'
+      - 'neon/membership/**'
       - 'tests/p2b-sync.test.ts'
       - '.github/workflows/p26-isolated-http-e2e.yml'
   workflow_dispatch:
@@ -61,6 +65,7 @@ jobs:
       STAYHUB_ENABLE_TEST_SIGNUP: '1'
       STAYHUB_LOCAL_SYNC_TEST: '1'
       P26_E2E_BASE: http://127.0.0.1:3000
+      STAYHUB_MEMBERSHIP_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/stayhub_membership_ci
       NEXT_PUBLIC_SUPABASE_URL: https://build-only.invalid
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: build-only-placeholder
       NEXT_TELEMETRY_DISABLED: '1'
@@ -72,6 +77,10 @@ jobs:
       - run: npm install --no-audit --no-fund
       - name: Apply all migrations to isolated local CI database only
         run: node scripts/p26-ci-migrate.mjs
+      - name: Create separate membership PostgreSQL test database (Neon stand-in)
+        run: |
+          PGPASSWORD=postgres createdb -h 127.0.0.1 -U postgres stayhub_membership_ci
+          PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 -d stayhub_membership_ci -f neon/membership/001_membership.sql
       - name: Boot localhost Next.js with disposable CI Postgres only
         shell: bash
         run: |
@@ -85,6 +94,8 @@ jobs:
           exit 1
       - name: Test registration, session, QR and authorization over HTTP
         run: node scripts/p26-http-e2e.mjs
+      - name: Test separate Neon membership integration and scoped entitlements
+        run: node scripts/p60-membership-http-e2e.mjs
       - name: Install Chromium for isolated browser E2E
         run: |
           npm install --no-save playwright
