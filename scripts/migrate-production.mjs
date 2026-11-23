@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Apply only reviewed sequential SQL files to a dedicated Railway production DB.
- * Run only as a controlled production pre-deploy step with the dedicated production DATABASE_URL.
+ * Run only as a controlled production pre-deploy step; preserve Railway DATABASE_URL for rollback.
  *
  * Requires RAILWAY_ENVIRONMENT_NAME=production,
  * RAILWAY_PROJECT_ID=<expected StayHub project id> and DATABASE_URL.
@@ -26,9 +26,11 @@ if(env.RAILWAY_ENVIRONMENT_ID !== EXPECTED_ENVIRONMENT) {
 if(env.RAILWAY_PROJECT_ID !== EXPECTED_PROJECT) {
   throw new Error('REFUSED: incorrect Railway project id')
 }
-if (!env.DATABASE_URL) throw new Error('REFUSED: DATABASE_URL is missing')
 const neonProduction = env.STAYHUB_DB_PROVIDER === 'neon-production'
-let connectionString = env.DATABASE_URL
+if (!env.DATABASE_URL) throw new Error('REFUSED: Railway rollback DATABASE_URL is missing')
+if (neonProduction && !env.STAYHUB_NEON_PRODUCTION_URL)
+  throw new Error('REFUSED: STAYHUB_NEON_PRODUCTION_URL is missing')
+let connectionString = neonProduction ? env.STAYHUB_NEON_PRODUCTION_URL : env.DATABASE_URL
 if (neonProduction) {
   const url = new URL(connectionString)
   if (!env.STAYHUB_NEON_PRODUCTION_HOST ||
