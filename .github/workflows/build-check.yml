@@ -37,6 +37,8 @@ jobs:
         run: node scripts/test-local-sync-contract.mjs
       - name: IndexedDB v3 persistence, migration and sync tests
         run: npx tsx --test tests/local-db.test.ts tests/p2b-sync.test.ts
+      - name: Encrypted P5.9 backup and restore regression
+        run: npx tsx --test tests/p59-backup.test.ts
       - name: Static P1 audit
         run: npm run audit:p1
       - name: Type check
