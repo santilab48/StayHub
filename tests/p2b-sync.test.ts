@@ -140,7 +140,7 @@ test('pull: pagination, invalid page and cross-workspace ID never corrupt data',
 })
 
 test('two isolated devices exchange room changes and preserve offline conflicts', async () => {
-  const { IDBFactory } = await import('fake-indexeddb')
+  const { IDBFactory, IDBKeyRange } = await import('fake-indexeddb')
   const { pullServerUnits } = await import('../lib/local-db/sync')
   const { saveRoom } = await import('../lib/local-db/offline')
   // Separate IndexedDB factories accurately model separate browser/device storage.
@@ -148,8 +148,13 @@ test('two isolated devices exchange room changes and preserve offline conflicts'
   const factoryB = new IDBFactory()
   async function onDevice<T>(db: IDBFactory, work: () => Promise<T>): Promise<T> {
     const original = globalThis.indexedDB
+    const originalRange = globalThis.IDBKeyRange
     globalThis.indexedDB = db
-    try { return await work() } finally { globalThis.indexedDB = original }
+    globalThis.IDBKeyRange = IDBKeyRange
+    try { return await work() } finally {
+      globalThis.indexedDB = original
+      globalThis.IDBKeyRange = originalRange
+    }
   }
   const onA = <T>(work: () => Promise<T>) => onDevice(factoryA,work)
   const onB = <T>(work: () => Promise<T>) => onDevice(factoryB,work)
