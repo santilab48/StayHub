@@ -105,7 +105,7 @@ export default function WorkspacePage() {
     <div className="toolbar"><a href="/" className="muted">StayHub</a><span className="pill">{online ? 'ออนไลน์' : 'ออฟไลน์'}</span></div>
     {loading ? <section className="card">กำลังเปิดพื้นที่ใช้งาน...</section> : !workspace ?
       <section className="card"><h1>ยังไม่มีพื้นที่ใช้งาน</h1><a className="btn" href="/start">เริ่มต้นใช้งาน</a></section> : <>
-        <section className="card"><h1>{workspace.dormName}</h1><p className="muted">{accommodationLabel(workspace.accommodationType)} · ผู้ดูแล {workspace.ownerName}</p><span className="pill">บันทึกในเครื่อง</span></section>
+        <section className="card"><a href="/workspace/backup">ข้อมูลและการสำรอง</a><h1>{workspace.dormName}</h1><p className="muted">{accommodationLabel(workspace.accommodationType)} · ผู้ดูแล {workspace.ownerName}</p><span className="pill">บันทึกในเครื่อง</span></section>
         {error && <p role="alert">บันทึกไม่สำเร็จ · {error}</p>}
         {notice && <p role="status">{notice}</p>}
         <section className="card section"><h2>สถานะการซิงก์</h2>
