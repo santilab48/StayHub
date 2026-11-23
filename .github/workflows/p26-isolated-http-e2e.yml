@@ -41,6 +41,7 @@ jobs:
       RAILWAY_ENVIRONMENT_NAME: staging
       RAILWAY_ENVIRONMENT_ID: ced39691-4fe7-4707-bba7-6d0e801f1ff8
       STAYHUB_ENABLE_TEST_SIGNUP: '1'
+      STAYHUB_LOCAL_SYNC_TEST: '1'
       P26_E2E_BASE: http://127.0.0.1:3000
       NEXT_PUBLIC_SUPABASE_URL: https://build-only.invalid
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: build-only-placeholder
