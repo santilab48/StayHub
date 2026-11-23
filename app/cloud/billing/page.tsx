@@ -136,6 +136,7 @@ export default function CloudBillingPage(){
   }
   return <main className="wrap" style={{maxWidth:1050}}>
     <p><a href="/cloud">← กลับหน้าจัดการที่พัก</a></p>
+    <p><a className="btn secondary" href="/cloud/leases">จัดการสัญญาเช่าก่อนทำบิล</a></p>
     <h1>บิลรายเดือน · StayHub Cloud</h1>
     <p className="muted">ค่าน้ำ ค่าไฟ ค่าเช่า และการรับเงินสด/โอน · ข้อมูลผูกกับบัญชีและที่พักจากระบบ Cloud</p>
     {properties.length>0&&<section className="card section"><label>เลือกที่พัก <select value={propertyId} onChange={e=>{setPage(1);setPropertyId(e.target.value)}}><option value="">บิลของฉัน (ผู้เช่า)</option>{properties.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label></section>}

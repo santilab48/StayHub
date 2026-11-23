@@ -8,9 +8,9 @@ export default function AdminShell({slug,title,children}:{slug:string,title:stri
  const pathname=usePathname()
  const nav=[
   ['สิ่งที่ต้องทำ',r.adminTodo,'✓'],
-  ['ทำบิล',r.adminBillingTab,'฿'],
+  ['ทำบิล','/cloud/billing','฿'],
   ['การเงิน',r.adminFinance,'▤'],
-  ['สัญญา',r.adminContractsTab,'✍️'],
+  ['สัญญา','/cloud/leases','✍️'],
   ['ผู้เช่า',r.adminResidentsTab,'👥'],
   ['ทั่วไป',r.adminGeneralTab,'⚙️']
  ]
