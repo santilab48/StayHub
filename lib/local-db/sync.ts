@@ -138,8 +138,10 @@ export async function mergeServerUnits(propertyId: string, units: ServerUnit[]):
       if (prior && prior.propertyId !== propertyId) throw new Error('Remote room ID belongs to another workspace')
       // A previously synced room may be refreshed only if the local version still
       // equals the last accepted server record. Preserve offline edits otherwise.
-      if (prior && (!entries.length || entries.some(item =>
-        (item.serverRecord as {name?: unknown}|null)?.name !== prior.name))) {
+      const latestSynced = entries.filter(item => item.status === 'synced')
+        .sort((a,b) => b.createdAt.localeCompare(a.createdAt) || b.operationId.localeCompare(a.operationId))[0]
+      if (prior && (!latestSynced ||
+          (latestSynced.serverRecord as {name?: unknown}|null)?.name !== prior.name)) {
         protectedCount++
         continue
       }
@@ -163,6 +165,8 @@ export async function pullServerUnits(
   serverPropertyId: string,
   load: (after?: string) => Promise<{ units: ServerUnit[]; nextCursor: string | null }>,
 ): Promise<{ imported: number; updated: number; protected: number }> {
+  if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(serverPropertyId))
+    throw new Error('Invalid linked property ID')
   const total = { imported: 0, updated: 0, protected: 0 }
   const seen = new Set<string>()
   let after: string | undefined
