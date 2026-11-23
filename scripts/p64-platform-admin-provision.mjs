@@ -34,10 +34,16 @@ if(exactCI){
  if(!env.STAYHUB_MEMBERSHIP_NEON_HOST ||
   !env.STAYHUB_MEMBERSHIP_NEON_HOST.endsWith('.neon.tech') ||
   neon.hostname!==env.STAYHUB_MEMBERSHIP_NEON_HOST||neon.pathname!=='/neondb' ||
-  railway.hostname!=='127.0.0.1')
-  throw Error('REFUSED: Neon staging target mismatch or unverified Railway database target')
- // Remote Railway read-only access must be separately audited before enabling staging.
- throw Error('REFUSED: staged operator workflow cannot establish a verified read-only Railway identity connection yet')
+  !env.STAYHUB_P64_RAILWAY_READONLY_HOST ||
+  !env.STAYHUB_P64_RAILWAY_READONLY_HOST.endsWith('.railway.internal') ||
+  railway.hostname!==env.STAYHUB_P64_RAILWAY_READONLY_HOST ||
+  railway.pathname!=='/railway' ||
+  decodeURIComponent(railway.username)!=='stayhub_identity_reader')
+  throw Error('REFUSED: Neon staging target mismatch or Railway read-only identity mismatch')
+ neon.searchParams.set('sslmode','verify-full')
+ // Requires a separately provisioned SELECT-only Railway role; never reuse admin credentials.
+ if(decodeURIComponent(neon.username)==='stayhub_membership_reader')
+  throw Error('REFUSED: Neon read-only role cannot mutate administrators')
 }
 if(process.argv.length!==3)throw Error('A signed approval request file path is required')
 const artifact=JSON.parse(readFileSync(process.argv[2],'utf8'))
@@ -70,6 +76,14 @@ const railwayDb=new pg.Client({connectionString:rail})
 const neonDb=new pg.Client({connectionString:neon.toString()})
 await railwayDb.connect()
 try{
+ if(intendedStaging){
+  const meta=await railwayDb.query(`SELECT current_database() AS db,current_user AS role,
+    has_table_privilege(current_user,'stayhub.accounts','SELECT') AS can_read,
+    has_table_privilege(current_user,'stayhub.accounts','UPDATE') AS can_update`)
+  if(meta.rows[0]?.db!=='railway'||meta.rows[0]?.role!=='stayhub_identity_reader'||
+     meta.rows[0]?.can_read!==true||meta.rows[0]?.can_update!==false)
+   throw Error('REFUSED: Railway database role is not strictly read-only')
+ }
  const account=await railwayDb.query('SELECT id FROM stayhub.accounts WHERE id=$1',[req.account])
  if(account.rowCount!==1)throw Error('REFUSED: account UUID does not exist in the independent Railway identity database')
  await neonDb.connect()
