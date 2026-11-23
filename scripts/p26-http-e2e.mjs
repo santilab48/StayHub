@@ -96,6 +96,22 @@ async function main(){
  const stays=expect(await request('/api/v2/my-stays',{cookie:tenant}),200,'tenant sees approved stay')
  const stayId=stays.data.items.find(x=>x.unit_name==='CI-101')?.id
  assert.ok(stayId,'approved stay must be visible to tenant')
+ // P5.6: tenant cannot access Owner/Admin property-management endpoints,
+ // despite having an approved stay. No elevated role is implied by residence.
+ expect(await request('/api/v2/units?propertyId='+prop,{cookie:tenant}),403,'tenant denied owner unit list')
+ expect(await request('/api/v2/requests?propertyId='+prop,{cookie:tenant}),403,'tenant denied owner join requests')
+ expect(await request('/api/v2/residents?propertyId='+prop,{cookie:tenant}),403,'tenant denied resident directory')
+ expect(await request('/api/v2/occupancy?propertyId='+prop,{cookie:tenant}),403,'tenant denied owner occupancy')
+ expect(await request('/api/v2/invites?propertyId='+prop,{cookie:tenant}),403,'tenant denied invite inventory')
+ expect(await request('/api/v2/unit',{method:'POST',cookie:tenant,body:{propertyId:prop,name:'tenant-forbidden'}}),403,'tenant cannot create rooms')
+ expect(await request('/api/v2/create-invite',{method:'POST',cookie:tenant,body:{propertyId:prop,unitId:unit}}),403,'tenant cannot issue QR invitations')
+ expect(await request('/api/v2/sync/properties',{cookie:tenant}),200,'tenant property sync list is readable but empty')
+ const tenantSyncProperties=expect(await request('/api/v2/sync/properties',{cookie:tenant}),200,'tenant sync ownership list')
+ assert.ok(!tenantSyncProperties.data.properties.some(x=>x.id===prop),'tenant cannot manage property via sync')
+ expect(await request('/api/v2/sync?propertyId='+prop,{cookie:tenant}),403,'tenant cannot pull owner room sync')
+ expect(await request('/api/v2/sync',{method:'POST',cookie:tenant,body:{...syncBody,operationId:randomUUID()}}),403,'tenant cannot push owner room sync')
+ expect(await request('/api/v2/requests?propertyId='+prop,{cookie:alice}),200,'owner still manages resident requests')
+ expect(await request('/api/v2/residents?propertyId='+prop,{cookie:alice}),200,'owner can list resident directory')
  const lease=expect(await request('/api/v2/leases',{method:'POST',cookie:alice,body:{
    action:'create',propertyId:prop,stayId,startsOn:'2026-11-01',monthlyRent:4000,securityDeposit:0
  }}),201,'owner issues active lease').data.id
