@@ -18,8 +18,9 @@ const request=async(path,{method='GET',body,cookie,extraHeaders={}}={})=>{
 }
 const expect=(r,status,label)=>{assert.equal(r.status,status,`${label}: HTTP ${r.status} ${JSON.stringify(r.data)}`);console.log('PASS',label,status);return r}
 const assertMoney=(value,expected,label)=>{
- assert.ok(typeof value==='string'&&/^(?:0|[1-9]\\d*)(?:\\.\\d{1,2})?$/.test(value),label+': malformed money')
- assert.equal(Math.round(Number(value)*100),Math.round(Number(expected)*100),label)
+ const n=Number(value)
+ assert.ok(typeof value==='string'&&Number.isFinite(n)&&n>=0&&Number.isSafeInteger(Math.round(n*100)),label+': invalid money')
+ assert.equal(Math.round(n*100),Math.round(Number(expected)*100),label)
 }
 const register=async(name)=>{
  const r=expect(await request('/api/v2/register',{method:'POST',body:{email:email(name),password}}),201,'register '+name)
@@ -154,9 +155,9 @@ async function main(){
  assert.equal(unpaid.data.outstanding,'4350.00')
  const unpaidSummary=expect(await request('/api/v2/bills/summary?propertyId='+prop,{cookie:alice}),200,'owner summary before payment')
  assert.equal(unpaidSummary.data.billCount,1)
- assert.equal(unpaidSummary.data.billedTotal,'4350.00')
- assert.equal(unpaidSummary.data.paidTotal,'0.00')
- assert.equal(unpaidSummary.data.outstandingTotal,'4350.00')
+ assertMoney(unpaidSummary.data.billedTotal,'4350.00','unpaidSummary billedTotal')
+ assertMoney(unpaidSummary.data.paidTotal,'0.00','unpaidSummary paidTotal')
+ assertMoney(unpaidSummary.data.outstandingTotal,'4350.00','unpaidSummary outstandingTotal')
  expect(await request('/api/v2/bills/summary?propertyId='+prop,{cookie:bob}),403,'unrelated owner forbidden summary')
  expect(await request('/api/v2/bills/summary?propertyId='+prop,{cookie:tenant}),403,'tenant forbidden owner summary')
  expect(await request('/api/v2/bills?propertyId='+prop+'&status=invalid',{cookie:alice}),400,'bill history rejects bad status')
@@ -182,9 +183,9 @@ async function main(){
  assert.equal(partial.data.paid,'1500.00')
  assert.equal(partial.data.outstanding,'2850.00')
  const partialSummary=expect(await request('/api/v2/bills/summary?propertyId='+prop,{cookie:alice}),200,'partial bill summary')
- assert.equal(partialSummary.data.billedTotal,'4350.00')
- assert.equal(partialSummary.data.paidTotal,'1500.00')
- assert.equal(partialSummary.data.outstandingTotal,'2850.00')
+ assertMoney(partialSummary.data.billedTotal,'4350.00','partialSummary billedTotal')
+ assertMoney(partialSummary.data.paidTotal,'1500.00','partialSummary paidTotal')
+ assertMoney(partialSummary.data.outstandingTotal,'2850.00','partialSummary outstandingTotal')
  expect(await request(paymentPath,{method:'POST',cookie:alice,
   extraHeaders:{'idempotency-key':'p57-overpay-'+tag},
   body:{propertyId:prop,amount:'2850.01',method:'cash'}}),409,'overpayment of one satang denied')
@@ -216,9 +217,9 @@ async function main(){
  assert.equal(finalBill.data.payments.length,2)
  const settledSummary=expect(await request('/api/v2/bills/summary?propertyId='+prop,{cookie:alice}),200,'paid bill summary')
  assert.equal(settledSummary.data.billCount,1)
- assert.equal(settledSummary.data.billedTotal,'4350.00')
- assert.equal(settledSummary.data.paidTotal,'4350.00')
- assert.equal(settledSummary.data.outstandingTotal,'0.00')
+ assertMoney(settledSummary.data.billedTotal,'4350.00','settledSummary billedTotal')
+ assertMoney(settledSummary.data.paidTotal,'4350.00','settledSummary paidTotal')
+ assertMoney(settledSummary.data.outstandingTotal,'0.00','settledSummary outstandingTotal')
  const settledOwnerHistory=expect(await request('/api/v2/bills?propertyId='+prop+'&status=paid',{cookie:alice}),200,'paid-only history filter')
  assert.equal(settledOwnerHistory.data.items.length,1)
  assert.equal(settledOwnerHistory.data.items[0].id,billId)
