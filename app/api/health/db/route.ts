@@ -14,7 +14,7 @@ export async function GET(){
     ? new URL(process.env.DATABASE_URL)
     : null
   const isIsolatedCI = ciUrl?.hostname === '127.0.0.1' && ciUrl.pathname === '/stayhub_p26_ci'
-  const expectedMigrations = process.env.STAYHUB_DB_PROVIDER === 'neon-staging' || isIsolatedCI ? 14 : 13
+  const expectedMigrations = process.env.STAYHUB_DB_PROVIDER === 'neon-production' ? 13 : 14
   if(r.rows[0]?.applied !== expectedMigrations)return NextResponse.json({status:'unavailable'},{status:503,headers})
   return NextResponse.json({status:'ok',service:'stayhub',database:'ready'},{headers})
  }catch{return NextResponse.json({status:'unavailable'},{status:503,headers})}
