@@ -121,3 +121,13 @@ This section supersedes the earlier **BLOCKED** classification specifically for 
 **Migration difference:** repository contains 001–014; Neon Production ledger contains 001–013 (13), while `014_local_sync.sql` is not yet applied there. Railway's ledger remains unknown; do not infer it from app health or CI.
 
 **Decision: P1 PARTIAL / migration cutover BLOCKED** until exact Railway Production inventory and server destination verification can be obtained through an approved, authenticated read-only route. Do not delete/overwrite either database. No data copy, production environment change, migration or deploy occurred in this P1.1 update.
+
+## P1.2 — Additional verified metadata and Railway access boundary
+
+Read-only Neon Production SQL directly confirmed **240 columns**, **85 indexes**, **401 table constraints** (as exposed by `information_schema.table_constraints`, including 74 foreign keys), and extensions `btree_gist 1.8`, `pgcrypto 1.4`, `plpgsql 1.0`. This is the live Neon schema; it does **not** establish parity with Railway.
+
+The already-existing repository script `scripts/p27-readonly-inventory.mjs` has a Railway Production environment/DB identity guard, starts a `REPEATABLE READ READ ONLY` transaction, and returns exact table counts, migration filename/checksums, installed extensions and billing aggregates **without exporting customer records**. It can provide the missing Railway evidence in an approved trusted production execution context; do not insert it into the app's production pre-deploy hook.
+
+The connected Railway API exposes service inventory, deployment status/logs and variable **names** but no direct SQL execution and no value for the existing `DATABASE_URL`. No runnable environment fork or existing Railway cloud-agent task was found. Thus this session cannot independently execute `scripts/p27-readonly-inventory.mjs` against the production Railway database. The historical 2026-11-22 empty-table observation cannot substitute for a current count.
+
+**P1.2 result: Neon inspected; Railway exact database parity remains BLOCKED.** Do not promote code, run schema migrations, perform data transfer, change variables, deploy or decommission Neon until the actual Railway production database has been inventoried and the source/target data discrepancy is resolved.
