@@ -108,50 +108,85 @@ export interface ServerUnit {
   revision: number
 }
 
+interface RoomSnapshot {
+  serverPropertyId: string
+  name: string
+  revision: number
+}
+
+const roomSnapshotKey = (propertyId: string, unitId: string) => `sync-room:${propertyId}:${unitId}`
+const uuidPattern = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i
+
 /**
- * Merge one verified server page into an existing local workspace.
- * Local pending/conflicting edits always win over a remote snapshot.
- * Untracked local records are never overwritten by a remote record.
+ * A complete server page is merged in one IndexedDB transaction.
+ * Unknown local records and all pending edits stay on this device untouched.
+ * Snapshots preserve the last *acknowledged* server value for subsequent pulls.
  */
-export async function mergeServerUnits(propertyId: string, units: ServerUnit[]): Promise<{ imported: number; updated: number; protected: number }> {
-  if (!Array.isArray(units) || units.length > 100) throw new Error('Invalid remote page')
+export async function mergeServerUnits(
+  propertyId: string, serverPropertyId: string, units: ServerUnit[],
+): Promise<{ imported: number; updated: number; protected: number }> {
+  if (!uuidPattern.test(propertyId) || !uuidPattern.test(serverPropertyId) ||
+      !Array.isArray(units) || units.length > 100) throw new Error('Invalid remote page')
   const ids = new Set<string>()
   for (const unit of units) {
-    if (!unit || !/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(unit.id) ||
-        typeof unit.name !== 'string' || !unit.name.trim() || unit.name.length > 100 ||
-        !Number.isSafeInteger(unit.revision) || unit.revision < 1 || ids.has(unit.id)) {
+    if (!unit || !uuidPattern.test(unit.id) || typeof unit.name !== 'string' ||
+        !unit.name.trim() || unit.name.length > 100 ||
+        !Number.isSafeInteger(unit.revision) || unit.revision < 1 || ids.has(unit.id))
       throw new Error('Invalid remote unit')
-    }
     ids.add(unit.id)
   }
-  return withTransaction(['properties','units','sync_queue'], 'readwrite', async tx => {
-    if (!await requestValue(tx.objectStore('properties').get(propertyId))) throw new Error('Local workspace not found')
+  return withTransaction(['properties','units','sync_queue','workspaces'], 'readwrite', async tx => {
+    if (!await requestValue(tx.objectStore('properties').get(propertyId)))
+      throw new Error('Local workspace not found')
     const queue: SyncOperation[] = await requestValue(tx.objectStore('sync_queue').index('propertyId').getAll(propertyId))
     const unitStore = tx.objectStore('units')
+    const meta = tx.objectStore('workspaces')
     const now = new Date().toISOString()
     let imported = 0, updated = 0, protectedCount = 0
     for (const remote of units) {
       const entries = queue.filter(item => item.entityType === 'units' && item.entityId === remote.id)
-      // Even cancelled edits remain a local-only decision until the user reconciles them.
+      // Cancelled / failed / conflicted operations still reflect unresolved local edits.
       if (entries.some(item => item.status !== 'synced')) { protectedCount++; continue }
       const prior: LocalRecord<'units'> | undefined = await requestValue(unitStore.get(remote.id))
-      if (prior && prior.propertyId !== propertyId) throw new Error('Remote room ID belongs to another workspace')
-      // A previously synced room may be refreshed only if the local version still
-      // equals the last accepted server record. Preserve offline edits otherwise.
-      const latestSynced = entries.filter(item => item.status === 'synced')
-        .sort((a,b) => b.createdAt.localeCompare(a.createdAt) || b.operationId.localeCompare(a.operationId))[0]
-      if (prior && (!latestSynced ||
-          (latestSynced.serverRecord as {name?: unknown}|null)?.name !== prior.name)) {
+      if (prior && prior.propertyId !== propertyId)
+        throw new Error('Remote room ID belongs to another workspace')
+      const key = roomSnapshotKey(propertyId,remote.id)
+      const snapshot: RoomSnapshot | undefined = await requestValue(meta.get(key))
+      if (snapshot && snapshot.serverPropertyId !== serverPropertyId) {
         protectedCount++
         continue
       }
-      if (prior && prior.localRevision >= remote.revision) continue
+      const acknowledged = entries.filter(item => item.status === 'synced')
+        .sort((a,b) => b.createdAt.localeCompare(a.createdAt) || b.operationId.localeCompare(a.operationId))[0]
+      const knownName = snapshot?.name ?? (acknowledged?.serverRecord as {name?: unknown}|null)?.name
+      // No baseline => cannot prove this local record is safe to replace.
+      if (prior && (typeof knownName !== 'string' || knownName !== prior.name)) {
+        protectedCount++
+        continue
+      }
+      if (prior && snapshot && prior.localRevision > snapshot.revision &&
+          snapshot.name === remote.name && remote.revision <= snapshot.revision) {
+        // A locally advanced revision needs no downgrade.
+        continue
+      }
+      if (prior && prior.localRevision > remote.revision && prior.name !== remote.name) {
+        protectedCount++
+        continue
+      }
+      const baseline: RoomSnapshot = {serverPropertyId,name:remote.name,revision:remote.revision}
+      if (prior && prior.name === remote.name) {
+        // Confirm the current server version for the next pull, without rewriting
+        // local records or lowering their local revision.
+        await requestValue(meta.put(baseline,key))
+        continue
+      }
       const record: LocalRecord<'units'> = {
         id: remote.id, propertyId, name: remote.name,
         createdAt: prior?.createdAt ?? now, updatedAt: now,
         schemaVersion: 1, localRevision: remote.revision,
       }
       await requestValue(unitStore.put(record))
+      await requestValue(meta.put(baseline,key))
       if (prior) updated++
       else imported++
     }
@@ -159,14 +194,13 @@ export async function mergeServerUnits(propertyId: string, units: ServerUnit[]):
   })
 }
 
-/** Pull the entire property snapshot, then merge each validated page atomically. */
+/** Pull a bounded property snapshot with fresh authorization for every HTTP page. */
 export async function pullServerUnits(
   localPropertyId: string,
   serverPropertyId: string,
   load: (after?: string) => Promise<{ units: ServerUnit[]; nextCursor: string | null }>,
 ): Promise<{ imported: number; updated: number; protected: number }> {
-  if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(serverPropertyId))
-    throw new Error('Invalid linked property ID')
+  if (!uuidPattern.test(serverPropertyId)) throw new Error('Invalid linked property ID')
   const total = { imported: 0, updated: 0, protected: 0 }
   const seen = new Set<string>()
   let after: string | undefined
@@ -174,10 +208,8 @@ export async function pullServerUnits(
     const result = await load(after)
     if (!result || !Array.isArray(result.units) || result.units.length > 100 ||
         (result.nextCursor !== null && (typeof result.nextCursor !== 'string' ||
-        !/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(result.nextCursor)))) {
-      throw new Error('Invalid sync response')
-    }
-    const merged = await mergeServerUnits(localPropertyId, result.units)
+        !uuidPattern.test(result.nextCursor)))) throw new Error('Invalid sync response')
+    const merged = await mergeServerUnits(localPropertyId, serverPropertyId, result.units)
     total.imported += merged.imported
     total.updated += merged.updated
     total.protected += merged.protected
