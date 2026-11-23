@@ -158,7 +158,9 @@ export async function mergeServerUnits(
       }
       const acknowledged = entries.filter(item => item.status === 'synced')
         .sort((a,b) => b.createdAt.localeCompare(a.createdAt) || b.operationId.localeCompare(a.operationId))[0]
-      const knownName = snapshot?.name ?? (acknowledged?.serverRecord as {name?: unknown}|null)?.name
+      const acceptedName = (acknowledged?.serverRecord as {name?: unknown}|null)?.name
+      const knownName = typeof acceptedName === 'string' && acceptedName === prior?.name
+        ? acceptedName : snapshot?.name
       // No baseline => cannot prove this local record is safe to replace.
       if (prior && (typeof knownName !== 'string' || knownName !== prior.name)) {
         protectedCount++
