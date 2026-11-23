@@ -17,6 +17,10 @@ const request=async(path,{method='GET',body,cookie,extraHeaders={}}={})=>{
  return {status:response.status,data:json,cookie:response.headers.get('set-cookie')?.split(';')[0]}
 }
 const expect=(r,status,label)=>{assert.equal(r.status,status,`${label}: HTTP ${r.status} ${JSON.stringify(r.data)}`);console.log('PASS',label,status);return r}
+const assertMoney=(value,expected,label)=>{
+ assert.ok(typeof value==='string'&&/^(?:0|[1-9]\\d*)(?:\\.\\d{1,2})?$/.test(value),label+': malformed money')
+ assert.equal(Math.round(Number(value)*100),Math.round(Number(expected)*100),label)
+}
 const register=async(name)=>{
  const r=expect(await request('/api/v2/register',{method:'POST',body:{email:email(name),password}}),201,'register '+name)
  assert.match(r.cookie||'',/^stayhub_session=/)
