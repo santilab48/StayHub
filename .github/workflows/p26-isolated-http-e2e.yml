@@ -11,6 +11,7 @@ on:
       - 'scripts/p53-browser-e2e.mjs'
       - 'scripts/p57-receipt-browser-e2e.mjs'
       - 'scripts/p58-offline-pwa-e2e.mjs'
+      - 'scripts/p59-ci-postgres-restore.sh'
       - 'tests/p2b-sync.test.ts'
       - '.github/workflows/p26-isolated-http-e2e.yml'
   pull_request:
@@ -23,6 +24,7 @@ on:
       - 'scripts/p53-browser-e2e.mjs'
       - 'scripts/p57-receipt-browser-e2e.mjs'
       - 'scripts/p58-offline-pwa-e2e.mjs'
+      - 'scripts/p59-ci-postgres-restore.sh'
       - 'tests/p2b-sync.test.ts'
       - '.github/workflows/p26-isolated-http-e2e.yml'
   workflow_dispatch:
@@ -93,6 +95,8 @@ jobs:
         run: node scripts/p57-receipt-browser-e2e.mjs
       - name: Test installed PWA offline reload and IndexedDB persistence
         run: node scripts/p58-offline-pwa-e2e.mjs
+      - name: Drill logical PostgreSQL backup and restore on disposable CI database
+        run: bash scripts/p59-ci-postgres-restore.sh
       - name: Print web logs on failure
         if: failure()
         run: tail -120 /tmp/stayhub-p26-next.log || true
