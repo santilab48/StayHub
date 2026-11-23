@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { postgresQuery } from '../../../../lib/db/postgres'
+import { postgresHealthQuery } from '../../../../lib/db/postgres'
 
 export const dynamic = 'force-dynamic'
 
@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   const headers = { 'Cache-Control': 'no-store' }
   try {
-    const res = await postgresQuery<{ applied: number }>(
+    const res = await postgresHealthQuery<{ applied: number }>(
       `SELECT COUNT(*)::integer AS applied FROM stayhub.schema_migrations
        WHERE filename ~ '^0(0[1-9]|1[01])_[a-zA-Z0-9_-]+\\.sql$'`,
     )

@@ -20,7 +20,9 @@ export async function GET() {
     const client = await getPostgresPool().connect()
     let tls = false
     try {
+      if (process.env.STAYHUB_WRITE_FREEZE === 'YES') await client.query('BEGIN READ ONLY')
       await client.query('SELECT 1')
+      if (process.env.STAYHUB_WRITE_FREEZE === 'YES') await client.query('COMMIT')
       // Neon may terminate the client TLS at its pooler. pg_stat_ssl on the
       // backend then measures a different hop, so inspect the app's TLS socket.
       const stream = client.connection.stream as unknown as {
@@ -28,6 +30,11 @@ export async function GET() {
         authorized?: boolean
       }
       tls = stream.encrypted === true && stream.authorized === true
+    } catch (error) {
+      if (process.env.STAYHUB_WRITE_FREEZE === 'YES') {
+        try { await client.query('ROLLBACK') } catch { /* Preserve probe failure. */ }
+      }
+      throw error
     } finally {
       client.release()
     }

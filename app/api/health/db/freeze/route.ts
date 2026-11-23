@@ -18,14 +18,17 @@ export async function GET() {
   try {
     const client = await getPostgresPool().connect()
     try {
-      const state = await client.query<{ read_only: string }>(
-        'SHOW default_transaction_read_only',
-      )
+      await client.query('BEGIN READ ONLY')
+      const state = await client.query<{ read_only: string }>('SHOW transaction_read_only')
+      await client.query('COMMIT')
       const readOnly = state.rows[0]?.read_only === 'on'
       return NextResponse.json(
         { status: readOnly ? 'frozen' : 'unavailable', readOnly },
         { status: readOnly ? 200 : 503, headers },
       )
+    } catch (error) {
+      try { await client.query('ROLLBACK') } catch { /* Preserve probe failure. */ }
+      throw error
     } finally { client.release() }
   } catch {
     return NextResponse.json({ status: 'unavailable' }, { status: 503, headers })

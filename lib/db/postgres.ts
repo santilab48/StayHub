@@ -65,6 +65,26 @@ export function postgresQuery<T extends QueryResultRow = QueryResultRow>(
   return getPostgresPool().query<T>(sql, [...params])
 }
 
+/** Run allowed maintenance probes inside an explicitly read-only transaction.
+ * Neon transaction pooling does not guarantee a startup session default survives.
+ */
+export async function postgresHealthQuery<T extends QueryResultRow = QueryResultRow>(
+  sql: string,
+  params: readonly unknown[] = [],
+): Promise<QueryResult<T>> {
+  if (process.env.STAYHUB_WRITE_FREEZE !== 'YES') return postgresQuery<T>(sql, params)
+  const client = await getPostgresPool().connect()
+  try {
+    await client.query('BEGIN READ ONLY')
+    const result = await client.query<T>(sql, [...params])
+    await client.query('COMMIT')
+    return result
+  } catch (error) {
+    try { await client.query('ROLLBACK') } catch { /* Preserve original error. */ }
+    throw error
+  } finally { client.release() }
+}
+
 export async function withPostgresTransaction<T>(
   handler: (client: PoolClient) => Promise<T>,
 ): Promise<T> {
