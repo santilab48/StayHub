@@ -140,7 +140,7 @@ export async function POST(req:NextRequest,{params}:Params){
     if(action==='register'){
       const email=typeof body.email==='string'?body.email.trim().toLowerCase():''
       const password=body.password
-      if(!validEmail(email)||typeof password!=='string'||password.length<12||password.length>128)return reply({error:'Provide valid email and a password of 12–128 characters'},400)
+      if(!validEmail(email)||typeof password!=='string'||password.length<6||password.length>128)return reply({error:'Provide valid email and a password of 6–128 characters'},400)
       if(!await consumeAuthAttempt('register',email,3,3600))return reply({error:'Too many registration attempts. Please try again later'},429)
       const stored=await hashPassword(password)
       let id:string
