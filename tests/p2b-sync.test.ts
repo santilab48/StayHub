@@ -139,12 +139,23 @@ test('pull: pagination, invalid page and cross-workspace ID never corrupt data',
   )
 })
 
-test('two workspaces exchange room changes through one server and protect offline conflicts', async () => {
+test('two isolated devices exchange room changes and preserve offline conflicts', async () => {
+  const { IDBFactory } = await import('fake-indexeddb')
   const { pullServerUnits } = await import('../lib/local-db/sync')
   const { saveRoom } = await import('../lib/local-db/offline')
+  // Separate IndexedDB factories accurately model separate browser/device storage.
+  const factoryA = new IDBFactory()
+  const factoryB = new IDBFactory()
+  async function onDevice<T>(db: IDBFactory, work: () => Promise<T>): Promise<T> {
+    const original = globalThis.indexedDB
+    globalThis.indexedDB = db
+    try { return await work() } finally { globalThis.indexedDB = original }
+  }
+  const onA = <T>(work: () => Promise<T>) => onDevice(factoryA,work)
+  const onB = <T>(work: () => Promise<T>) => onDevice(factoryB,work)
   const serverPropertyId = crypto.randomUUID()
-  const a = await createDeviceWorkspace('Device A', 'A')
-  const b = await createDeviceWorkspace('Device B', 'B')
+  const a = await onA(() => createDeviceWorkspace('Device A', 'Shared property'))
+  const b = await onB(() => createDeviceWorkspace('Device B', 'Shared property'))
   const server = new Map<string, { id: string; name: string; revision: number }>()
   const send = async (op: { entityId: string; baseRevision: number; payload: unknown }) => {
     const existing = server.get(op.entityId)
@@ -158,42 +169,42 @@ test('two workspaces exchange room changes through one server and protect offlin
     server.set(op.entityId,saved)
     return { result: 'accepted' as const, serverRecord: saved }
   }
-  const pull = (workspaceId: string) => pullServerUnits(workspaceId, serverPropertyId, async () => ({
-    units: [...server.values()], nextCursor: null,
+  const pull = (workspaceId: string) => pullServerUnits(workspaceId,serverPropertyId,async () => ({
+    units:[...server.values()],nextCursor:null,
   }))
-  const original = await saveRoom(a.id, 'First name')
-  await syncNow(a.id,send)
+  const original = await onA(() => saveRoom(a.id,'First name'))
+  await onA(() => syncNow(a.id,send))
   assert.equal(server.get(original.id)?.revision,1)
-  const imported = await pull(b.id)
+  const imported = await onB(() => pull(b.id))
   assert.equal(imported.imported,1)
-  assert.equal((await getLocalRecord('units',b.id,original.id))?.name,'First name')
+  assert.equal((await onB(() => getLocalRecord('units',b.id,original.id)))?.name,'First name')
 
-  const firstA = (await getLocalRecord('units',a.id,original.id))!
-  await saveRoom(a.id,'Edited from A',firstA)
-  await syncNow(a.id,send)
+  const firstA = (await onA(() => getLocalRecord('units',a.id,original.id)))!
+  await onA(() => saveRoom(a.id,'Edited from A',firstA))
+  await onA(() => syncNow(a.id,send))
   assert.equal(server.get(original.id)?.revision,2)
-  const localB = (await getLocalRecord('units',b.id,original.id))!
-  await saveRoom(b.id,'Offline B edit',localB)
-  const blocked = await pull(b.id)
+  const localB = (await onB(() => getLocalRecord('units',b.id,original.id)))!
+  await onB(() => saveRoom(b.id,'Offline B edit',localB))
+  const blocked = await onB(() => pull(b.id))
   assert.equal(blocked.protected,1)
-  assert.equal((await getLocalRecord('units',b.id,original.id))?.name,'Offline B edit')
-  await syncNow(b.id,send)
-  const conflict = (await listSyncQueue(b.id)).find(op =>
-    op.entityId===original.id && op.status==='conflict')
+  assert.equal((await onB(() => getLocalRecord('units',b.id,original.id)))?.name,'Offline B edit')
+  await onB(() => syncNow(b.id,send))
+  const conflict = (await onB(() => listSyncQueue(b.id))).find(op =>
+    op.entityId === original.id && op.status === 'conflict')
   assert.ok(conflict)
-  await resolveSyncConflict(b.id,conflict.operationId,'keep_local')
-  await syncNow(b.id,send)
+  await onB(() => resolveSyncConflict(b.id,conflict.operationId,'keep_local'))
+  await onB(() => syncNow(b.id,send))
   assert.equal(server.get(original.id)?.revision,3)
-  await pull(b.id)
-  assert.equal((await getLocalRecord('units',b.id,original.id))?.localRevision,3,
+  await onB(() => pull(b.id))
+  assert.equal((await onB(() => getLocalRecord('units',b.id,original.id)))?.localRevision,3,
     'server revision must be stored even when the room name already matches')
-  const afterMerge = (await getLocalRecord('units',b.id,original.id))!
-  await saveRoom(b.id,'B second edit',afterMerge)
-  const next = (await listSyncQueue(b.id)).filter(op =>
-    op.entityId===original.id && op.status==='pending')
+  const afterMerge = (await onB(() => getLocalRecord('units',b.id,original.id)))!
+  await onB(() => saveRoom(b.id,'B second edit',afterMerge))
+  const next = (await onB(() => listSyncQueue(b.id))).filter(op =>
+    op.entityId === original.id && op.status === 'pending')
   assert.equal(next.at(-1)?.baseRevision,3)
-  await syncNow(b.id,send)
+  await onB(() => syncNow(b.id,send))
   assert.equal(server.get(original.id)?.revision,4)
-  await pull(a.id)
-  assert.equal((await getLocalRecord('units',a.id,original.id))?.name,'B second edit')
+  await onA(() => pull(a.id))
+  assert.equal((await onA(() => getLocalRecord('units',a.id,original.id)))?.name,'B second edit')
 })
