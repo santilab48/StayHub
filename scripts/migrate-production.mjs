@@ -44,10 +44,11 @@ if (neonProduction) {
 }
 
 const dirname = resolve('db/migrations')
-// Migration 014 is explicitly staging-only (local sync); Production health and schema
-// currently require migrations 001–013. Never auto-apply staging-only SQL in Production.
+// Railway Production needs migration 014 for property-scoped idempotent local sync.
+// Neon Production retains 001–013 as a separate rollback target; never migrate it implicitly.
+const productionMigrationLimit = neonProduction ? 13 : 14
 const files = readdirSync(dirname)
-  .filter(x=>/^\d{3}_[\w-]+\.sql$/.test(x) && Number(x.slice(0,3)) <= 13)
+  .filter(x=>/^\d{3}_[\w-]+\.sql$/.test(x) && Number(x.slice(0,3)) <= productionMigrationLimit)
   .sort()
 if(!files.length) throw new Error('No migrations found')
 const migrations = files.map(name=>{
