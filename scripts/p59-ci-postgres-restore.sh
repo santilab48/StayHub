@@ -18,10 +18,12 @@ cleanup() {
 }
 trap cleanup EXIT
 # Never connect to Railway/Neon, never create or drop any non-CI database.
-docker run --rm --network host -e PGPASSWORD=postgres -v "$workdir:/work" postgres:16 \n  pg_dump -h 127.0.0.1 -U postgres --format=custom --no-owner --no-privileges --file=/work/isolated.pgdump "$source_db"
+docker run --rm --network host -e PGPASSWORD=postgres -v "$workdir:/work" postgres:16 \
+  pg_dump -h 127.0.0.1 -U postgres --format=custom --no-owner --no-privileges --file=/work/isolated.pgdump "$source_db"
 test -s "$workdir/isolated.pgdump"
 createdb -T template0 "$restore_db"
-docker run --rm --network host -e PGPASSWORD=postgres -v "$workdir:/work:ro" postgres:16 \n  pg_restore -h 127.0.0.1 -U postgres --exit-on-error --no-owner --no-privileges --dbname="$restore_db" /work/isolated.pgdump
+docker run --rm --network host -e PGPASSWORD=postgres -v "$workdir:/work:ro" postgres:16 \
+  pg_restore -h 127.0.0.1 -U postgres --exit-on-error --no-owner --no-privileges --dbname="$restore_db" /work/isolated.pgdump
 sql="SELECT
 (SELECT count(*) FROM stayhub.schema_migrations),
 (SELECT count(*) FROM stayhub.properties),
