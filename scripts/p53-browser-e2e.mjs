@@ -50,8 +50,10 @@ async function setupBrowser(page,owner,serverPropertyId) {
   }).locator('select')
   await propertySelect.selectOption(serverPropertyId)
   await page.getByRole('button',{name:'เชื่อมที่พัก'}).click()
-  await page.getByRole('button',{name:'ซิงก์ตอนนี้'}).waitFor({state:'visible'})
-  assert.equal(await page.getByRole('button',{name:'ซิงก์ตอนนี้'}).isDisabled(),false)
+  // Connecting is an async local IndexedDB transaction. Wait for the link
+  // and the commit handler to finish, rather than asserting immediately.
+  await page.waitForFunction(() => Array.from(document.querySelectorAll('button'))
+    .some(button => button.textContent?.trim() === 'ซิงก์ตอนนี้' && !button.disabled))
 }
 
 async function editRoom(page,oldName,newName) {
