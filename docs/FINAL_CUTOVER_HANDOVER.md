@@ -77,3 +77,16 @@ Isolated tests ครอบคลุม desktop Chromium, auth/session, owner/te
 - รายละเอียด: `docs/P63_PLATFORM_ADMIN_READONLY_GATE.md`
 
 **Final Cutover ยังคงสถานะไม่ครบ 100%** โดยเฉพาะ Production Railway backup/restore, approved Production write E2E, package pricing/policy, production admin provisioning และ physical-device testing
+
+
+## Addendum P6.4 — Two-person signed Platform Admin grant/revoke and Neon audit (2026-11-23)
+
+- เพิ่ม `neon/membership/003_platform_admin_audit.sql` เป็น Append-only Audit Events พร้อม Unique Request ID และ Trigger ป้องกัน UPDATE/DELETE
+- เพิ่มคำสั่งออฟไลน์ `scripts/p64-platform-admin-provision.mjs` ซึ่งตรวจลายเซ็น **Ed25519 สองกุญแจ**, ตรวจ Account UUID จาก Railway, กันคำขอซ้ำ และทำ Grant/Revoke + Audit ใน Transaction เดียวกัน
+- เพิ่ม `scripts/p64-platform-admin-provision-e2e.mjs` และ CI ทดสอบกับ PostgreSQL แยกสองฐาน รวมเคสลายเซ็นผิด Account ไม่พบ Replay และการเพิกถอนสิทธิ์
+- Neon Staging `br-fancy-sky-a1n96vul` ลง Schema Audit ใหม่แล้ว: 0 รายการ Audit หลัง Migration, Reader อ่านได้ และ Trigger ครบ ส่วน Neon Production ยังไม่เปลี่ยน
+- **ยังไม่ได้แต่งตั้งผู้ดูแลจริง, ยังไม่เปิด Admin Write API, ไม่ได้ Deploy Production และไม่เปลี่ยนข้อมูลผู้ใช้จริง** การสั่งเปลี่ยนสิทธิ์ Production ถูกปิดไว้ใน CLI นี้โดยเจตนา
+- ข้อจำกัดสำคัญ: ยังไม่มีผู้อนุมัติสองฝ่ายที่ยืนยันตัวตน/จัดการกุญแจจริง และยังไม่มี Railway Identity Read-only Role สำหรับ Staging จึงยังไม่รัน Operator Acceptance กับบัญชีจริง
+- รายละเอียด: `docs/P64_PLATFORM_ADMIN_DUAL_APPROVAL.md`; GitHub CI E2E `45163671719` และ Build `45163671715` ต้องตรวจผล SUCCESS ก่อนการส่งมอบรอบนี้
+
+**Final Cutover ยังคงไม่ครบ 100%** เพราะ Production Railway Backup/Restore, Production Write E2E, แพ็กเกจ/ราคา/สิทธิ์สมาชิกจริง, การอนุมัติ Super Admin และการทดสอบอุปกรณ์จริงยังไม่ผ่านหลักฐานครบ
