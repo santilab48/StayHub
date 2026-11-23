@@ -38,6 +38,33 @@ async function main(){
  expect(await request('/api/v2/login',{method:'POST',body:{email:email('alice'),password:'wrong'}}),401,'wrong credentials denied')
  const prop=expect(await request('/api/v2/property',{method:'POST',body:{name:'CI Test Property '+tag,type:'apartment'},cookie:alice}),201,'owner creates property').data.id
  assert.match(prop,/^[0-9a-f-]{36}$/)
+ // Local-First sync tests against disposable CI PostgreSQL. No Railway/Neon traffic.
+ expect(await request('/api/v2/sync/properties'),401,'anonymous cannot list sync properties')
+ const linked=expect(await request('/api/v2/sync/properties',{cookie:alice}),200,'owner can list sync properties')
+ assert.ok(linked.data.properties.some(x=>x.id===prop),'new property must be linkable')
+ const unrelated=expect(await request('/api/v2/sync/properties',{cookie:bob}),200,'other account can only see own properties')
+ assert.ok(!unrelated.data.properties.some(x=>x.id===prop))
+ const syncUnit=randomUUID(),operationId=randomUUID()
+ const syncBody={operationId,propertyId:prop,entityId:syncUnit,entityType:'units',action:'upsert',baseRevision:0,payload:{name:'CI-Sync-101'}}
+ expect(await request('/api/v2/sync',{method:'POST',body:syncBody}),401,'anonymous cannot sync')
+ expect(await request('/api/v2/sync',{method:'POST',cookie:bob,body:syncBody}),403,'cross-property sync denied')
+ const firstSync=expect(await request('/api/v2/sync',{method:'POST',cookie:alice,body:syncBody}),200,'owner sync creates room')
+ assert.equal(firstSync.data.result,'accepted')
+ assert.equal(firstSync.data.serverRecord.revision,1)
+ const syncReplay=expect(await request('/api/v2/sync',{method:'POST',cookie:alice,body:syncBody}),200,'sync retry idempotent')
+ assert.equal(syncReplay.data.result,'duplicate')
+ assert.equal(syncReplay.data.originalResult,'accepted')
+ expect(await request('/api/v2/sync',{method:'POST',cookie:alice,body:{...syncBody,payload:{name:'tampered'}}}),409,'reusing sync id with different payload denied')
+ const staleSync=expect(await request('/api/v2/sync',{method:'POST',cookie:alice,body:{...syncBody,operationId:randomUUID(),payload:{name:'stale'}}}),200,'stale revision conflicts')
+ assert.equal(staleSync.data.result,'conflict')
+ assert.equal(staleSync.data.serverRecord.revision,1)
+ const updatedSync=expect(await request('/api/v2/sync',{method:'POST',cookie:alice,body:{...syncBody,operationId:randomUUID(),baseRevision:1,payload:{name:'CI-Sync-102'}}}),200,'revision-aware sync updates room')
+ assert.equal(updatedSync.data.result,'accepted')
+ assert.equal(updatedSync.data.serverRecord.revision,2)
+ const noDelete=expect(await request('/api/v2/sync',{method:'POST',cookie:alice,body:{...syncBody,operationId:randomUUID(),action:'delete',baseRevision:2,payload:null}}),200,'unreviewed room deletion is rejected')
+ assert.equal(noDelete.data.result,'rejected')
+ expect(await request('/api/v2/sync',{method:'POST',cookie:alice,body:{...syncBody,operationId:randomUUID(),entityType:'bills'}}),400,'bill drafts cannot be issued via sync')
+
  expect(await request('/api/v2/register',{method:'POST',body:{email:email('alice'),password}}),409,'duplicate account denied')
  const unit=expect(await request('/api/v2/unit',{method:'POST',body:{propertyId:prop,name:'CI-101'},cookie:alice}),201,'owner creates unit').data.id
  expect(await request('/api/v2/units?propertyId='+prop,{cookie:alice}),200,'owner lists units')
