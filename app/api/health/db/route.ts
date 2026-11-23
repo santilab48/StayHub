@@ -9,7 +9,17 @@ export async function GET() {
   try {
     const res = await postgresHealthQuery<{ applied: number }>(
       `SELECT COUNT(*)::integer AS applied FROM stayhub.schema_migrations
-       WHERE filename ~ '^0(0[1-9]|1[01])_[a-zA-Z0-9_-]+\\.sql$'`,
+       WHERE filename ~ '^0(0[1-9]|1[0-2])_[a-zA-Z0-9_-]+\\.sql`,
+    )
+    if (res.rows[0]?.applied !== 12) {
+      return NextResponse.json({ status: 'unavailable' }, { status: 503, headers })
+    }
+    return NextResponse.json({ status: 'ok', service: 'stayhub', database: 'ready' }, { headers })
+  } catch {
+    return NextResponse.json({ status: 'unavailable' }, { status: 503, headers })
+  }
+}
+`,
     )
     if (res.rows[0]?.applied !== 11) {
       return NextResponse.json({ status: 'unavailable' }, { status: 503, headers })

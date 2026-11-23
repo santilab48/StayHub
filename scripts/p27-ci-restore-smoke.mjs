@@ -64,11 +64,11 @@ try {
   }catch(e){await sourceDb.query('ROLLBACK');throw e}
   const before=await counts(sourceDb)
   const history=await migrationHistory(sourceDb)
-  assert.equal(history.length,11,'Expected all 11 reviewed migrations')
+  assert.equal(history.length,12,'Expected all 12 reviewed migrations')
   assert.equal(before.accounts,'1')
   assert.equal(before.properties,'1')
   assert.equal(before.units,'1')
-  console.log('PASS source fixture and 11 migration records established')
+  console.log('PASS source fixture and 12 migration records established')
 
   run('pg_dump',['--format=custom','--no-owner',
     '--no-acl','--file='+backup,'--dbname=stayhub_p26_ci'])
@@ -84,7 +84,7 @@ try {
   assert.deepEqual(after,before,'Restored table counts do not match snapshot')
   assert.deepEqual(await migrationHistory(targetDb),history,'Restored migration hashes differ')
   console.log('PASS restored exact row counts across '+Object.keys(before).length+' StayHub tables')
-  console.log('PASS restored migration history and checksums (11/11)')
+  console.log('PASS restored migration history and checksums (12/12)')
 
   const sourceConstraints=await sourceDb.query(`SELECT conrelid::regclass::text AS rel,conname,contype
     FROM pg_constraint WHERE connamespace='stayhub'::regnamespace ORDER BY 1,2`)

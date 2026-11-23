@@ -36,7 +36,7 @@ export async function GET(req:NextRequest,{params}:Params){
     if(!account)return reply({error:'Please sign in'},401)
     if(action==='me')return reply({id:account.id,email:account.email})
     if(action==='my-stays'){
-      const r=await postgresQuery(`SELECT s.id,p.name AS property_name,u.name AS unit_name,p.property_type
+      const r=await postgresQuery(`SELECT s.id,s.property_id,p.name AS property_name,u.name AS unit_name,p.property_type
         FROM stayhub.stays s
         JOIN stayhub.properties p ON p.id=s.property_id
         JOIN stayhub.units u ON u.id=s.unit_id AND u.property_id=s.property_id
