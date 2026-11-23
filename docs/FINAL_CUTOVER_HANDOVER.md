@@ -63,3 +63,17 @@ Isolated tests ครอบคลุม desktop Chromium, auth/session, owner/te
 - ทดสอบ desktop/mobile, PWA, printer/receipt และ rollback ใน environment แยก แล้วตรวจ Production health/provider/Neon reader สดอีกครั้ง
 
 **Final cutover status: ไม่ครบ 100%** แม้ infrastructure dual-database ที่เคย deploy จะผ่าน Production predeploy และ isolated QA รอบนี้ผ่าน
+
+
+## Addendum P6.3 — Platform Admin readonly gate (2026-11-23)
+
+งานที่ทำต่อหลัง Commit `162df535b5393c5f1f23b38bac83c86e269afbd8`:
+
+- พัฒนา Registry ผู้ดูแลฝั่ง Neon โดยไม่สร้างบัญชี Super Admin เริ่มต้น และเพิ่มหน้าค้นหาสมาชิกแบบ **อ่านอย่างเดียว** `/platform-admin` ที่ตรวจ Session Railway + ตารางสิทธิ์ Neon ฝั่ง Server ทุกครั้ง
+- เพิ่ม API `GET /api/v2/platform-members` พร้อม 401/403, Pagination และ `Cache-Control: no-store` ไม่มี Endpoint ให้ผู้ใช้แก้ไขหรือออกสิทธิ์เอง
+- ผ่าน GitHub Build/Security https://github.com/santilab48/StayHub/actions/runs/45160023762 และ isolated PostgreSQL/Chromium/restore https://github.com/santilab48/StayHub/actions/runs/45160023656 โดยทดสอบว่าผู้ไม่มีสิทธิ์ถูกปฏิเสธ การเพิกถอนสิทธิ์มีผลทันที และสมาชิกไม่สามารถเพิ่มสิทธิ์ตนเองผ่าน API
+- Neon **Staging** `br-fancy-sky-a1n96vul`: ลง `neon/membership/002_platform_admins.sql` แบบเพิ่มตารางเท่านั้น ตรวจบัญชี Reader อ่านทะเบียนผู้ดูแลซึ่งยังมี 0 รายการได้ แต่ไม่สามารถอ่านตารางที่พักเดิม
+- **ยังไม่ Deploy/แก้ Neon Production หรือ Railway Production ใน P6.3** และไม่เปิดใช้งาน Super Admin แก่บัญชีจริง ต้องมีขั้นตอนแต่งตั้ง/เพิกถอนพร้อม Audit Event และตัวตนผู้ดูแลที่อนุมัติก่อน
+- รายละเอียด: `docs/P63_PLATFORM_ADMIN_READONLY_GATE.md`
+
+**Final Cutover ยังคงสถานะไม่ครบ 100%** โดยเฉพาะ Production Railway backup/restore, approved Production write E2E, package pricing/policy, production admin provisioning และ physical-device testing
