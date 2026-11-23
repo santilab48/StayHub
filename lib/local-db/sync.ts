@@ -177,8 +177,14 @@ export async function mergeServerUnits(
       }
       const baseline: RoomSnapshot = {serverPropertyId,name:remote.name,revision:remote.revision}
       if (prior && prior.name === remote.name) {
-        // Confirm the current server version for the next pull, without rewriting
-        // local records or lowering their local revision.
+        // The server may acknowledge a rebased edit at a revision higher than
+        // this device's localRevision. Persist that revision before the next
+        // offline edit, otherwise the next queued update will falsely conflict.
+        if (remote.revision > prior.localRevision) {
+          await requestValue(unitStore.put({
+            ...prior, localRevision: remote.revision, updatedAt: now,
+          }))
+        }
         await requestValue(meta.put(baseline,key))
         continue
       }
