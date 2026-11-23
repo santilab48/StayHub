@@ -8,6 +8,31 @@ import { localSyncEnabled } from '../../../../lib/db/local-sync-environment'
 export const dynamic = 'force-dynamic'
 const reply = (value: unknown, status = 200) => NextResponse.json(value, { status, headers: { 'Cache-Control': 'no-store' } })
 
+/** Read-only, bounded property-scoped room snapshot for second-device hydration. */
+export async function GET(req: NextRequest) {
+  if (!localSyncEnabled()) return reply({ error: 'Sync unavailable' }, 503)
+  const account = await accountFromSession()
+  if (!account) return reply({ error: 'Sign in required' }, 401)
+  const propertyId = req.nextUrl.searchParams.get('propertyId')
+  const after = req.nextUrl.searchParams.get('after')
+  if (!uuid(propertyId) || (after !== null && !uuid(after))) return reply({ error: 'Invalid cursor' }, 400)
+  try {
+    return await withPostgresTransaction(async client => {
+      if (!await canManageProperty(client, account.id, propertyId)) return reply({ error: 'Forbidden' }, 403)
+      const data = await client.query<{ id: string; name: string; revision: number }>(
+        `SELECT u.id,u.name,coalesce(r.revision,1)::integer AS revision
+         FROM stayhub.units u LEFT JOIN stayhub.local_sync_revisions r
+           ON r.property_id=u.property_id AND r.entity_id=u.id
+         WHERE u.property_id=$1 AND u.id>$2::uuid AND u.active=true
+         ORDER BY u.id LIMIT 101`,
+        [propertyId, after ?? '00000000-0000-0000-0000-000000000000'],
+      )
+      const rows = data.rows.slice(0,100)
+      return reply({ units: rows, nextCursor: data.rows.length > 100 ? rows.at(-1)?.id : null })
+    })
+  } catch { return reply({ error: 'Sync unavailable' }, 503) }
+}
+
 export async function POST(req: NextRequest) {
   if (!localSyncEnabled()) return reply({ result: 'rejected' }, 503)
   if (!checkOrigin(req)) return reply({ result: 'rejected' }, 403)
