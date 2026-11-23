@@ -4,7 +4,7 @@ import {postgresQuery} from '../../../../lib/db/postgres'
 export const dynamic='force-dynamic'
 const send=(value:unknown,status=200)=>NextResponse.json(value,{status,headers:{'Cache-Control':'no-store'}})
 const uuid=(v:unknown):v is string=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)
-const string=(v:unknown,min:number,max:number)=>typeof v==='string'&&v.trim().length>=min&&v.trim().length<=max
+const string=(v:unknown,min:number,max:number):v is string=>typeof v==='string'&&v.trim().length>=min&&v.trim().length<=max
 const money=(v:unknown)=>typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=1000000&&Math.round(v*100)===v*100
 type Access={owner:boolean;units:string[]}
 async function getAccess(accountId:string,propertyId:string):Promise<Access|null>{
@@ -81,7 +81,7 @@ export async function POST(req:NextRequest){
  catch{return send({error:'Invalid JSON'},400)}
  if(!uuid(b.propertyId)||!string(b.action,3,60))return send({error:'Invalid request'},400)
  const propertyId=b.propertyId
- const action=b.action
+ const action=String(b.action)
  try{
   const access=await getAccess(account.id,propertyId)
   if(!access)return send({error:'Forbidden'},403)
@@ -89,7 +89,7 @@ export async function POST(req:NextRequest){
   if(privileged.includes(action)&&!access.owner)return send({error:'Forbidden'},403)
   if(action==='settings-save'){
    const {waterRate,electricRate,dueDay,lateFee}=b
-   if(!money(waterRate)||!money(electricRate)||!money(lateFee)||!Number.isInteger(dueDay)||Number(dueDay)<1||Number(dueDay)>28)return send({error:'Invalid settings'},400)
+   if(!money(waterRate)||!money(electricRate)||!money(lateFee)||typeof dueDay!=='number'||!Number.isInteger(dueDay)||Number(dueDay)<1||Number(dueDay)>28)return send({error:'Invalid settings'},400)
    await postgresQuery(`INSERT INTO stayhub.property_settings(property_id,water_rate,electric_rate,due_day,late_fee,updated_by)
    VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(property_id) DO UPDATE
    SET water_rate=EXCLUDED.water_rate,electric_rate=EXCLUDED.electric_rate,

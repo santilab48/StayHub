@@ -32,7 +32,7 @@ export default function MyStayPage(){
     {stays.map(stay=><section key={stay.id} className="card section">
       <h2>{stay.property_name}</h2><p>ห้อง: <strong>{stay.unit_name}</strong></p>
       <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))'}}>
-        {tiles.map(([icon,title,description],i)=>i===1?<a key={title} href="/cloud/billing" className="card tile"><span className="icon">{icon}</span><strong>{title}</strong><p className="muted">{description}</p></a>:<div key={title} className="card tile">
+        {tiles.map(([icon,title,description],i)=>(i===1||i===3||i===4)?<a key={title} href={i===1?"/cloud/billing":"/cloud/operations?kind="+(i===3?"parcels":"announcements")} className="card tile"><span className="icon">{icon}</span><strong>{title}</strong><p className="muted">{description}</p></a>:<div key={title} className="card tile">
           <span className="icon">{icon}</span><strong>{title}</strong>
           <p className="muted">{i===0?'สิทธิ์ได้รับการยืนยันแล้ว':description}</p>
         </div>)}
