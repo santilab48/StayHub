@@ -14,13 +14,12 @@ CREATE INDEX IF NOT EXISTS platform_admin_events_account_idx
   ON stayhub_membership.platform_admin_events(railway_account_id,occurred_at DESC);
 REVOKE ALL ON stayhub_membership.platform_admin_events FROM PUBLIC;
 
-CREATE OR REPLACE FUNCTION stayhub_membership.reject_platform_admin_event_mutation()
+CREATE FUNCTION stayhub_membership.reject_platform_admin_event_mutation()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   RAISE EXCEPTION 'Platform administrator audit events are append-only';
 END
 $$;
-DROP TRIGGER IF EXISTS platform_admin_events_immutable ON stayhub_membership.platform_admin_events;
 CREATE TRIGGER platform_admin_events_immutable
 BEFORE UPDATE OR DELETE ON stayhub_membership.platform_admin_events
 FOR EACH ROW EXECUTE FUNCTION stayhub_membership.reject_platform_admin_event_mutation();
