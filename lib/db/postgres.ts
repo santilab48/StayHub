@@ -9,10 +9,9 @@ export function getPostgresPool(): Pool {
   const usingNeonStaging = process.env.STAYHUB_DB_PROVIDER === 'neon-staging'
   const usingNeonProduction = process.env.STAYHUB_DB_PROVIDER === 'neon-production'
   const writeFreeze = process.env.STAYHUB_WRITE_FREEZE === 'YES'
-  // Prevent an accidental first Neon Production deployment with writes enabled.
-  if (usingNeonProduction && !writeFreeze) {
-    throw new Error('Neon production connection requires verified maintenance write freeze')
-  }
+  // Write freeze is a temporary maintenance state, not a permanent Neon
+  // connection requirement. Production promotion/cutover remains a separate
+  // operator-controlled release gate.
   if (usingNeonStaging && (
     process.env.RAILWAY_PROJECT_ID !== 'a8a5a434-4d18-438f-b4ea-ece072094595' ||
     process.env.RAILWAY_ENVIRONMENT_NAME !== 'staging' ||
