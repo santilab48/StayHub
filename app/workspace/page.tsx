@@ -5,7 +5,7 @@ import { getActiveWorkspace, type DeviceWorkspace } from '../../lib/local-worksp
 import { accommodationLabel } from '../../lib/accommodation-types'
 import type { LocalRecord } from '../../lib/local-db'
 import { getPropertyLink, savePropertyLink, type PropertyLink } from '../../lib/local-db/property-link'
-import { listSyncQueue, resolveSyncConflict, syncNow, type SyncOperation } from '../../lib/local-db/sync'
+import { listSyncQueue, pullServerUnits, resolveSyncConflict, syncNow, type SyncOperation } from '../../lib/local-db/sync'
 import { getBillItems, listAllLocal, removeRoom, saveBillDraft, saveMeter, saveRoom } from '../../lib/local-db/offline'
 
 type Room = LocalRecord<'units'>
@@ -134,6 +134,22 @@ export default function WorkspacePage() {
             const result = await response.json()
             if (!['accepted', 'duplicate', 'conflict', 'rejected'].includes(result.result)) throw new Error('ผลตอบกลับไม่ถูกต้อง')
             return result
+          }).then(async () => {
+            // The existing Sync button now also pulls the property snapshot.
+            // Never mutate local rooms until membership has been revalidated.
+            if (!link) throw new Error('ต้องเชื่อมที่พักก่อนซิงก์')
+            const checked = await fetch('/api/v2/sync/properties', { credentials: 'same-origin', cache: 'no-store' })
+            if (!checked.ok) throw new Error('กรุณาเข้าสู่ระบบก่อนซิงก์')
+            const current = await checked.json()
+            if (current.accountId !== link.accountId || !current.properties.some((property: { id: string }) => property.id === link.serverPropertyId))
+              throw new Error('ไม่มีสิทธิ์ในที่พักที่เชื่อมไว้')
+            await pullServerUnits(workspace.id, link.serverPropertyId, async after => {
+              const params = new URLSearchParams({ propertyId: link.serverPropertyId })
+              if (after) params.set('after', after)
+              const response = await fetch('/api/v2/sync?' + params, { credentials: 'same-origin', cache: 'no-store' })
+              if (!response.ok) throw new Error('โหลดห้องพักจาก Server ไม่สำเร็จ')
+              return response.json()
+            })
           }))}>ซิงก์ตอนนี้</button>{' '}
           <button onClick={() => setShowQueue(!showQueue)}>ดูรายการรอซิงก์</button>{' '}
           <button onClick={() => setShowConflicts(!showConflicts)}>ดูข้อขัดแย้ง</button>
