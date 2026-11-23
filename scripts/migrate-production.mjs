@@ -133,3 +133,7 @@ try {
   client.release()
   await pool.end()
 }
+
+// Production deploys must also verify the separate, strictly read-only Neon
+// membership database. This is a SELECT-only preflight, not a Neon migration.
+if(!checkOnly && !dryRun) await import('./check-membership-production.mjs')
