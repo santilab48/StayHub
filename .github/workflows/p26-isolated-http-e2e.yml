@@ -16,6 +16,8 @@ on:
       - 'scripts/p60-membership-provision.mjs'
       - 'scripts/p61-membership-browser-e2e.mjs'
       - 'scripts/p63-platform-admin-http-e2e.mjs'
+      - 'scripts/p64-platform-admin-provision.mjs'
+      - 'scripts/p64-platform-admin-provision-e2e.mjs'
       - 'scripts/check-membership-production.mjs'
       - 'scripts/migrate-production.mjs'
       - 'neon/membership/**'
@@ -36,6 +38,8 @@ on:
       - 'scripts/p60-membership-provision.mjs'
       - 'scripts/p61-membership-browser-e2e.mjs'
       - 'scripts/p63-platform-admin-http-e2e.mjs'
+      - 'scripts/p64-platform-admin-provision.mjs'
+      - 'scripts/p64-platform-admin-provision-e2e.mjs'
       - 'scripts/check-membership-production.mjs'
       - 'scripts/migrate-production.mjs'
       - 'neon/membership/**'
@@ -92,6 +96,7 @@ jobs:
           PGPASSWORD=postgres createdb -h 127.0.0.1 -U postgres stayhub_membership_ci
           PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 -d stayhub_membership_ci -f neon/membership/001_membership.sql
           PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 -d stayhub_membership_ci -f neon/membership/002_platform_admins.sql
+          PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 -d stayhub_membership_ci -f neon/membership/003_platform_admin_audit.sql
       - name: Boot localhost Next.js with disposable CI Postgres only
         shell: bash
         run: |
@@ -109,6 +114,8 @@ jobs:
         run: node scripts/p60-membership-http-e2e.mjs
       - name: Test server-authorized Platform Admin membership directory and revocation
         run: node scripts/p63-platform-admin-http-e2e.mjs
+      - name: Test dual-signed operator grant and revoke with immutable audit
+        run: node scripts/p64-platform-admin-provision-e2e.mjs
       - name: Verify isolated membership DB identity and reader schema preflight
         run: node scripts/check-membership-production.mjs
       - name: Install Chromium for isolated browser E2E
