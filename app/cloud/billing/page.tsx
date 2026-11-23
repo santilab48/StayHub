@@ -138,11 +138,14 @@ export default function CloudBillingPage(){
     <p><a href="/cloud">← กลับหน้าจัดการที่พัก</a></p>
     <p><a className="btn secondary" href="/cloud/leases">จัดการสัญญาเช่าก่อนทำบิล</a></p>
     <h1>บิลรายเดือน · StayHub Cloud</h1>
+    <p><a className="btn secondary" href="/cloud/receipts">ดูใบเสร็จที่ชำระครบ</a></p>
     <p className="muted">ค่าน้ำ ค่าไฟ ค่าเช่า และการรับเงินสด/โอน · ข้อมูลผูกกับบัญชีและที่พักจากระบบ Cloud</p>
     {properties.length>0&&<section className="card section"><label>เลือกที่พัก <select value={propertyId} onChange={e=>{setPage(1);setPropertyId(e.target.value)}}><option value="">บิลของฉัน (ผู้เช่า)</option>{properties.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label></section>}
     {error&&<p role="alert" className="card" style={{color:'crimson'}}>{error}</p>}
     {notice&&<p role="status" className="card">{notice}</p>}
-    {owner&&<>
+    {selectedBill.bill.status==='paid'&&Number(selectedBill.outstanding)===0&&
+        <p><a className="btn secondary" href={'/cloud/receipts/'+encodeURIComponent(selectedBill.bill.id)+'?propertyId='+encodeURIComponent(selectedBill.bill.property_id)}>ใบเสร็จ / พิมพ์ PDF</a></p>}
+      {owner&&<>
       <section className="card section"><h2>ออกบิลรายเดือน</h2>
         <form className="list" onSubmit={e=>void issueBill(e)}>
           <label>เดือนออกบิล <input type="month" required value={period} onChange={e=>setPeriod(e.target.value)}/></label>
