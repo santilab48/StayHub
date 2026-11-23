@@ -22,8 +22,12 @@ async function signup(label) {
     body:JSON.stringify({email:`p60-${label}-${tag}@example.invalid`,password}),
   })
   assert.equal(response.status,201,'isolated account registration')
-  const data=await response.json()
-  return {id:data.id,cookie:response.headers.get('set-cookie')?.split(';')[0]}
+  const cookie=response.headers.get('set-cookie')?.split(';')[0]
+  assert.ok(cookie,'registration must issue an authenticated session')
+  const me=await fetch(base+'/api/v2/me',{headers:{cookie}})
+  assert.equal(me.status,200,'Railway session resolves after signup')
+  const data=await me.json()
+  return {id:data.id,cookie}
 }
 async function query(cookie) {
   const response=await fetch(base+'/api/v2/membership',{headers:cookie?{cookie}:{}})
