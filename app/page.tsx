@@ -1,16 +1,32 @@
+'use client'
+import {useRouter} from 'next/navigation'
+import {accommodationTypes,type AccommodationType} from '../lib/accommodation-types'
+const choices:{id:AccommodationType;icon:string;description:string}[]=[
+ {id:'apartment',icon:'🏢',description:'หอพัก ห้องเช่า และอพาร์ตเมนต์รายเดือน'},
+ {id:'guesthouse',icon:'🛎️',description:'เกสต์เฮาส์และที่พักขนาดเล็ก'},
+ {id:'daily',icon:'🛏️',description:'ห้องพักรายวันและที่พักระยะสั้น'},
+ {id:'homestay',icon:'🏡',description:'บ้านพักส่วนตัวและโฮมสเตย์'}
+]
 export default function Home(){
-  return <main className="wrap">
-    <section className="hero card" style={{padding:32}}>
-      <span className="badge">StayHub</span>
-      <h1>จัดการที่พักได้ง่าย ในแอปเดียว</h1>
-      <p className="lead">เลือกประเภทที่พักก่อน สมัครสมาชิก แล้วเริ่มสร้างที่พักและ QR ให้ผู้เช่าได้จากบัญชีเจ้าของ ไม่ต้องใช้ LINE OA</p>
-      <div className="flow"><a className="btn" href="/cloud">เริ่มต้นสำหรับเจ้าของที่พัก</a><a className="btn secondary" href="/cloud">เข้าสู่ระบบเจ้าของ</a><a className="btn secondary" href="/start">โหมดทดลองในเครื่อง</a><a className="btn secondary" href="/my">แผงผู้เช่า</a></div>
-      <p className="footnote">ฟังก์ชัน Cloud และ Billing อยู่ระหว่างตรวจสอบความพร้อมก่อนเปิดใช้จริง โปรดอย่าใช้ข้อมูลการเงินหรือข้อมูลผู้เช่าจริงระหว่างช่วงทดสอบ ข้อมูลในเครื่องและ Cloud ยังไม่ซิงก์กัน</p>
-    </section>
-    <section className="section grid">
-      <div className="card"><div className="icon">🏠</div><h3>ที่พักของคุณ</h3><p className="muted">เริ่มตั้งค่าหอพัก เกสต์เฮาส์ รายวัน และโฮมสเตย์ได้โดยไม่ผูกกับ LINE</p></div>
-      <div className="card"><div className="icon">💾</div><h3>ข้อมูลในเครื่อง</h3><p className="muted">เก็บข้อมูลเริ่มต้นผ่าน IndexedDB</p></div>
-      <div className="card"><div className="icon">🔐</div><h3>เชื่อมบัญชีในอนาคต</h3><p className="muted">ข้อมูลแชร์และการเงินต้องได้รับการตรวจสิทธิ์จาก Server</p></div>
-    </section>
-  </main>
+ const router=useRouter()
+ return <main className="welcomePage">
+  <header className="welcomeHeader">
+   <div className="welcomeBrand"><span className="welcomeBrandMark">S</span><span>StayHub</span></div>
+   <a className="welcomeLogin" href="/cloud?login=1">มีบัญชีแล้ว? เข้าสู่ระบบ</a>
+  </header>
+  <section className="welcomeBody" aria-labelledby="welcomeTitle">
+   <div className="welcomeIntro"><span className="welcomeEyebrow">เริ่มต้นใช้งาน STAYHUB</span>
+    <h1 id="welcomeTitle">เลือกประเภทที่พักของคุณ</h1>
+    <p>เลือกหนึ่งประเภทเพื่อเริ่มสมัครสมาชิกก่อนเข้าสู่ระบบจัดการที่พัก</p></div>
+   <div className="welcomeGrid">
+    {choices.map(choice=><button type="button" key={choice.id} className="welcomeChoice"
+     onClick={()=>router.push('/cloud?type='+encodeURIComponent(choice.id))}>
+     <span className="welcomeChoiceIcon" aria-hidden="true">{choice.icon}</span>
+     <span className="welcomeChoiceCopy"><strong>{accommodationTypes[choice.id].label}</strong><small>{choice.description}</small></span>
+     <span className="welcomeChoiceArrow" aria-hidden="true">↗</span>
+    </button>)}
+   </div>
+  </section>
+  <footer className="welcomeFooter">เลือกประเภท → สมัครสมาชิก → ตั้งค่าที่พัก</footer>
+ </main>
 }
