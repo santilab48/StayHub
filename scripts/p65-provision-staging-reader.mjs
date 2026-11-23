@@ -34,7 +34,7 @@ try{
   if(exists.rowCount)throw Error('REFUSED: role exists; use read-only checker instead')
   // Create a non-inheriting role with no admin powers, a generated password, and no memberships.
   const create=await admin.query(`SELECT format(
-   'CREATE ROLE %I WITH LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD %L', $1, $2
+   'CREATE ROLE %I WITH LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD %L', $1::text, $2::text
   ) AS sql`,[role,pw])
   await admin.query(create.rows[0].sql)
   await admin.query('GRANT USAGE ON SCHEMA stayhub TO stayhub_identity_reader')
