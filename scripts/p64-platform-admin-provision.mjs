@@ -59,6 +59,15 @@ if(!req || Object.keys(req).sort().join(',')!=='account,action,expiresAt,reason,
  throw Error('REFUSED: invalid or stale signed request')
 const aKey=env.STAYHUB_P64_APPROVER_A_SPKI_B64,bKey=env.STAYHUB_P64_APPROVER_B_SPKI_B64
 if(!aKey||!bKey||aKey===bKey)throw Error('REFUSED: two distinct configured Ed25519 approvers required')
+// The key registry must bind each key to an independently identified Railway account.
+// A valid signature alone does not prove that its holder is a different person from the target.
+const aAccount=env.STAYHUB_P64_APPROVER_A_ACCOUNT_ID
+const bAccount=env.STAYHUB_P64_APPROVER_B_ACCOUNT_ID
+if(!uuid.test(aAccount??'')||!uuid.test(bAccount??'')||
+ aAccount.toLowerCase()===bAccount.toLowerCase()||
+ req.account.toLowerCase()===aAccount.toLowerCase()||
+ req.account.toLowerCase()===bAccount.toLowerCase())
+ throw Error('REFUSED: distinct verified approver accounts required; self-grant and self-revoke forbidden')
 const msg=Buffer.from(JSON.stringify(req),'utf8')
 function authenticate(base64,signature){
  if(typeof signature!=='string'||!/^[A-Za-z0-9+/]+={0,2}$/.test(signature))return false
@@ -78,14 +87,25 @@ await railwayDb.connect()
 try{
  if(intendedStaging){
   const meta=await railwayDb.query(`SELECT current_database() AS db,current_user AS role,
-    has_table_privilege(current_user,'stayhub.accounts','SELECT') AS can_read,
-    has_table_privilege(current_user,'stayhub.accounts','UPDATE') AS can_update`)
+    has_column_privilege(current_user,'stayhub.accounts','id','SELECT') AS can_read,
+    EXISTS(SELECT 1 FROM pg_roles WHERE rolname=current_user AND
+      (rolsuper OR rolcreaterole OR rolcreatedb OR rolbypassrls)) AS elevated,
+    EXISTS(SELECT 1 FROM pg_auth_members m JOIN pg_roles r ON r.oid=m.member
+      WHERE r.rolname=current_user) AS has_inherited_roles,
+    EXISTS(SELECT 1 FROM pg_tables t WHERE t.schemaname='stayhub' AND
+      (has_table_privilege(current_user,format('%I.%I',t.schemaname,t.tablename),'INSERT') OR
+       has_table_privilege(current_user,format('%I.%I',t.schemaname,t.tablename),'UPDATE') OR
+       has_table_privilege(current_user,format('%I.%I',t.schemaname,t.tablename),'DELETE') OR
+       has_table_privilege(current_user,format('%I.%I',t.schemaname,t.tablename),'TRUNCATE'))) AS can_write`)
   if(meta.rows[0]?.db!=='railway'||meta.rows[0]?.role!=='stayhub_identity_reader'||
-     meta.rows[0]?.can_read!==true||meta.rows[0]?.can_update!==false)
+     meta.rows[0]?.can_read!==true||meta.rows[0]?.can_write!==false||
+     meta.rows[0]?.elevated!==false||meta.rows[0]?.has_inherited_roles!==false)
    throw Error('REFUSED: Railway database role is not strictly read-only')
  }
- const account=await railwayDb.query('SELECT id FROM stayhub.accounts WHERE id=$1',[req.account])
- if(account.rowCount!==1)throw Error('REFUSED: account UUID does not exist in the independent Railway identity database')
+ const accounts=await railwayDb.query('SELECT id FROM stayhub.accounts WHERE id=ANY($1::uuid[])',
+  [[req.account,aAccount,bAccount]])
+ if(accounts.rowCount!==3)
+  throw Error('REFUSED: target and both approvers must exist in the independent Railway identity database')
  await neonDb.connect()
  try{
   await neonDb.query('BEGIN')
@@ -110,8 +130,10 @@ try{
     if(existing.rowCount!==1)throw Error('REFUSED: admin is not active')
    }
    await neonDb.query(`INSERT INTO stayhub_membership.platform_admin_events
-    (request_id,railway_account_id,action,approver_a_fingerprint,approver_b_fingerprint,reason)
-    VALUES($1,$2,$3,$4,$5,$6)`,[req.requestId,req.account,req.action,fingerprint(aKey),fingerprint(bKey),req.reason])
+    (request_id,railway_account_id,action,approver_a_fingerprint,approver_b_fingerprint,
+     approver_a_railway_account_id,approver_b_railway_account_id,reason)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,
+    [req.requestId,req.account,req.action,fingerprint(aKey),fingerprint(bKey),aAccount,bAccount,req.reason])
    await neonDb.query('COMMIT')
    console.log('PASS P6.4: authorized, identity-verified, dual-signed '+req.action+' with append-only audit event')
   }catch(err){await neonDb.query('ROLLBACK').catch(()=>{});throw err}

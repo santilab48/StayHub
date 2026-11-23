@@ -97,6 +97,7 @@ jobs:
           PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 -d stayhub_membership_ci -f neon/membership/001_membership.sql
           PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 -d stayhub_membership_ci -f neon/membership/002_platform_admins.sql
           PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 -d stayhub_membership_ci -f neon/membership/003_platform_admin_audit.sql
+          PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 -d stayhub_membership_ci -f neon/membership/004_platform_admin_approvers.sql
       - name: Boot localhost Next.js with disposable CI Postgres only
         shell: bash
         run: |
