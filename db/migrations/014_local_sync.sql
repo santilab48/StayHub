@@ -1,5 +1,4 @@
--- Local sync receipt and revision state (Railway PostgreSQL staging and production).
--- Production deployment requires property-scoped authenticated sync; never sync bill drafts as issued bills.
+-- Staging-only local sync receipt and revision state.
 CREATE TABLE IF NOT EXISTS stayhub.local_sync_receipts (
   operation_id uuid PRIMARY KEY,
   property_id uuid NOT NULL REFERENCES stayhub.properties(id),
