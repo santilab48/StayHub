@@ -37,10 +37,17 @@ Do not call this two-device browser E2E verified until the isolated workflows pa
 
 ## Staging build-time test gate (P5.2)
 
-Railway Staging service `StayHub-F_Sd` now uses a build command that first executes the sync contract and IndexedDB regression tests, and runs the Next.js build **only if they pass**:
+The repository's `railway.json` now defines a build command that first executes the sync contract and IndexedDB regression tests, and runs the Next.js build **only if they pass**. Railway reads this repository file ahead of any environment-specific dashboard build command:
 
 ```sh
 node scripts/test-local-sync-contract.mjs && npx tsx --test tests/local-db.test.ts tests/p2b-sync.test.ts && npm run build
 ```
 
-This setting is scoped to Railway Staging environment `ced39691-4fe7-4707-bba7-6d0e801f1ff8`; Railway Production's build command and pinned source remain unchanged. Inspect the subsequent Staging deployment's build logs before claiming test results. The isolated HTTP test workflow continues to be configured via GitHub Actions and is a separate verification gate.
+This file-level build gate applies to future builds from this branch, not only Staging. The **currently running Production image remains pinned** to old commit `366bbbd4`, and Production was not deployed in P5.2. The isolated HTTP test workflow continues to be configured via GitHub Actions and is a separate verification gate.
+
+### Staging execution evidence
+
+- First gated build `fb841afb-553b-43f8-849c-072356b7cbdd` failed appropriately: 10/11 tests passed; one stale test expectation was corrected without making unsafe production changes.
+- Second gated build and deployment `081b31c6-5647-4446-a712-fe456977c2f4` completed **SUCCESS** at code commit `a722a664b0fa8c58b8cd2ddace162cbb524c9e64`.
+- Build log explicitly shows **11 tests, 11 passes, 0 failures**, including previously failing server-pull test, followed by **Next.js compiled successfully**, type validation and healthy Staging deployment.
+- This proves the local IndexedDB and static sync-contract regression suite ran, but does **not** prove isolated PostgreSQL HTTP GitHub Actions passed or a real two-device browser E2E completed. The latter are still required before Production promotion.
