@@ -76,3 +76,59 @@ test('keep-local conflict rebases onto server revision without mutating local ro
   assert.equal(sentRevision, 3)
   assert.equal((await listSyncQueue(workspace.id)).find(op => op.entityId === room.id)?.status, 'synced')
 })
+
+test('pull: import remote room, keep pending local edits and refresh acknowledged remote changes', async () => {
+  const { mergeServerUnits, pullServerUnits } = await import('../lib/local-db/sync')
+  const { listLocalRecords } = await import('../lib/local-db')
+  const local = await createDeviceWorkspace('Device B', 'Shared property')
+  const remoteId = crypto.randomUUID()
+  const first = await pullServerUnits(local.id, crypto.randomUUID(), async () => ({
+    units: [{ id: remoteId, name: 'Room 101', revision: 1 }], nextCursor: null,
+  }))
+  assert.deepEqual(first, { imported: 1, updated: 0, protected: 0 })
+  assert.equal((await getLocalRecord('units', local.id, remoteId))?.name, 'Room 101')
+  const fresh = await mergeServerUnits(local.id, [{ id: remoteId, name: 'Room 101 changed', revision: 2 }])
+  assert.equal(fresh.protected, 1, 'untracked local records are never overwritten')
+  assert.equal((await getLocalRecord('units', local.id, remoteId))?.name, 'Room 101')
+  const changed = await saveRoom(local.id, 'Offline edit', (await getLocalRecord('units', local.id, remoteId))!)
+  const queued = await listSyncQueue(local.id)
+  assert.ok(queued.some(item => item.entityId === remoteId && item.status === 'pending'))
+  await mergeServerUnits(local.id, [{ id: remoteId, name: 'Remote edit', revision: 3 }])
+  assert.equal((await getLocalRecord('units', local.id, remoteId))?.name, changed.name)
+  await syncNow(local.id, async op => ({
+    result: 'accepted', serverRecord: { id: op.entityId, name: 'Offline edit', revision: 2 },
+  }))
+  const ack = await mergeServerUnits(local.id, [{ id: remoteId, name: 'Updated elsewhere', revision: 3 }])
+  assert.equal(ack.updated, 1)
+  assert.equal((await getLocalRecord('units', local.id, remoteId))?.name, 'Updated elsewhere')
+  assert.equal((await listLocalRecords('units', local.id)).records.length, 1)
+})
+
+test('pull: pagination, invalid page and cross-workspace ID never corrupt data', async () => {
+  const { mergeServerUnits, pullServerUnits } = await import('../lib/local-db/sync')
+  const a = await createDeviceWorkspace('Owner A', 'A')
+  const b = await createDeviceWorkspace('Owner B', 'B')
+  const roomB = await saveRoom(b.id, 'B Private')
+  const remoteA = crypto.randomUUID()
+  const cursors: (string | undefined)[] = []
+  const result = await pullServerUnits(a.id, crypto.randomUUID(), async after => {
+    cursors.push(after)
+    return after ? { units: [{ id: crypto.randomUUID(), name: 'Second page', revision: 1 }], nextCursor: null }
+      : { units: [{ id: remoteA, name: 'First page', revision: 1 }], nextCursor: remoteA }
+  })
+  assert.equal(result.imported, 2)
+  assert.deepEqual(cursors, [undefined, remoteA])
+  await assert.rejects(
+    mergeServerUnits(a.id, [{ id: roomB.id, name: 'Other property', revision: 2 }]),
+    /another workspace/,
+  )
+  assert.equal((await getLocalRecord('units', b.id, roomB.id))?.name, 'B Private')
+  await assert.rejects(
+    mergeServerUnits(a.id, [{ id: crypto.randomUUID(), name: '', revision: 1 }]),
+    /Invalid remote unit/,
+  )
+  await assert.rejects(
+    pullServerUnits(a.id, crypto.randomUUID(), async () => ({ units: [], nextCursor: remoteA })),
+    /Invalid pagination cursor/,
+  )
+})
