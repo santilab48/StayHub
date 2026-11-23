@@ -34,3 +34,13 @@ The existing button **ซิงก์ตอนนี้** now runs outbound queu
 ## Release gate and rollback
 
 Do not call this two-device browser E2E verified until the isolated workflows pass and a real browser-to-browser sync is tested. Production app remains pinned to previous commit `366bbbd4a1ef4f3934eddc50f5bc1f826df76178` and **P5.2 code is not yet live in Production**. Continue using Stage until CI outcomes are verified. To roll back P5.2 in a subsequent deployment, revert the GET/merge/button-handler changes; no database migration or destructive data reversal is required. Existing device local baselines should be treated as benign metadata and left intact.
+
+## Staging build-time test gate (P5.2)
+
+Railway Staging service `StayHub-F_Sd` now uses a build command that first executes the sync contract and IndexedDB regression tests, and runs the Next.js build **only if they pass**:
+
+```sh
+node scripts/test-local-sync-contract.mjs && npx tsx --test tests/local-db.test.ts tests/p2b-sync.test.ts && npm run build
+```
+
+This setting is scoped to Railway Staging environment `ced39691-4fe7-4707-bba7-6d0e801f1ff8`; Railway Production's build command and pinned source remain unchanged. Inspect the subsequent Staging deployment's build logs before claiming test results. The isolated HTTP test workflow continues to be configured via GitHub Actions and is a separate verification gate.
