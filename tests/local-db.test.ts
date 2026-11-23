@@ -26,11 +26,11 @@ async function property(name = 'Example property') {
 test('creates every required store and preserves the workspace store', async () => {
   const db = await openLocalDB()
   try {
-    assert.equal(await getLocalDatabaseVersion(), 2)
+    assert.equal(await getLocalDatabaseVersion(), 3)
     assert.deepEqual([...db.objectStoreNames], [
       'announcements', 'bill_items', 'bills', 'change_log', 'leases', 'meter_readings',
       'parcels', 'payments', 'properties', 'repairs', 'residents', 'settings',
-      'units', 'vehicles', 'workspaces',
+      'sync_queue', 'units', 'vehicles', 'workspaces',
     ])
   } finally {
     db.close()
