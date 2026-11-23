@@ -40,7 +40,8 @@ async function state() {
 }
 async function assertContents(){
   await page.getByRole('heading',{name:'ห้องพัก'}).waitFor()
-  await page.locator('li').filter({hasText:room}).waitFor()
+  await page.locator('section').filter({has:page.getByRole('heading',{name:'ห้องพัก'})})
+    .locator('li').filter({hasText:room}).waitFor()
   await page.locator('section').filter({has:page.getByRole('heading',{name:'มิเตอร์น้ำและไฟ'})})
     .locator('li').filter({hasText:'น้ำ 35'}).waitFor()
   await page.locator('section').filter({has:page.getByRole('heading',{name:'บิลรายเดือนในเครื่อง'})})
