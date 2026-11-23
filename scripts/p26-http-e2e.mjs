@@ -173,6 +173,35 @@ async function main(){
  expect(await request('/api/v2/checkout',{method:'POST',cookie:alice,body:{propertyId:prop,stayId}}),200,'owner checks tenant out')
  expect(await request('/api/v2/bills/'+billId+'?propertyId='+prop,{cookie:tenant}),200,'tenant can read historical bill after checkout')
  expect(await request('/api/v2/bills/'+billId+'/payments?propertyId='+prop,{cookie:tenant}),200,'tenant can read payment balance after checkout')
+ // P5.6: Only disposable PostgreSQL may grant test memberships. Never mutate
+ // Railway/Neon data or rely on an unapproved Production admin.
+ const ciDb=process.env.DATABASE_URL
+ if(process.env.CI!=='true'||!ciDb||new URL(ciDb).hostname!=='127.0.0.1'||
+    new URL(ciDb).pathname!=='/stayhub_p26_ci')
+   throw new Error('Refused: admin-role fixture is isolated-CI-only')
+ const { Client }=await import('pg')
+ const client=new Client({connectionString:ciDb})
+ await client.connect()
+ try {
+   const bobAccount=expect(await request('/api/v2/me',{cookie:bob}),200,'admin candidate authenticated').data.id
+   const staffCookie=await register('staff')
+   const staffAccount=expect(await request('/api/v2/me',{cookie:staffCookie}),200,'staff candidate authenticated').data.id
+   await client.query("INSERT INTO stayhub.property_memberships(property_id,account_id,role) VALUES($1,$2,'admin')",[prop,bobAccount])
+   await client.query("INSERT INTO stayhub.property_memberships(property_id,account_id,role) VALUES($1,$2,'staff')",[prop,staffAccount])
+   expect(await request('/api/v2/units?propertyId='+prop,{cookie:bob}),200,'property admin can list rooms')
+   expect(await request('/api/v2/requests?propertyId='+prop,{cookie:bob}),200,'property admin can review join requests')
+   const adminProperties=expect(await request('/api/v2/sync/properties',{cookie:bob}),200,'property admin can discover authorized sync property')
+   assert.ok(adminProperties.data.properties.some(x=>x.id===prop))
+   expect(await request('/api/v2/sync?propertyId='+prop,{cookie:bob}),200,'property admin can pull rooms')
+   const adminOp={...syncBody,operationId:randomUUID(),entityId:randomUUID(),baseRevision:0,payload:{name:'CI-admin-room'}}
+   assert.equal(expect(await request('/api/v2/sync',{method:'POST',cookie:bob,body:adminOp}),200,'property admin can sync room').data.result,'accepted')
+   expect(await request('/api/v2/units?propertyId='+prop,{cookie:staffCookie}),403,'staff cannot use owner-only room API')
+   expect(await request('/api/v2/requests?propertyId='+prop,{cookie:staffCookie}),403,'staff cannot review owner-only requests')
+   const staffProperties=expect(await request('/api/v2/sync/properties',{cookie:staffCookie}),200,'staff sync list is scoped')
+   assert.ok(!staffProperties.data.properties.some(x=>x.id===prop))
+   expect(await request('/api/v2/sync?propertyId='+prop,{cookie:staffCookie}),403,'staff cannot pull owner sync')
+   expect(await request('/api/v2/sync',{method:'POST',cookie:staffCookie,body:{...adminOp,operationId:randomUUID()}}),403,'staff cannot push owner sync')
+ } finally { await client.end() }
  // Verified logout must revoke the cookie on the server, not just clear browser state.
  expect(await request('/api/v2/logout',{method:'POST',cookie:bob,body:{}}),200,'logout bob')
  expect(await request('/api/v2/me',{cookie:bob}),401,'revoked session denied')
