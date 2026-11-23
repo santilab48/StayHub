@@ -24,8 +24,8 @@ async function inspect(url) {
   const tables=(await db.query(`SELECT table_name FROM information_schema.tables
    WHERE table_schema='stayhub' AND table_type='BASE TABLE'
    ORDER BY table_name`)).rows.map(x=>x.table_name)
-  if(tables.length!==20||!tables.includes('schema_migrations'))
-    throw new Error('Unexpected StayHub schema: expected exactly 20 tables')
+  if(tables.length!==28||!tables.includes('schema_migrations'))
+    throw new Error('Unexpected StayHub schema: expected exactly 28 tables')
   const rows={}
   for(const table of tables){
    assert.match(table,/^[a-z_]+$/)
@@ -34,7 +34,7 @@ async function inspect(url) {
   const history=(await db.query(
    'SELECT filename,checksum FROM stayhub.schema_migrations ORDER BY filename'
   )).rows
-  if(history.length!==11)throw new Error('Expected 11 migration records')
+  if(history.length!==13)throw new Error('Expected 13 migration records')
   const extensions=(await db.query(
    "SELECT extname,extversion FROM pg_extension ORDER BY extname"
   )).rows
