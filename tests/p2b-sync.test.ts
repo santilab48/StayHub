@@ -54,3 +54,25 @@ async function getActiveWorkspaceForTest() {
   if (!workspace) throw new Error('Missing workspace')
   return workspace
 }
+
+test('keep-local conflict rebases onto server revision without mutating local room', async () => {
+  const workspace = await createDeviceWorkspace('Sync owner', 'Sync property')
+  const room = await saveRoom(workspace.id, 'Local room')
+  await syncNow(workspace.id, async () => ({ result: 'conflict', serverRecord: { name: 'Server room', revision: 3 } }))
+  const before = (await listSyncQueue(workspace.id)).find(op => op.entityId === room.id)!
+  assert.equal(before.status, 'conflict')
+  await resolveSyncConflict(workspace.id, before.operationId, 'keep_local')
+  const after = (await listSyncQueue(workspace.id)).find(op => op.entityId === room.id)!
+  assert.equal(after.status, 'pending')
+  assert.equal(after.baseRevision, 3)
+  assert.equal(after.attemptCount, 0)
+  assert.notEqual(after.operationId, before.operationId)
+  assert.equal((await getLocalRecord('units', workspace.id, room.id))?.name, 'Local room')
+  let sentRevision = -1
+  await syncNow(workspace.id, async op => {
+    sentRevision = op.baseRevision
+    return { result: 'accepted', serverRecord: { name: 'Local room', revision: 4 } }
+  })
+  assert.equal(sentRevision, 3)
+  assert.equal((await listSyncQueue(workspace.id)).find(op => op.entityId === room.id)?.status, 'synced')
+})
