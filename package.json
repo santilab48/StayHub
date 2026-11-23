@@ -13,7 +13,8 @@
     "db:staging:check": "node scripts/migrate-staging.mjs --check",
     "db:staging:migrate": "node scripts/migrate-staging.mjs",
     "test:id-binding": "node scripts/test-id-binding-contract.mjs",
-    "test:id-binding:db": "node scripts/test-id-binding-db.mjs"
+    "test:id-binding:db": "node scripts/test-id-binding-db.mjs",
+    "test:local-db": "tsx --test tests/local-db.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",
@@ -31,6 +32,8 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@types/pg": "^8.15.5",
-    "@types/qrcode": "^1.5.6"
+    "@types/qrcode": "^1.5.6",
+    "fake-indexeddb": "6.2.5",
+    "tsx": "4.21.0"
   }
 }
