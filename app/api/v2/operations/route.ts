@@ -148,7 +148,7 @@ export async function POST(req:NextRequest){
    if(!allowedPrevious)return send({error:'Invalid transition'},409)
    const r=await postgresQuery('UPDATE stayhub.ride_requests SET status=$3,updated_at=now() WHERE property_id=$1 AND id=$2 AND status=$4 RETURNING id',
     [propertyId,b.id,b.status,allowedPrevious])
-   if(!r.rowCount)return send({error:'Not found'},404)
+   if(!r.rowCount)return send({error:'Ride state conflict or not found'},409)
   }else if(action==='document-add'){
    if(!uuid(b.unitId)||!await unitAllowed(propertyId,b.unitId,access)||!string(b.title,1,160)||!string(b.description||'',0,4000))
     return send({error:'Invalid document'},400)
