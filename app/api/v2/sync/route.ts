@@ -47,10 +47,11 @@ export async function POST(req: NextRequest) {
         const saved = await client.query('INSERT INTO stayhub.units (id,property_id,name) VALUES($1,$2,$3) ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name WHERE stayhub.units.property_id=$2 RETURNING id,name', [entityId, propertyId, name])
         if (!saved.rowCount) result = 'rejected'
         else {
-          serverRecord = saved.rows[0]
+          serverRecord = { ...saved.rows[0], revision: currentRevision + 1 }
           await client.query('INSERT INTO stayhub.local_sync_revisions(property_id,entity_id,revision) VALUES($1,$2,$3) ON CONFLICT(property_id,entity_id) DO UPDATE SET revision=EXCLUDED.revision', [propertyId, entityId, currentRevision + 1])
         }
       }
+      if (result === 'conflict' && unit.rowCount) serverRecord = { ...unit.rows[0], revision: currentRevision }
       await client.query('INSERT INTO stayhub.local_sync_receipts(operation_id,property_id,account_id,request_hash,entity_type,entity_id,outcome,server_record) VALUES($1,$2,$3,$4,$5,$6,$7,$8)', [operationId, propertyId, account.id, requestHash, entityType, entityId, result, JSON.stringify(serverRecord)])
       return reply({ result, serverRecord })
     })
