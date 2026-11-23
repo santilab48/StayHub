@@ -188,6 +188,7 @@ export default function CloudOwnerPage(){
           </form>
         </>}
       </section>
+      <section className="card section"><h2>สมาชิกและสิทธิพิเศษ</h2><p className="muted">ตรวจสอบสถานะแพ็กเกจ วันหมดอายุ และสิทธิพิเศษของบัญชีนี้จากระบบสมาชิก</p><a className="btn secondary" href="/membership">ดูสถานะสมาชิก</a></section>
       <section className="card section"><h2>ห้องพักและผู้พัก</h2><p className="muted">เพิ่มห้อง ดูสถานะห้อง ย้ายห้อง และจัดการย้ายออก ผ่านฐานข้อมูล Cloud</p><a className="btn" href="/cloud/rooms">จัดการห้องพัก</a></section>
       <section className="card section"><h2>แจ้งซ่อม</h2><p className="muted">ดูรายการแจ้งซ่อม รับงาน นัดหมาย และปิดงานจากระบบ Cloud</p><a className="btn secondary" href="/cloud/repairs">จัดการงานซ่อม</a></section>
       <section className="card section"><h2>งานบริการและข้อมูลหอพัก</h2><p className="muted">ประกาศ พัสดุ รถของห้อง คนขับ เรียกรถ เอกสารข้อความ และราคาค่าใช้จ่าย</p><a className="btn secondary" href="/cloud/operations">จัดการงานบริการ</a></section>
