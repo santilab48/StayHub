@@ -138,3 +138,62 @@ test('pull: pagination, invalid page and cross-workspace ID never corrupt data',
     /Invalid pagination cursor/,
   )
 })
+
+test('two workspaces exchange room changes through one server and protect offline conflicts', async () => {
+  const { pullServerUnits } = await import('../lib/local-db/sync')
+  const { saveRoom } = await import('../lib/local-db/offline')
+  const serverPropertyId = crypto.randomUUID()
+  const a = await createDeviceWorkspace('Device A', 'A')
+  const b = await createDeviceWorkspace('Device B', 'B')
+  const server = new Map<string, { id: string; name: string; revision: number }>()
+  const send = async (op: { entityId: string; baseRevision: number; payload: unknown }) => {
+    const existing = server.get(op.entityId)
+    const currentRevision = existing?.revision ?? 0
+    if (op.baseRevision !== currentRevision)
+      return { result: 'conflict' as const, serverRecord: existing }
+    const saved = {
+      id: op.entityId, name: (op.payload as { name: string }).name,
+      revision: currentRevision + 1,
+    }
+    server.set(op.entityId,saved)
+    return { result: 'accepted' as const, serverRecord: saved }
+  }
+  const pull = (workspaceId: string) => pullServerUnits(workspaceId, serverPropertyId, async () => ({
+    units: [...server.values()], nextCursor: null,
+  }))
+  const original = await saveRoom(a.id, 'First name')
+  await syncNow(a.id,send)
+  assert.equal(server.get(original.id)?.revision,1)
+  const imported = await pull(b.id)
+  assert.equal(imported.imported,1)
+  assert.equal((await getLocalRecord('units',b.id,original.id))?.name,'First name')
+
+  const firstA = (await getLocalRecord('units',a.id,original.id))!
+  await saveRoom(a.id,'Edited from A',firstA)
+  await syncNow(a.id,send)
+  assert.equal(server.get(original.id)?.revision,2)
+  const localB = (await getLocalRecord('units',b.id,original.id))!
+  await saveRoom(b.id,'Offline B edit',localB)
+  const blocked = await pull(b.id)
+  assert.equal(blocked.protected,1)
+  assert.equal((await getLocalRecord('units',b.id,original.id))?.name,'Offline B edit')
+  await syncNow(b.id,send)
+  const conflict = (await listSyncQueue(b.id)).find(op =>
+    op.entityId===original.id && op.status==='conflict')
+  assert.ok(conflict)
+  await resolveSyncConflict(b.id,conflict.operationId,'keep_local')
+  await syncNow(b.id,send)
+  assert.equal(server.get(original.id)?.revision,3)
+  await pull(b.id)
+  assert.equal((await getLocalRecord('units',b.id,original.id))?.localRevision,3,
+    'server revision must be stored even when the room name already matches')
+  const afterMerge = (await getLocalRecord('units',b.id,original.id))!
+  await saveRoom(b.id,'B second edit',afterMerge)
+  const next = (await listSyncQueue(b.id)).filter(op =>
+    op.entityId===original.id && op.status==='pending')
+  assert.equal(next.at(-1)?.baseRevision,3)
+  await syncNow(b.id,send)
+  assert.equal(server.get(original.id)?.revision,4)
+  await pull(a.id)
+  assert.equal((await getLocalRecord('units',a.id,original.id))?.name,'B second edit')
+})
