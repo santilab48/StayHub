@@ -147,8 +147,8 @@ export default function CloudOwnerPage(){
     </section>}
     {screen==='auth'&&!account&&<section className={authStyles.panel} aria-labelledby="ownerAuthTitle">
       <div className={authStyles.heading}>
-        <span className={authStyles.overline}>STAYHUB <span aria-hidden="true">/</span> OWNER ACCESS</span>
-        <h1 id="ownerAuthTitle">{authMode==='register'?'เริ่มต้นจัดการที่พัก':'ยินดีต้อนรับกลับ'}</h1>
+        <span className={authStyles.overline}>StayHub</span>
+        <h1 id="ownerAuthTitle">{authMode==='register'?'สมัครสมาชิก':'เข้าสู่ระบบ'}</h1>
         <p>{authMode==='register'?'สมัครบัญชีเพื่อเริ่มใช้งาน StayHub':'เข้าสู่ระบบเพื่อจัดการที่พักของคุณ'}</p>
       </div>
       {authMode==='register'&&<div className={authStyles.selected}>
@@ -166,9 +166,9 @@ export default function CloudOwnerPage(){
             <button type="button" className={authStyles.passwordToggle} aria-label={showPassword?'ซ่อนรหัสผ่าน':'แสดงรหัสผ่าน'} aria-pressed={showPassword} onClick={()=>setShowPassword(v=>!v)}>{showPassword?'ซ่อน':'แสดง'}</button>
           </span>
         </label>
-        <button type="submit" disabled={busy} className={authStyles.submit}>{busy?'กำลังดำเนินการ...':authMode==='register'?'สร้างบัญชีและดำเนินการต่อ':'เข้าสู่ระบบ'}<span aria-hidden="true">↗</span></button>
+        <button type="submit" disabled={busy} className={authStyles.submit}>{busy?'กำลังดำเนินการ...':authMode==='register'?'สร้างบัญชีและดำเนินการต่อ':'เข้าสู่ระบบ'}</button>
       </form>
-      <p className={authStyles.switch}>{authMode==='register'?'มีบัญชีอยู่แล้ว?':'ยังไม่มีบัญชี?'} <button type="button" className="ownerAuthTextButton" onClick={()=>{setAuthMode(authMode==='register'?'login':'register');setMessage('')}}>{authMode==='register'?'เข้าสู่ระบบ':'สมัครสมาชิก'}</button></p>
+      <p className={authStyles.switch}>{authMode==='register'?'มีบัญชีอยู่แล้ว?':'ยังไม่มีบัญชี?'} <button type="button" className={authStyles.linkButton} onClick={()=>{setAuthMode(authMode==='register'?'login':'register');setMessage('')}}>{authMode==='register'?'เข้าสู่ระบบ':'สมัครสมาชิก'}</button></p>
     </section>}
     {screen==='dashboard'&&account&&<>
       <section className="card section">
