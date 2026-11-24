@@ -37,10 +37,7 @@ export default function Receipts(){
   <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/cloud?tab=finance">StayHub <span>Cloud</span></a><a className={dashboardStyles.back} href="/cloud?tab=finance">กลับหน้าจัดการ</a></header>
   <h1>ใบเสร็จที่ชำระครบ · StayHub Cloud</h1>
   <p className="muted">ใช้ข้อมูลที่ชำระจริงบน PostgreSQL ไม่สร้างใบเสร็จสำหรับยอดที่ยังค้าง</p>
-  {properties.length>0&&<section className="card section"><label>ที่พัก<select value={propertyId} onChange={e=>{setPage(1);setPropertyId(e.target.value)}}>
-   <option value="">บิลของฉัน (ผู้เข้าพัก)</option>
-   {properties.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-  </select></label></section>}
+  
   {error&&<p role="alert" style={{color:'crimson'}}>{error}</p>}
   <section className="card section">
    <h2>รายการชำระครบ</h2>
