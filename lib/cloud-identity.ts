@@ -27,9 +27,9 @@ export async function issueSession(accountId:string){
   const jar=await cookies()
   jar.set(COOKIE,raw,{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax',path:'/',maxAge:14*86400})
 }
-export async function accountFromSession(){
+export async function accountFromSession(tenantOnly=false){
   const raw=(await cookies()).get(COOKIE)?.value
-  if(raw){
+  if(raw&&!tenantOnly){
     const res=await postgresQuery<{id:string,email:string}>(
       `SELECT a.id,a.email FROM stayhub.sessions s
        JOIN stayhub.accounts a ON a.id=s.account_id

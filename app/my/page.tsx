@@ -1,41 +1,16 @@
 'use client'
 import {useEffect,useState} from 'react'
-type Stay={id:string;property_name:string;unit_name:string;property_type:string}
-type JoinRequest={id:string;property_name:string;unit_name:string|null;status:'pending'|'approved'|'rejected'}
-const tiles=[
-  ['🏠','ห้องของฉัน','ข้อมูลห้องและการเข้าพัก'],
-  ['🧾','บิลและชำระเงิน','ดูบิลและยอดค้างจากระบบ Cloud'],
-  ['🔧','แจ้งซ่อม','ส่งเรื่องและติดตามสถานะจากที่พัก'],
-  ['📦','พัสดุและบริการ','ติดตามพัสดุ รถ และบริการ'],
-  ['📢','ประกาศ','ติดตามประกาศของที่พัก'],
-  ['💬','ติดต่อที่พัก','รอเปิดช่องทางติดต่อ'],
-]
+import styles from '../cloud/dashboard.module.css'
+import tenant from './tenant.module.css'
+type Stay={id:string;property_id:string;unit_id:string;property_name:string;unit_name:string}
+const tiles=[['billing','บิลของฉัน','ใบแจ้งหนี้และยอดชำระ','M5 3h14v18l-3-2-4 2-4-2-3 2V3M8 8h8m-8 4h8'],['repairs','แจ้งซ่อม','แจ้งปัญหาและติดตาม','M14 6a5 5 0 0 0-6 6L3 17l4 4 5-5a5 5 0 0 0 6-6l-4 4-4-4 4-4Z'],['parcels','พัสดุ','ตรวจสอบพัสดุของห้อง','M3 7l9-4 9 4v10l-9 4-9-4V7Zm0 0 9 4 9-4M12 11v10'],['announcements','ประกาศ','ข่าวสารจากที่พัก','M3 10v4h4l9 5V5l-9 5H3Zm4 4 2 6'],['vehicles','รถของห้อง','ลงทะเบียนรถ','M3 16V9l3-5h12l3 5v7M3 11h18M5 16v3m14-3v3'],['rides','เรียกรถ','ขอรถและติดตาม','M3 16V9l3-5h12l3 5v7M3 11h18M5 16v3m14-3v3'],['documents','เอกสาร','ข้อความและเอกสารของห้อง','M6 3h9l5 5v13H6V3Zm9 0v6h5M9 13h8m-8 4h8']]
 export default function MyStayPage(){
-  const [stays,setStays]=useState<Stay[]>([])
-  const [requests,setRequests]=useState<JoinRequest[]>([])
-  const [state,setState]=useState('กำลังตรวจสอบสิทธิ์การเข้าพัก...')
-  useEffect(()=>{
-    fetch('/api/v2/my-stays',{cache:'no-store'})
-      .then(async r=>{const data=await r.json();if(!r.ok)throw Error(data.error||'Please sign in');setStays(data.items);return fetch('/api/v2/my-requests',{cache:'no-store'})})
-      .then(async r=>{const data=await r.json();if(!r.ok)throw Error('Unable to load requests');setRequests(data.items);setState('')})
-      .catch(()=>setState('กรุณาสแกน QR ประจำห้องอีกครั้ง'))
-  },[])
-  return <main className="wrap" style={{maxWidth:900}}>
-    <a href="/">← StayHub</a><h1>แผงผู้เข้าพัก</h1>
-    <p className="muted">ข้อมูลห้องจะแสดงหลังเจ้าของอนุมัติการเข้าพักแล้ว</p>
-    <section className="card section"><h2>บิลและยอดค้างย้อนหลัง</h2><p className="muted">ดูบิลของบัญชีนี้ได้แม้ย้ายห้องหรือย้ายออกแล้ว</p><a href="/cloud/billing" className="btn secondary">ดูบิลของฉัน</a></section>
-    {state&&<p role="status" className="card">{state}</p>}
-    {!state&&!stays.length&&<section className="card"><h2>ยังไม่มีห้องที่อนุมัติ</h2><p>สแกน QR ของเจ้าของแล้วส่งคำขอเข้าร่วม หรือรอเจ้าของอนุมัติห้องก่อน</p></section>}
-    {!state&&requests.length>0&&<section className="card section"><h2>คำขอเข้าร่วมของฉัน</h2>{requests.map(r=><p key={r.id}>{r.property_name} · {r.unit_name||'รอเลือกห้อง'} · {r.status==='pending'?'รอเจ้าของอนุมัติ':r.status==='approved'?'อนุมัติแล้ว':'ปฏิเสธแล้ว'}</p>)}</section>}
-    {stays.map(stay=><section key={stay.id} className="card section">
-      <h2>{stay.property_name}</h2><p>ห้อง: <strong>{stay.unit_name}</strong></p>
-      <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))'}}>
-        {tiles.map(([icon,title,description],i)=>(i===1||i===2||i===3||i===4)?<a key={title} href={i===1?"/cloud/billing":i===2?"/cloud/repairs":"/cloud/operations?kind="+(i===3?"parcels":"announcements")} className="card tile"><span className="icon">{icon}</span><strong>{title}</strong><p className="muted">{description}</p></a>:<div key={title} className="card tile">
-          <span className="icon">{icon}</span><strong>{title}</strong>
-          <p className="muted">{i===0?'สิทธิ์ได้รับการยืนยันแล้ว':description}</p>
-        </div>)}
-      </div>
-      <p className="footnote">นี่คือแผงทดสอบ PWA: ฟีเจอร์บริการอื่นจะเปิดทีละส่วนหลังผ่านการตรวจสิทธิ์ ไม่แสดงข้อมูลปลอมหรือข้อมูลห้องอื่น</p>
-    </section>)}
-  </main>
+ const [stays,setStays]=useState<Stay[]>([])
+ const [state,setState]=useState('กำลังตรวจสอบสิทธิ์...')
+ useEffect(()=>{let live=true;const load=async()=>{try{const d=await fetch('/api/v2/tenant-device',{cache:'no-store'});const v=await d.json();if(!d.ok||v.status!=='approved'){if(live)setState(v.status==='pending'?'รอเจ้าของอนุมัติ':'กรุณาสแกน QR ประจำห้องอีกครั้ง');return}const r=await fetch('/api/v2/my-stays?tenant=1',{cache:'no-store'});if(!r.ok)throw Error();const data=await r.json();if(live){setStays(data.items);setState('')}}catch{if(live)setState('ไม่สามารถโหลดข้อมูลห้องได้')}};void load();return()=>{live=false}},[])
+ return <main className={styles.shell}><div className={styles.workspace}><header className={styles.header}><div><div className={styles.brand}>StayHub <span>ผู้เช่า</span></div><p className={styles.subtitle}>บริการที่พักของฉัน</p></div></header><div className={styles.content}>
+ {state&&<section className="card section" role="status">{state}</section>}
+ {!state&&!stays.length&&<section className="card section">ไม่พบห้องที่ได้รับอนุมัติ</section>}
+ {stays.map(s=><section key={s.id} className={tenant.stack}><div className="card section"><p className="muted">{s.property_name}</p><h1 className={tenant.room}>ห้อง {s.unit_name}</h1><span className="muted">ได้รับอนุมัติแล้ว</span></div><div className={tenant.tiles}>{tiles.map(([route,title,desc,path])=><a key={route} className={tenant.tile} href={'/my/'+route+'?'+new URLSearchParams({propertyId:s.property_id,unitId:s.unit_id})}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d={path}/></svg><strong>{title}</strong><small>{desc}</small></a>)}</div></section>)}
+ </div></div></main>
 }

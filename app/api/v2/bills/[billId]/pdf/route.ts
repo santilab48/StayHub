@@ -12,7 +12,7 @@ const error=(status:number)=>NextResponse.json({error:status===401?'Please sign 
 
 export async function GET(req:NextRequest,{params}:Params){
   if(!stagingAuthEnabled())return error(404)
-  const account=await accountFromSession()
+  const account=await accountFromSession(req.nextUrl.searchParams.get('tenant')==='1')
   if(!account)return error(401)
   const propertyId=req.nextUrl.searchParams.get('propertyId'),{billId}=await params
   if(!uuid(propertyId)||!uuid(billId))return error(404)

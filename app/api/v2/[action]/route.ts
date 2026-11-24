@@ -32,7 +32,7 @@ export async function GET(req:NextRequest,{params}:Params){
         AND i.use_count<i.max_uses AND p.status<>'suspended'`,[hashToken(token)])
       return r.rowCount?reply(r.rows[0]):reply({error:'Invitation expired or invalid'},404)
     }
-    const account=await accountFromSession()
+    const account=await accountFromSession(req.nextUrl.searchParams.get('tenant')==='1')
     if(!account)return reply({error:'Please sign in'},401)
     if(action==='me')return reply({id:account.id,email:account.email})
     if(action==='my-stays'){
@@ -176,7 +176,7 @@ export async function POST(req:NextRequest,{params}:Params){
       jar.delete('stayhub_session')
       return reply({ok:true})
     }
-    const account=await accountFromSession()
+    const account=await accountFromSession(req.nextUrl.searchParams.get('tenant')==='1')
     if(!account)return reply({error:'Please sign in'},401)
     if(action==='property'){
       const name=typeof body.name==='string'?body.name.trim():''

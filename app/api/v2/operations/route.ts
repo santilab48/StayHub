@@ -25,7 +25,7 @@ async function unitAllowed(propertyId:string,unitId:string,access:Access){
 }
 export async function GET(req:NextRequest){
  if(!stagingAuthEnabled())return send({error:'Not enabled'},503)
- const account=await accountFromSession()
+ const account=await accountFromSession(req.nextUrl.searchParams.get('tenant')==='1')
  if(!account)return send({error:'Please sign in'},401)
  const propertyId=req.nextUrl.searchParams.get('propertyId')
  const kind=req.nextUrl.searchParams.get('kind')
@@ -74,7 +74,7 @@ export async function POST(req:NextRequest){
  if(!stagingAuthEnabled())return send({error:'Not enabled'},503)
  if(!checkOrigin(req))return send({error:'Invalid origin'},403)
  if(Number(req.headers.get('content-length')||0)>8192)return send({error:'Payload too large'},413)
- const account=await accountFromSession()
+ const account=await accountFromSession(req.nextUrl.searchParams.get('tenant')==='1')
  if(!account)return send({error:'Please sign in'},401)
  let b:Record<string,unknown>
  try{b=await req.json();if(!b||typeof b!=='object'||Array.isArray(b))throw Error('json')}

@@ -15,7 +15,7 @@ const parseMoney=(v:string)=>cents(v)
 
 export async function GET(req:NextRequest){
   if(!stagingAuthEnabled())return reply({error:'Not enabled'},503)
-  const account=await accountFromSession()
+  const account=await accountFromSession(req.nextUrl.searchParams.get('tenant')==='1')
   if(!account)return reply({error:'Please sign in'},401)
   const filter=parseBillHistory(req.nextUrl.searchParams)
   if(!filter)return reply({error:'Invalid bill filters or page'},400)
@@ -43,7 +43,7 @@ export async function POST(req:NextRequest){
   if(!stagingAuthEnabled())return reply({error:'Not enabled'},503)
   if(!checkOrigin(req))return reply({error:'Invalid origin'},403)
   if(Number(req.headers.get('content-length')||0)>8192)return reply({error:'Payload too large'},413)
-  const account=await accountFromSession()
+  const account=await accountFromSession(req.nextUrl.searchParams.get('tenant')==='1')
   if(!account)return reply({error:'Please sign in'},401)
   let body:Record<string,unknown>
   try{body=await req.json();if(!body||typeof body!=='object'||Array.isArray(body))throw Error('bad')}

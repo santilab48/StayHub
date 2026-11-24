@@ -12,7 +12,7 @@ type Bill={id:string;property_id:string;account_id:string;unit_id:string;stay_id
 
 export async function GET(req:NextRequest,{params}:Params){
   if(!stagingAuthEnabled())return reply({error:'Not enabled'},503)
-  const account=await accountFromSession()
+  const account=await accountFromSession(req.nextUrl.searchParams.get('tenant')==='1')
   if(!account)return reply({error:'Please sign in'},401)
   const propertyId=req.nextUrl.searchParams.get('propertyId'),{billId}=await params
   if(!uuid(propertyId)||!uuid(billId))return reply({error:'Invalid property or bill'},400)
