@@ -38,6 +38,7 @@ export default function CloudBillingPage(){
   const [page,setPage]=useState(1)
   const [hasMore,setHasMore]=useState(false)
   const [busy,setBusy]=useState(false)
+  const [action,setAction]=useState('')
   const [notice,setNotice]=useState('')
   const [error,setError]=useState('')
   const billListRequest=useRef(0)
@@ -105,7 +106,8 @@ export default function CloudBillingPage(){
     setUnitRate(activeLease?.source==='room_contract'?(activeLease[meterType]||''):'')
     setCurrentReading('');setInitialReading('')
   },[activeLease,meterType,month])
-  async function run(task:()=>Promise<void>){
+  async function run(task:()=>Promise<void>,area='detail'){
+    setAction(area)
     setBusy(true);setError('');setNotice('')
     try{await task()}catch(e){setError(e instanceof Error?e.message:'ทำรายการไม่สำเร็จ')}
     finally{setBusy(false)}
@@ -117,16 +119,16 @@ export default function CloudBillingPage(){
       await request('/api/v2/meter-readings',body)
       setCurrentReading('');setInitialReading('')
       setNotice('บันทึกมิเตอร์เรียบร้อย')
-    })
+    },'meter')
   }
   async function issueBill(e:FormEvent){e.preventDefault();if(!leaseId)return
     await run(async()=>{
-      const body={propertyId,...(activeLease?.source==='room_contract'?{roomContractId:leaseId}:{leaseId}),period:month,otherAmount,otherLabel}
+      const body={propertyId,...(activeLease?.source==='room_contract'?{roomContractId:leaseId}:{leaseId}),period:month,otherAmount,otherLabel:otherLabel.trim()||'ค่าอื่น ๆ'}
       const result=await request<{id:string}>('/api/v2/bills',body,stableKey(billReplay,body))
       billReplay.current=null
       await loadBills(propertyId,1);setPage(1)
       setNotice('ออกบิลเรียบร้อย เลขอ้างอิง '+result.id.slice(0,8))
-    })
+    },'issue')
   }
   async function payBill(e:FormEvent){e.preventDefault();if(!selectedBill)return
     await run(async()=>{
@@ -137,8 +139,9 @@ export default function CloudBillingPage(){
       await loadBills(propertyId,page)
       await loadDetail(bill)
       setPayAmount('');setNotice('บันทึกรับเงินเรียบร้อย')
-    })
+    },'payment')
   }
+  const feedback=(area:string)=>action===area?<div aria-live="polite">{busy?<p>กำลังดำเนินการ...</p>:error?<p role="alert" style={{color:'#b91c1c',background:'#fff1f2',padding:12,borderRadius:8}}>{error}</p>:notice?<p role="status" style={{color:'#166534',background:'#f0fdf4',padding:12,borderRadius:8}}>{notice}</p>:null}</div>:null
   return <main className={dashboardStyles.detail}><div className={dashboardStyles.detailInner}>
     <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/cloud?tab=finance">StayHub <span>Cloud</span></a><a className={dashboardStyles.back} href="/cloud?tab=finance">กลับหน้าจัดการ</a></header>
     <p><a className="btn secondary" href="/cloud/leases">จัดการสัญญาเช่าก่อนทำบิล</a></p>
@@ -157,19 +160,19 @@ export default function CloudBillingPage(){
             <option value="">-- เลือกห้อง --</option>{leases.map(l=><option key={l.id} value={l.id}>{l.unit_name} · ค่าเช่า {money(l.monthly_rent)} บาท</option>)}
           </select></label>
           <label>ค่าอื่น ๆ (บาท) <input inputMode="decimal" value={otherAmount} onChange={e=>setOtherAmount(e.target.value)} required/></label>
-          <label>รายละเอียดค่าอื่น ๆ <input maxLength={120} value={otherLabel} onChange={e=>setOtherLabel(e.target.value)} required/></label>
-          <button className="btn" type="submit" disabled={busy||!leaseId}>ออกบิล</button>{!leases.length&&<p className="muted">ไม่พบสัญญาที่ครอบคลุมเดือนนี้ <a href="/cloud/leases">ตรวจสัญญารายห้อง</a></p>}
-          <small className="muted">ค่าเช่าและค่าบริการจากสัญญา ค่าน้ำ/ไฟจากมิเตอร์เดือนนี้</small>
+          <label>รายละเอียดค่าอื่น ๆ <input maxLength={120} value={otherLabel} onChange={e=>setOtherLabel(e.target.value)} required={Number(otherAmount)>0}/></label>
+          <button className="btn" type="submit" disabled={busy||!leaseId}>{busy&&action==='issue'?'กำลังออกบิล...':'ออกบิล'}</button>{feedback('issue')}{!leases.length&&<p className="muted">ไม่พบสัญญาที่ครอบคลุมเดือนนี้ <a href="/cloud/leases">ตรวจสัญญารายห้อง</a></p>}
+          <small className="muted">ค่าเช่าและค่าบริการจากสัญญา ค่าน้ำ/ไฟจากมิเตอร์เดือนนี้</small>{activeLease?.source==='room_contract'&&(Number(activeLease.water)>0||Number(activeLease.electric)>0)&&<p>กรุณา <a href="#meter-entry">บันทึกมิเตอร์น้ำและไฟ</a> ก่อนออกบิล หากมีการคิดค่าต่อหน่วย</p>}
         </form>
       </section>
-      <section className="card section"><h2>จดมิเตอร์น้ำและไฟ</h2>
+      <section id="meter-entry" className="card section"><h2>จดมิเตอร์น้ำและไฟ</h2>
         <form className="list" onSubmit={e=>void saveMeter(e)}>
           <p className="muted">ห้อง: {activeLease?.unit_name||'กรุณาเลือกห้อง'} · เดือน {period}</p>
           <label>ประเภท <select value={meterType} onChange={e=>setMeterType(e.target.value as 'water'|'electric')}><option value="water">น้ำ</option><option value="electric">ไฟฟ้า</option></select></label>
           <label>เลขมิเตอร์ปัจจุบัน <input required inputMode="decimal" value={currentReading} onChange={e=>setCurrentReading(e.target.value)}/></label>
           <label>เลขตั้งต้น (กรอกเฉพาะเดือนแรก) <input inputMode="decimal" value={initialReading} onChange={e=>setInitialReading(e.target.value)}/></label>
           <label>อัตราต่อหน่วย (บาท) <input required inputMode="decimal" value={unitRate} onChange={e=>setUnitRate(e.target.value)}/></label>
-          <button className="btn secondary" type="submit" disabled={busy||!activeLease}>บันทึกมิเตอร์</button>
+          <button className="btn secondary" type="submit" disabled={busy||!activeLease}>{busy&&action==='meter'?'กำลังบันทึก...':'บันทึกมิเตอร์'}</button>{feedback('meter')}
           <small className="muted">ต้องบันทึกมิเตอร์ก่อนออกบิล ระบบจะปฏิเสธเลขที่ลดลงและรายการซ้ำ</small>
         </form>
       </section>
@@ -192,7 +195,7 @@ export default function CloudBillingPage(){
         {selectedBill.bill.status!=='paid'&&selectedBill.bill.status!=='void'&&<form className="list" onSubmit={e=>void payBill(e)}><h3>บันทึกรับเงิน</h3>
           <label>จำนวนเงิน (บาท) <input required inputMode="decimal" value={payAmount} onChange={e=>setPayAmount(e.target.value)}/></label>
           <label>วิธีรับเงิน <select value={method} onChange={e=>setMethod(e.target.value as 'cash'|'transfer')}><option value="cash">เงินสด</option><option value="transfer">โอนเงิน</option></select></label>
-          <button className="btn" disabled={busy} type="submit">ยืนยันรับเงิน</button>
+          <button className="btn" disabled={busy} type="submit">{busy&&action==='payment'?'กำลังบันทึก...':'ยืนยันรับเงิน'}</button>{feedback('payment')}
         </form>}
       </>}
     </section>}
