@@ -42,3 +42,20 @@ Remote HEAD ตอนเริ่ม: `a7ad4ae671b555d222180cd7ddfb8f6591fb6687`
 4. ตรวจ current deployment/configuration และ rollback artifact ใน Railway พร้อมซ้อม restore/rollback บน environment แยกก่อนประกาศพร้อมกู้คืน.
 
 **Migration acceptance: NOT ACCEPTED / BLOCKED.** Infrastructure cutover มีหลักฐานย้อนหลัง แต่ backup, restore, data integrity และ Production functional acceptance ยังไม่มีหลักฐานจริงครบ. ไม่ได้แก้ application code จึงไม่รัน TypeScript/Build ซ้ำ.
+
+
+## Addendum — Direct production service check (24 November 2026)
+
+This is a new connected check that partially resolves the previous execution environment's inability to access Railway management. It does **not** override the P7 backup, restore, data-integrity or authenticated functional gates.
+
+- Railway project `a8a5a434-4d18-438f-b4ea-ece072094595`, Production environment `c9c4b13a-9041-4ae6-bd50-2d02b546b053`: both `StayHub` and `Postgres-PDqf` are **online 1/1**, with 0 warning/critical issues and no pending Railway environment changes at inspection time.
+- Railway `Postgres-PDqf` volume `postgres-volume-zENI` is mounted at `/var/lib/postgresql/data` (500 MB). This is **not** evidence of a usable backup.
+- Current Production deployment `fa736402-0a12-497c-8c48-00ab26c2a217` remains **SUCCESS**, source commit `201fe3b524a35804544ae1fdd1259b6b07e09f75`. No new Production deployment was initiated.
+- Custom domain `stayhub.tushub.com`: ownership **verified**, CNAME propagated to `rz9ikc4w.up.railway.app`, Railway certificate `CERTIFICATE_STATUS_TYPE_VALID`.
+- A direct read-only Neon Production query through role `stayhub_membership_reader`, branch `br-snowy-tree-a1kt7omx`, returns 0 plans, 0 entitlements and 0 memberships (consistent with unconfigured commercial membership).
+- The external page/health HTTP fetch remained inaccessible to the remote web client, so no claim of a successful authenticated application or write acceptance is made.
+- Railway management connector used here exposes service, deployments and volume status but **does not expose a backup schedule, retention, restore point or production database SQL/execution operation**. Accordingly P7.1 (backup), P7.2 (restore of production data), P7.3 (source-to-production data completeness) and P7.4 (live authenticated functional/write E2E) remain **BLOCKED / unverified**. Neither backup restore nor Production data write was attempted.
+- For the current P7 report HEAD `56b8d96254b287ec51c33494b6958d26dc0fd2df`, GitHub Build/Security workflow `45342479938` was SUCCESS when checked, while isolated HTTP E2E `45342479896` was still **in progress**; do not assert the latter passed until completed.
+- The prior report's claim that Railway/Neon management could not be checked is historical to its runner and has now been superseded for **service status, domain/TLS, deployment and Neon reader checks only**.
+
+**Verdict:** Infrastructure + domain cutover verified operational; final data/backup/restore/functional acceptance remains incomplete. No Production modifications, migrations, re-deployments or user-data writes were performed.
