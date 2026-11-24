@@ -1,4 +1,5 @@
 'use client'
+import dashboardStyles from '../dashboard.module.css'
 import {FormEvent,useCallback,useEffect,useState} from 'react'
 type Property={id:string;name:string;role:string}
 type Stay={property_id:string;property_name:string;unit_id:string;unit_name:string}
@@ -67,8 +68,8 @@ export default function CloudRepairs(){
   await run({action:'create',unitId,title:title.trim(),detail:detail.trim()})
   setTitle('');setDetail('')
  }
- return <main className="wrap" style={{maxWidth:1000}}>
-  <p><a href="/cloud">← จัดการที่พัก</a></p>
+ return <main className={dashboardStyles.detail}><div className={dashboardStyles.detailInner}>
+  <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/cloud?tab=services">StayHub <span>Cloud</span></a><a className={dashboardStyles.back} href="/cloud?tab=services">กลับหน้าจัดการ</a></header>
   <h1>แจ้งซ่อมและติดตามงาน · StayHub Cloud</h1>
   <p className="muted">งานซ่อมผูกกับห้องและบัญชีผู้แจ้งจริง พร้อมประวัติสถานะ</p>
   <section className="card section"><label>ที่พัก<select value={propertyId} onChange={e=>setPropertyId(e.target.value)}>
@@ -111,5 +112,5 @@ export default function CloudRepairs(){
     </div>)}</div>}
    </section>
   </>}
- </main>
+ </div></main>
 }
