@@ -26,6 +26,20 @@ export async function GET(req:NextRequest){
       u.name AS unit_name,l.starts_on,l.ends_on,l.monthly_rent,l.security_deposit,l.status,l.created_at
       FROM stayhub.leases l JOIN stayhub.units u ON u.property_id=l.property_id AND u.id=l.unit_id
       WHERE l.property_id=$1 ORDER BY l.created_at DESC LIMIT 300`,[propertyId])
+    if(req.nextUrl.searchParams.get('billing')==='1'){
+      const period=req.nextUrl.searchParams.get('period')
+      if(!date(period)||!period.endsWith('-01'))return reply({error:'Invalid billing month'},400)
+      const docs=await postgresQuery(`SELECT c.id,c.unit_id,u.name AS unit_name,c.snapshot->>'rent' AS monthly_rent,
+        c.snapshot->>'water' AS water,c.snapshot->>'electric' AS electric,c.snapshot->>'service' AS service,
+        c.snapshot->>'waterMeter' AS water_meter,c.snapshot->>'electricMeter' AS electric_meter,
+        'active' AS status,'room_contract' AS source
+        FROM stayhub.room_contracts c JOIN stayhub.units u ON u.id=c.unit_id AND u.property_id=c.property_id
+        WHERE c.property_id=$1 AND u.active AND (c.snapshot->>'startsOn')::date<($2::date+interval '1 month')::date
+          AND (c.snapshot->>'endsOn')::date >= $2::date ORDER BY u.name,c.created_at DESC`,[propertyId,period])
+      const seen=new Set<string>()
+      const unique=docs.rows.filter(d=>{if(seen.has(d.unit_id))return false;seen.add(d.unit_id);return true})
+      return reply({items:[...unique,...r.rows.filter(l=>l.status==='active'&&!seen.has(l.unit_id)&&String(l.starts_on instanceof Date?l.starts_on.toISOString():l.starts_on).slice(0,10)<=period.slice(0,7)+'-31'&&(!l.ends_on||String(l.ends_on instanceof Date?l.ends_on.toISOString():l.ends_on).slice(0,10)>=period))]})
+    }
     return reply({items:r.rows})
   }catch{return reply({error:'Lease list unavailable'},503)}
 }
