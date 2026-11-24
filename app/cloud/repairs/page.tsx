@@ -72,11 +72,11 @@ export default function CloudRepairs(){
   <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/cloud?tab=services">StayHub <span>Cloud</span></a><a className={dashboardStyles.back} href="/cloud?tab=services">กลับหน้าจัดการ</a></header>
   <h1>แจ้งซ่อมและติดตามงาน · StayHub Cloud</h1>
   <p className="muted">งานซ่อมผูกกับห้องและบัญชีผู้แจ้งจริง พร้อมประวัติสถานะ</p>
-  <section className="card section"><label>ที่พัก<select value={propertyId} onChange={e=>setPropertyId(e.target.value)}>
+  {owners.length===0&&stays.length>1&&<section className="card section"><label>ที่พัก<select value={propertyId} onChange={e=>setPropertyId(e.target.value)}>
    <option value="">-- เลือกที่พัก --</option>
    {owners.map(p=><option value={p.id} key={p.id}>{p.name}</option>)}
    {stays.filter(s=>!owners.some(p=>p.id===s.property_id)).map(s=><option value={s.property_id} key={s.property_id}>{s.property_name} (ผู้พัก)</option>)}
-  </select></label></section>
+  </select></label></section>}
   {error&&<p role="alert" className="card section" style={{color:'crimson'}}>{error}</p>}
   {notice&&<p role="status" className="card section">{notice}</p>}
   {propertyId&&<>
