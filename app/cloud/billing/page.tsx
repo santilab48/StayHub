@@ -230,7 +230,7 @@ export default function CloudBillingPage(){
     </section>
     {selectedBill&&<section id="bill-detail" className="card section">
       {selectedBill.bill.status==='paid'&&Number(selectedBill.outstanding)===0&&<p><a className="btn secondary" href={'/cloud/receipts/'+encodeURIComponent(selectedBill.bill.id)+'?propertyId='+encodeURIComponent(selectedBill.bill.property_id)}>ใบเสร็จ / พิมพ์ PDF</a></p>}<div className="toolbar"><h2>รายละเอียดบิล {String(selectedBill.bill.period).slice(0,7)}</h2><button type="button" className="btn secondary" onClick={()=>setSelectedBill(null)}>ปิด</button></div>
-      <p>ห้อง {selectedBill.bill.unit_name} · {statusText(selectedBill.bill.status)}</p>{selectedBill.hasInvoice?<a className="btn secondary" href={'/api/v2/bills/'+encodeURIComponent(selectedBill.bill.id)+'/pdf?propertyId='+encodeURIComponent(selectedBill.bill.property_id)} target="_blank" rel="noopener noreferrer">พิมพ์บิล</a>:<button type="button" className="btn secondary" onClick={()=>window.print()}>พิมพ์บิล</button>}
+      <p>ห้อง {selectedBill.bill.unit_name} · {statusText(selectedBill.bill.status)}</p><a className="btn secondary" href={'/api/v2/bills/'+encodeURIComponent(selectedBill.bill.id)+'/pdf?propertyId='+encodeURIComponent(selectedBill.bill.property_id)} target="_blank" rel="noopener noreferrer">ใบแจ้งหนี้ PDF</a>
       <div className="list">{selectedBill.items.map((i,n)=><div key={i.feeCode+n} className="row"><span>{i.label}</span><strong>{money(i.amount)} บาท</strong></div>)}</div>
       <hr/><p><strong>ยอดรวม {money(selectedBill.bill.total)} บาท</strong></p><p>รับแล้ว {money(selectedBill.paid)} บาท · ค้าง {money(selectedBill.outstanding)} บาท</p>
       {owner&&<>
