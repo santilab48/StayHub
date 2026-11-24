@@ -2,6 +2,7 @@
 import {FormEvent,useEffect,useState} from 'react'
 import {accommodationTypes,isAccommodationType,type AccommodationType} from '../../lib/accommodation-types'
 import authStyles from './auth.module.css'
+import dashboardStyles from './dashboard.module.css'
 type Property={id:string;name:string;property_type:string;role:string}
 type OnboardingScreen='loading'|'choose'|'auth'|'dashboard'|'unavailable'
 const ONBOARDING_KEY='stayhub_owner_preferred_type_v1'
@@ -28,6 +29,7 @@ async function api(action:string,body?:Record<string,unknown>){
   return data
 }
 export default function CloudOwnerPage(){
+  const [dashboardTab,setDashboardTab]=useState<'property'|'residents'|'finance'|'services'|'membership'>('property')
   const [account,setAccount]=useState<{email:string}|null>(null)
   const [email,setEmail]=useState('')
   const [password,setPassword]=useState('')
@@ -121,8 +123,8 @@ export default function CloudOwnerPage(){
   async function loadUnits(id:string){const r=await fetch('/api/v2/units?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setUnits(data.items)}
   async function loadInvites(id:string){const r=await fetch('/api/v2/invites?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setInvites(data.items)}
   async function loadRequests(id:string){await run(async()=>{const r=await fetch('/api/v2/requests?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setRequests(data.items)})}
-  return <main className={screen==='choose'?'wrap ownerEntryPage ownerDarkEntry':screen==='auth'?authStyles.shell:'wrap'} style={{maxWidth:screen==='auth'?undefined:screen==='choose'?1240:900}}>
-    {screen==='dashboard'?<><a href="/">← StayHub</a><h1>StayHub Cloud · เจ้าของที่พัก</h1></>:screen==='auth'?<a className={authStyles.homeLink} href="/" aria-label="กลับหน้าแรก">หน้าแรก</a>:<a className="ownerBackLink" href="/">กลับหน้าเลือกประเภทที่พัก</a>}
+  return <main className={screen==='choose'?'wrap ownerEntryPage ownerDarkEntry':screen==='auth'?authStyles.shell:screen==='dashboard'?dashboardStyles.shell:'wrap'} style={{maxWidth:screen==='auth'||screen==='dashboard'?undefined:screen==='choose'?1240:900}}>
+    {screen==='dashboard'?null:screen==='auth'?<a className={authStyles.homeLink} href="/" aria-label="กลับหน้าแรก">หน้าแรก</a>:<a className="ownerBackLink" href="/">กลับหน้าเลือกประเภทที่พัก</a>}
     {screen==='loading'&&<section className="card section" aria-live="polite"><p>กำลังตรวจสอบบัญชีของคุณ...</p></section>}
     {screen==='unavailable'&&<section className="card section" role="alert"><h2>ระบบบัญชียังไม่พร้อมใช้งาน</h2><p>ไม่สามารถตรวจสอบเซสชันหรือการเชื่อมต่อเซิร์ฟเวอร์ได้ โปรดลองใหม่ภายหลัง</p><button type="button" className="btn secondary" onClick={()=>window.location.reload()}>ลองใหม่</button></section>}
     {screen==='choose'&&<section className="card section">
@@ -161,15 +163,19 @@ export default function CloudOwnerPage(){
       </form>
       <p className={authStyles.switch}>{authMode==='register'?'มีบัญชีอยู่แล้ว?':'ยังไม่มีบัญชี?'} <button type="button" className={authStyles.linkButton} onClick={()=>{setAuthMode(authMode==='register'?'login':'register');setMessage('')}}>{authMode==='register'?'เข้าสู่ระบบ':'สมัครสมาชิก'}</button></p>
     </section>}
-    {screen==='dashboard'&&account&&<>
-      <section className="card section">
-        <div className="toolbar">
-          <div><strong>เจ้าของที่พัก · {account.email}</strong><p className="muted">ประเภทที่พักและสิทธิ์ของแต่ละแห่งอ้างอิงจากบัญชี Cloud</p></div>
-          <button type="button" className="btn secondary" disabled={busy} onClick={()=>void run(async()=>{
-            await api('logout',{});setAccount(null);setProperties([]);setSelected('');setInvite(null);setScreen('auth');setAuthMode('login')
-          })}>ออกจากระบบ</button>
-        </div>
-        {properties.length>0&&!showCreate&&<div className="list">
+    {screen==='dashboard'&&account&&<div className={dashboardStyles.workspace}>
+      <header className={dashboardStyles.header}>
+        <div><a href="/" className={dashboardStyles.brand}>StayHub <span>Cloud</span></a><p className={dashboardStyles.subtitle}>พื้นที่จัดการที่พักของคุณ</p></div>
+        <div className={dashboardStyles.account}><span>{account.email}</span><button type="button" className={dashboardStyles.logout} disabled={busy} onClick={()=>void run(async()=>{await api('logout',{});setAccount(null);setProperties([]);setSelected('');setInvite(null);setDashboardTab('property');setScreen('auth');setAuthMode('login')})}>ออกจากระบบ</button></div>
+      </header>
+      <nav className={dashboardStyles.tabs} aria-label="หมวดจัดการที่พัก"><button key="property" type="button" className={dashboardStyles.tab} aria-pressed={dashboardTab==='property'} onClick={()=>setDashboardTab('property')}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M5 21V5l7-3 7 3v16M9 9h1m4 0h1M9 13h1m4 0h1M10 21v-4h4v4"/></svg><span>ที่พัก</span></button>
+<button key="residents" type="button" className={dashboardStyles.tab} aria-pressed={dashboardTab==='residents'} onClick={()=>setDashboardTab('residents')}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 20V5m0 11h18v4M3 10h6a3 3 0 0 1 3 3v3m0-6h6a3 3 0 0 1 3 3v3"/></svg><span>ห้องพักและผู้เช่า</span></button>
+<button key="finance" type="button" className={dashboardStyles.tab} aria-pressed={dashboardTab==='finance'} onClick={()=>setDashboardTab('finance')}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3M8 8h8m-8 4h8m-8 4h4"/></svg><span>การเงิน</span></button>
+<button key="services" type="button" className={dashboardStyles.tab} aria-pressed={dashboardTab==='services'} onClick={()=>setDashboardTab('services')}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M14 6a5 5 0 0 0-6 6L3 17l4 4 5-5a5 5 0 0 0 6-6l-4 4-4-4 4-4Z"/></svg><span>งานบริการ</span></button>
+<button key="membership" type="button" className={dashboardStyles.tab} aria-pressed={dashboardTab==='membership'} onClick={()=>setDashboardTab('membership')}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1 3-6Z"/></svg><span>สมาชิก</span></button></nav>
+      <div className={dashboardStyles.content} aria-label="เนื้อหาหมวดที่เลือก">
+        <div hidden={dashboardTab!=='property'} className={dashboardStyles.grid}>
+          <section className="card section">        {properties.length>0&&!showCreate&&<div className="list">
           <h2>ที่พักของฉัน</h2>
           {properties.filter(p=>['owner','admin'].includes(p.role)).map(p=>
             <div key={p.id} className="row"><strong>{p.name}</strong><span className="muted">{isAccommodationType(p.property_type)?accommodationTypes[p.property_type].label:'ที่พัก'}</span></div>
@@ -190,15 +196,9 @@ export default function CloudOwnerPage(){
           </form>
         </>}
       </section>
-      <section className="card section"><h2>สมาชิกและสิทธิพิเศษ</h2><p className="muted">ตรวจสอบสถานะแพ็กเกจ วันหมดอายุ และสิทธิพิเศษของบัญชีนี้จากระบบสมาชิก</p><a className="btn secondary" href="/membership">ดูสถานะสมาชิก</a></section>
-      <section className="card section"><h2>ห้องพักและผู้พัก</h2><p className="muted">เพิ่มห้อง ดูสถานะห้อง ย้ายห้อง และจัดการย้ายออก ผ่านฐานข้อมูล Cloud</p><a className="btn" href="/cloud/rooms">จัดการห้องพัก</a></section>
-      <section className="card section"><h2>แจ้งซ่อม</h2><p className="muted">ดูรายการแจ้งซ่อม รับงาน นัดหมาย และปิดงานจากระบบ Cloud</p><a className="btn secondary" href="/cloud/repairs">จัดการงานซ่อม</a></section>
-      <section className="card section"><h2>งานบริการและข้อมูลหอพัก</h2><p className="muted">ประกาศ พัสดุ รถของห้อง คนขับ เรียกรถ เอกสารข้อความ และราคาค่าใช้จ่าย</p><a className="btn secondary" href="/cloud/operations">จัดการงานบริการ</a></section>
-      <section className="card section"><h2>ใบเสร็จรับเงิน</h2><p className="muted">ดูรายการชำระครบและพิมพ์ใบรับชำระเป็น PDF</p><a className="btn secondary" href="/cloud/receipts">เปิดใบเสร็จ</a></section>
-      <section className="card section"><h2>รายงาน</h2><p className="muted">รายรับ ยอดค้าง และสถานะห้อง พร้อมส่งออก CSV</p><a className="btn secondary" href="/cloud/reports">เปิดรายงาน</a></section>
-      <section className="card section"><h2>จัดการสัญญาเช่า</h2><p className="muted">ผูกผู้เช่าที่อนุมัติแล้วเข้ากับสัญญาเช่า ก่อนจดมิเตอร์และออกบิล</p><a className="btn" href="/cloud/leases">เปิดจัดการสัญญาเช่า</a></section>
-      <section className="card section"><h2>ระบบบิลรายเดือน</h2><p className="muted">จดมิเตอร์ ออกบิล ดูยอดค้าง และรับเงินสด/โอน</p><a className="btn" href="/cloud/billing">เปิดระบบบิล</a></section>
-      <section className="card section"><h2>QR เชิญผู้เช่า</h2>
+
+        </div>
+        <div hidden={dashboardTab!=='residents'} className={dashboardStyles.grid}><section className="card section"><h2>ห้องพักและผู้พัก</h2><p className="muted">เพิ่มห้อง ดูสถานะห้อง ย้ายห้อง และจัดการย้ายออก ผ่านฐานข้อมูล Cloud</p><a className="btn" href="/cloud/rooms">จัดการห้องพัก</a></section><section className="card section"><h2>จัดการสัญญาเช่า</h2><p className="muted">ผูกผู้เช่าที่อนุมัติแล้วเข้ากับสัญญาเช่า ก่อนจดมิเตอร์และออกบิล</p><a className="btn" href="/cloud/leases">เปิดจัดการสัญญาเช่า</a></section><div className={dashboardStyles.full}><section className="card section"><h2>QR เชิญผู้เช่า</h2>
         <label>เลือกที่พัก<select value={selected} onChange={e=>{setSelected(e.target.value);setInvite(null);setRequests([]);setInvites([]);setApproveUnit('');if(e.target.value){void loadUnits(e.target.value);void loadInvites(e.target.value)}}}>
           <option value="">-- เลือกที่พัก --</option>{properties.filter(p=>['owner','admin'].includes(p.role)).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
         </select></label>
@@ -235,7 +235,12 @@ export default function CloudOwnerPage(){
           </div>)}
         </div>}
       </section>
-    </>}
-    {message&&<p role="status" className={screen==='auth'?authStyles.message:'card'}>{message}</p>}
+</div></div>
+        <div hidden={dashboardTab!=='finance'} className={dashboardStyles.grid}><section className="card section"><h2>ระบบบิลรายเดือน</h2><p className="muted">จดมิเตอร์ ออกบิล ดูยอดค้าง และรับเงินสด/โอน</p><a className="btn" href="/cloud/billing">เปิดระบบบิล</a></section><section className="card section"><h2>ใบเสร็จรับเงิน</h2><p className="muted">ดูรายการชำระครบและพิมพ์ใบรับชำระเป็น PDF</p><a className="btn secondary" href="/cloud/receipts">เปิดใบเสร็จ</a></section><section className="card section"><h2>รายงาน</h2><p className="muted">รายรับ ยอดค้าง และสถานะห้อง พร้อมส่งออก CSV</p><a className="btn secondary" href="/cloud/reports">เปิดรายงาน</a></section></div>
+        <div hidden={dashboardTab!=='services'} className={dashboardStyles.grid}><section className="card section"><h2>แจ้งซ่อม</h2><p className="muted">ดูรายการแจ้งซ่อม รับงาน นัดหมาย และปิดงานจากระบบ Cloud</p><a className="btn secondary" href="/cloud/repairs">จัดการงานซ่อม</a></section><section className="card section"><h2>งานบริการและข้อมูลหอพัก</h2><p className="muted">ประกาศ พัสดุ รถของห้อง คนขับ เรียกรถ เอกสารข้อความ และราคาค่าใช้จ่าย</p><a className="btn secondary" href="/cloud/operations">จัดการงานบริการ</a></section></div>
+        <div hidden={dashboardTab!=='membership'} className={dashboardStyles.grid}><section className="card section"><h2>สมาชิกและสิทธิพิเศษ</h2><p className="muted">ตรวจสอบสถานะแพ็กเกจ วันหมดอายุ และสิทธิพิเศษของบัญชีนี้จากระบบสมาชิก</p><a className="btn secondary" href="/membership">ดูสถานะสมาชิก</a></section></div>
+      </div>
+    </div>}
+    {message&&<p role="status" className={screen==='auth'?authStyles.message:screen==='dashboard'?dashboardStyles.message:'card'}>{message}</p>}
   </main>
 }
