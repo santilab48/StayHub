@@ -1,4 +1,5 @@
 'use client'
+import dashboardStyles from '../cloud/dashboard.module.css'
 import {useEffect,useState} from 'react'
 
 type Membership={
@@ -46,8 +47,8 @@ export default function MembershipPage(){
     void load()
     return()=>{alive=false;abort.abort()}
   },[reload])
-  return <main className="wrap" style={{maxWidth:900}}>
-    <a href="/cloud">← StayHub Cloud</a>
+  return <main className={dashboardStyles.detail}><div className={dashboardStyles.detailInner}>
+    <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/cloud?tab=membership">StayHub <span>Cloud</span></a><a className={dashboardStyles.back} href="/cloud?tab=membership">กลับหน้าจัดการ</a></header>
     <h1>สมาชิกและสิทธิพิเศษ</h1>
     <p className="muted">ข้อมูลแพ็กเกจและสิทธิพิเศษจัดเก็บใน Neon ส่วนบัญชีและข้อมูลที่พักยังอยู่ใน Railway</p>
     <section className="card section" aria-live="polite">
@@ -75,5 +76,5 @@ export default function MembershipPage(){
       </>}
     </section>
     <p className="muted">การต่ออายุและเปิดสิทธิ์พิเศษต้องได้รับอนุมัติจากผู้ดูแล ไม่สามารถเพิ่มสิทธิ์ด้วยตนเองผ่านหน้านี้</p>
-  </main>
+  </div></main>
 }
