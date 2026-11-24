@@ -24,9 +24,9 @@ export default function Receipts(){
   }).catch(e=>{if(alive)setError(e instanceof Error?e.message:'เข้าสู่ระบบก่อน')})
   return()=>{alive=false}
  },[])
- useEffect(()=>{let active=true;setBills([])
-  const query=new URLSearchParams({limit:'50',page:String(page)})
-  if(propertyId)query.set('propertyId',propertyId)
+ useEffect(()=>{let active=true;setBills([]);setMore(false);setError('')
+  if(!propertyId)return()=>{active=false}
+  const query=new URLSearchParams({limit:'50',page:String(page),propertyId,status:'paid'})
   void get<{items:Bill[];hasMore:boolean}>('/api/v2/bills?'+query).then(r=>{
    if(active){setBills(r.items);setMore(r.hasMore)}
   }).catch(e=>{if(active)setError(e instanceof Error?e.message:'โหลดบิลไม่สำเร็จ')})

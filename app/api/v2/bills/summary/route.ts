@@ -27,7 +27,7 @@ export async function GET(req:NextRequest){
           COALESCE(sum(paid) FILTER (WHERE status<>'void'),0)::text AS "paidTotal",
           COALESCE(sum(total-paid) FILTER (WHERE status<>'void'),0)::text AS "outstandingTotal",
           count(*) FILTER (WHERE status IN ('unpaid','partial'))::integer AS "unpaidCount"
-        FROM balances`,billHistoryArgs(filter,true,account.id))
+        FROM balances`,billHistoryArgs(filter,true,account.id).slice(0,4))
       return reply({propertyId:filter.propertyId,filters:{period:filter.period,unitId:filter.unitId,status:filter.status},
         ...r.rows[0]})
     })

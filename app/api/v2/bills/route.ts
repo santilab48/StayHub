@@ -5,7 +5,7 @@ import {withPostgresTransaction} from '../../../../lib/db/postgres'
 import {lockedBillingIdentity,exclusiveMonthlyStay} from '../../../../lib/db/billing-identity'
 import {canManageProperty,periodDate,requestKey,uuid} from '../../../../lib/db/billing-request'
 import {cents,formatCents} from '../../../../lib/db/billing-calculation'
-import {billHistoryArgs,billScope,parseBillHistory} from '../../../../lib/db/billing-history'
+import {billHistoryArgs,billScope,tenantScopedBillScope,parseBillHistory} from '../../../../lib/db/billing-history'
 import {createInvoiceDocument} from '../../../../lib/invoices/create-invoice'
 
 export const dynamic='force-dynamic'
@@ -23,6 +23,9 @@ export async function GET(req:NextRequest){
     return await withPostgresTransaction(async client=>{
       const manage=filter.propertyId!==null&&await canManageProperty(client,account.id,filter.propertyId)
       const args=billHistoryArgs(filter,manage,account.id)
+      const scope=manage?billScope:tenantScopedBillScope
+      const pageArgs=manage?args.slice(0,4):args
+      const limitIndex=manage?5:7,offsetIndex=manage?6:8
       const r=await client.query(`SELECT b.id,b.property_id,b.account_id,b.period,b.total,b.status,b.unit_id,b.stay_id,b.lease_id,
         u.name AS unit_name,COALESCE(p.paid,0)::text AS paid,
         (CASE WHEN b.status='void' THEN 0 ELSE b.total-COALESCE(p.paid,0) END)::text AS outstanding
@@ -30,9 +33,9 @@ export async function GET(req:NextRequest){
         JOIN stayhub.units u ON u.property_id=b.property_id AND u.id=b.unit_id
         LEFT JOIN LATERAL (SELECT sum(amount) AS paid FROM stayhub.billing_payments
           WHERE property_id=b.property_id AND bill_id=b.id) p ON true
-        WHERE ${billScope}
-        ORDER BY b.period DESC,b.created_at DESC,b.id DESC LIMIT $7 OFFSET $8`,
-        [...args,filter.limit+1,filter.offset])
+        WHERE ${scope}
+        ORDER BY b.period DESC,b.created_at DESC,b.id DESC LIMIT $${limitIndex} OFFSET $${offsetIndex}`,
+        [...pageArgs,filter.limit+1,filter.offset])
       return reply({items:r.rows.slice(0,filter.limit),page:filter.offset/filter.limit+1,
         limit:filter.limit,hasMore:r.rows.length>filter.limit})
     })

@@ -22,8 +22,9 @@ export const billScope=`b.finalized=true
   AND ($1::uuid IS NULL OR b.property_id=$1::uuid)
   AND ($2::date IS NULL OR b.period=$2::date)
   AND ($3::uuid IS NULL OR b.unit_id=$3::uuid)
-  AND ($4::text IS NULL OR b.status=$4::text)
-  AND ($5::boolean OR ${tenantBillAccess})`
+  AND ($4::text IS NULL OR b.status=$4::text)`
+
+export const tenantScopedBillScope=`${billScope} AND ($5::boolean OR ${tenantBillAccess})`
 
 export function billHistoryArgs(filter:BillHistoryFilter,owner:boolean,accountId:string){
   return [filter.propertyId,filter.period,filter.unitId,filter.status,owner,accountId]
