@@ -16,6 +16,13 @@ export default function MyStayPage(){
   const [requests,setRequests]=useState<JoinRequest[]>([])
   const [state,setState]=useState('กำลังตรวจสอบสิทธิ์การเข้าพัก...')
   useEffect(()=>{
+    // Resume the validated room invitation when the installed app starts at /my.
+    try{
+      const pending=localStorage.getItem('stayhub.tenant.invitation')
+      if(pending&&/^[A-Za-z0-9_-]{43}$/.test(pending)){
+        window.location.replace('/join?token='+encodeURIComponent(pending));return
+      }
+    }catch{}
     fetch('/api/v2/my-stays',{cache:'no-store'})
       .then(async r=>{const data=await r.json();if(!r.ok)throw Error(data.error||'Please sign in');setStays(data.items);return fetch('/api/v2/my-requests',{cache:'no-store'})})
       .then(async r=>{const data=await r.json();if(!r.ok)throw Error('Unable to load requests');setRequests(data.items);setState('')})
