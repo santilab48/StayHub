@@ -1,6 +1,5 @@
 'use client'
 import {useEffect,useState} from 'react'
-import PwaInstall from '../../components/PwaInstall'
 type Stay={id:string;property_name:string;unit_name:string;property_type:string}
 type JoinRequest={id:string;property_name:string;unit_name:string|null;status:'pending'|'approved'|'rejected'}
 const tiles=[
@@ -16,24 +15,16 @@ export default function MyStayPage(){
   const [requests,setRequests]=useState<JoinRequest[]>([])
   const [state,setState]=useState('กำลังตรวจสอบสิทธิ์การเข้าพัก...')
   useEffect(()=>{
-    // Resume the validated room invitation when the installed app starts at /my.
-    try{
-      const pending=localStorage.getItem('stayhub.tenant.invitation')
-      if(pending&&/^[A-Za-z0-9_-]{43}$/.test(pending)){
-        window.location.replace('/join?token='+encodeURIComponent(pending));return
-      }
-    }catch{}
     fetch('/api/v2/my-stays',{cache:'no-store'})
       .then(async r=>{const data=await r.json();if(!r.ok)throw Error(data.error||'Please sign in');setStays(data.items);return fetch('/api/v2/my-requests',{cache:'no-store'})})
       .then(async r=>{const data=await r.json();if(!r.ok)throw Error('Unable to load requests');setRequests(data.items);setState('')})
-      .catch(()=>setState('กรุณาเข้าสู่ระบบเพื่อดูพื้นที่ของคุณ'))
+      .catch(()=>setState('กรุณาสแกน QR ประจำห้องอีกครั้ง'))
   },[])
   return <main className="wrap" style={{maxWidth:900}}>
     <a href="/">← StayHub</a><h1>แผงผู้เข้าพัก</h1>
-    <p className="muted">ที่พักและห้องบนแผงนี้ต้องผูกกับ Account ID และ Stay ID ที่เจ้าของอนุมัติแล้วเท่านั้น</p>
-    <PwaInstall/>
+    <p className="muted">ข้อมูลห้องจะแสดงหลังเจ้าของอนุมัติการเข้าพักแล้ว</p>
     <section className="card section"><h2>บิลและยอดค้างย้อนหลัง</h2><p className="muted">ดูบิลของบัญชีนี้ได้แม้ย้ายห้องหรือย้ายออกแล้ว</p><a href="/cloud/billing" className="btn secondary">ดูบิลของฉัน</a></section>
-    {state&&<p role="status" className="card">{state} <a href="/cloud">เข้าสู่ระบบ</a></p>}
+    {state&&<p role="status" className="card">{state}</p>}
     {!state&&!stays.length&&<section className="card"><h2>ยังไม่มีห้องที่อนุมัติ</h2><p>สแกน QR ของเจ้าของแล้วส่งคำขอเข้าร่วม หรือรอเจ้าของอนุมัติห้องก่อน</p></section>}
     {!state&&requests.length>0&&<section className="card section"><h2>คำขอเข้าร่วมของฉัน</h2>{requests.map(r=><p key={r.id}>{r.property_name} · {r.unit_name||'รอเลือกห้อง'} · {r.status==='pending'?'รอเจ้าของอนุมัติ':r.status==='approved'?'อนุมัติแล้ว':'ปฏิเสธแล้ว'}</p>)}</section>}
     {stays.map(stay=><section key={stay.id} className="card section">

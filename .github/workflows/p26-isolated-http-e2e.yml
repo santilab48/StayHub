@@ -111,6 +111,8 @@ jobs:
           exit 1
       - name: Test registration, session, QR and authorization over HTTP
         run: node scripts/p26-http-e2e.mjs
+      - name: Test QR device pending approval isolation and revocation
+        run: node scripts/p26-tenant-device-http-e2e.mjs
       - name: Test separate Neon membership integration and scoped entitlements
         run: node scripts/p60-membership-http-e2e.mjs
       - name: Test server-authorized Platform Admin membership directory and revocation
@@ -125,6 +127,8 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Test room contract monthly billing in real Chromium
         run: node scripts/p26-room-billing-browser-e2e.mjs
+      - name: Test tenant install and standalone approval flow in mobile Chromium
+        run: node scripts/p26-tenant-pwa-browser-e2e.mjs
       - name: Test member status page in real Chromium
         run: node scripts/p61-membership-browser-e2e.mjs
       - name: Test two independent browser contexts with offline conflict

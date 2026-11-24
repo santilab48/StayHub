@@ -7,6 +7,7 @@ import {postgresQuery} from './db/postgres'
 
 const scrypt=promisify(scryptCallback)
 const COOKIE='stayhub_session'
+export const TENANT_DEVICE_COOKIE='stayhub_tenant_device'
 export const hashToken=(raw:string)=>createHash('sha256').update(raw).digest('hex')
 export const newToken=()=>randomBytes(32).toString('base64url')
 export async function hashPassword(password:string){
@@ -28,12 +29,26 @@ export async function issueSession(accountId:string){
 }
 export async function accountFromSession(){
   const raw=(await cookies()).get(COOKIE)?.value
-  if(!raw)return null
-  const res=await postgresQuery<{id:string,email:string}>(
-    `SELECT a.id,a.email FROM stayhub.sessions s
-     JOIN stayhub.accounts a ON a.id=s.account_id
-     WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at>now()`,
-     [hashToken(raw)])
+  if(raw){
+    const res=await postgresQuery<{id:string,email:string}>(
+      `SELECT a.id,a.email FROM stayhub.sessions s
+       JOIN stayhub.accounts a ON a.id=s.account_id
+       WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at>now()`,
+       [hashToken(raw)])
+    if(res.rows[0])return res.rows[0]
+  }
+  const device=(await cookies()).get(TENANT_DEVICE_COOKIE)?.value
+  if(!device)return null
+  const res=await postgresQuery<{id:string,email:string}>(`
+    SELECT a.id,a.email FROM stayhub.tenant_devices d
+    JOIN stayhub.join_requests r ON r.property_id=d.property_id AND r.id=d.join_request_id
+      AND r.account_id=d.account_id AND r.unit_id=d.unit_id AND r.status='approved'
+    JOIN stayhub.stays s ON s.join_request_id=r.id AND s.property_id=d.property_id
+      AND s.account_id=d.account_id AND s.unit_id=d.unit_id
+      AND s.starts_at<=now() AND (s.ends_at IS NULL OR s.ends_at>now())
+    JOIN stayhub.accounts a ON a.id=d.account_id
+    WHERE d.token_hash=$1 AND d.revoked_at IS NULL AND d.expires_at>now()`,
+    [hashToken(device)])
   return res.rows[0]||null
 }
 export function checkOrigin(req:NextRequest){

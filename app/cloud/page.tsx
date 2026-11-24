@@ -15,7 +15,7 @@ const typeDescriptions:Record<AccommodationType,string>={
   daily:'ที่พักรายวันและห้องพักแบบคิดต่อคืน',
   homestay:'บ้านพักและโฮมสเตย์'
 }
-type RequestItem={id:string;email:string;status:string;unit_name:string|null;unit_id:string|null}
+type RequestItem={id:string;email:string;status:string;unit_name:string|null;unit_id:string|null;device_id:string|null;device_revoked_at:string|null}
 type Unit={id:string;name:string}
 type InviteItem={id:string;created_at:string;expires_at:string;use_count:number;max_uses:number;revoked_at:string|null;unit_id:string|null}
 async function api(action:string,body?:Record<string,unknown>){
@@ -237,6 +237,7 @@ export default function CloudOwnerPage(){
                 <button className="btn" disabled={busy||!(r.unit_id||approveUnit)} onClick={()=>void run(async()=>{await api('approve',{propertyId:selected,requestId:r.id,unitId:r.unit_id||approveUnit});await loadRequests(selected);setMessage('อนุมัติผูกห้องเรียบร้อยแล้ว')})}>อนุมัติผูกห้อง</button>
                 <button className="btn secondary" disabled={busy} onClick={()=>void run(async()=>{await api('reject',{propertyId:selected,requestId:r.id});await loadRequests(selected);setMessage('ปฏิเสธคำขอแล้ว')})}>ปฏิเสธ</button>
               </div></div>}
+            {r.device_id&&r.status==='approved'&&!r.device_revoked_at&&<button className="btn secondary" disabled={busy} onClick={()=>void run(async()=>{await api('revoke-tenant-device',{propertyId:selected,deviceId:r.device_id});await loadRequests(selected);setMessage('ยกเลิกสิทธิ์อุปกรณ์แล้ว')})}>ยกเลิกสิทธิ์อุปกรณ์</button>}
           </div>)}
         </div>}
       </section>

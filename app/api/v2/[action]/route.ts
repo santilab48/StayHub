@@ -107,9 +107,11 @@ export async function GET(req:NextRequest,{params}:Params){
       if(!validId(propertyId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
       const r=await postgresQuery(`
         SELECT st.id AS stay_id,st.account_id,st.unit_id,st.starts_at,st.ends_at,
-          a.email,u.name AS unit_name
+          CASE WHEN d.id IS NOT NULL THEN 'ผู้เช่าจากอุปกรณ์' ELSE a.email END AS email,
+          u.name AS unit_name
         FROM stayhub.stays st
         JOIN stayhub.accounts a ON a.id=st.account_id
+        LEFT JOIN stayhub.tenant_devices d ON d.account_id=st.account_id AND d.property_id=st.property_id
         JOIN stayhub.units u ON u.id=st.unit_id AND u.property_id=st.property_id
         WHERE st.property_id=$1
         ORDER BY st.starts_at DESC LIMIT 500
@@ -119,8 +121,11 @@ export async function GET(req:NextRequest,{params}:Params){
     if(action==='requests'){
       const propertyId=req.nextUrl.searchParams.get('propertyId')
       if(!validId(propertyId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
-      const r=await postgresQuery(`SELECT r.id,r.status,r.created_at,r.unit_id,a.email,u.name AS unit_name
+      const r=await postgresQuery(`SELECT r.id,r.status,r.created_at,r.unit_id,
+        CASE WHEN d.id IS NOT NULL THEN 'ผู้เช่าจากอุปกรณ์' ELSE a.email END AS email,
+        d.id AS device_id,d.revoked_at AS device_revoked_at,u.name AS unit_name
         FROM stayhub.join_requests r JOIN stayhub.accounts a ON a.id=r.account_id
+        LEFT JOIN stayhub.tenant_devices d ON d.join_request_id=r.id AND d.property_id=r.property_id
         LEFT JOIN stayhub.units u ON u.id=r.unit_id AND u.property_id=r.property_id
         WHERE r.property_id=$1 ORDER BY r.created_at DESC LIMIT 100`,[propertyId])
       return reply({items:r.rows})
@@ -179,6 +184,8 @@ export async function POST(req:NextRequest,{params}:Params){
       if(!name||name.length>120||!['apartment','guesthouse','daily','homestay'].includes(String(type)))return reply({error:'Invalid property'},400)
       const id=await withPostgresTransaction(async c=>{
         await c.query('SELECT id FROM stayhub.accounts WHERE id=$1 FOR UPDATE',[account.id])
+        const device=await c.query('SELECT 1 FROM stayhub.tenant_devices WHERE account_id=$1 LIMIT 1',[account.id])
+        if(device.rowCount)return null
         const existing=await c.query("SELECT 1 FROM stayhub.properties WHERE owner_account_id=$1 UNION ALL SELECT 1 FROM stayhub.property_memberships WHERE account_id=$1 AND role IN ('owner','admin') LIMIT 1",[account.id])
         if(existing.rowCount)return null
         const r=await c.query<{id:string}>(`INSERT INTO stayhub.properties(owner_account_id,name,property_type) VALUES($1,$2,$3) RETURNING id`,[account.id,name,type])
@@ -231,6 +238,14 @@ export async function POST(req:NextRequest,{params}:Params){
         WHERE id=$1 AND property_id=$2 AND revoked_at IS NULL RETURNING id`,
         [body.inviteId,propertyId])
       return r.rowCount?reply({status:'revoked'}):reply({error:'Invite not found or already revoked'},404)
+    }
+    if(action==='revoke-tenant-device'){
+      if(!validId(propertyId)||!validId(body.deviceId)||!await ownerHasProperty(account.id,propertyId))
+        return reply({error:'Forbidden'},403)
+      const r=await postgresQuery(`UPDATE stayhub.tenant_devices SET revoked_at=now()
+        WHERE id=$1 AND property_id=$2 AND revoked_at IS NULL RETURNING id`,
+        [body.deviceId,propertyId])
+      return r.rowCount?reply({status:'revoked'}):reply({error:'Device not found'},404)
     }
     if(action==='reject'){
       if(!validId(propertyId)||!validId(body.requestId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
