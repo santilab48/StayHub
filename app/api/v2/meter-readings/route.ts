@@ -45,6 +45,11 @@ export async function POST(req:NextRequest){
       // Serialize readings on the unit, including concurrent first readings.
       const unit=await client.query(`SELECT id FROM stayhub.units WHERE property_id=$1 AND id=$2 FOR UPDATE`,[propertyId,unitId])
       if(!unit.rowCount)return {error:'unit_not_found'}
+      const issued=await client.query(`SELECT 1 FROM stayhub.billing_bills WHERE property_id=$1 AND unit_id=$2 AND period=$3::date AND finalized=true`,[propertyId,unitId,period])
+      if(issued.rowCount)return {error:'bill_already_issued'}
+      const contracts=await client.query(`SELECT snapshot FROM stayhub.room_contracts WHERE property_id=$1 AND unit_id=$2 AND (snapshot->>'startsOn')::date<($3::date+interval '1 month')::date AND (snapshot->>'endsOn')::date>=$3::date LIMIT 2`,[propertyId,unitId,period])
+      if(contracts.rows.length>1)return {error:'overlapping_contracts'}
+      if(contracts.rows.length===1&&cents(contracts.rows[0].snapshot[meterType])!==cents(unitRate))return {error:'meter_rate_mismatch'}
       const duplicate=await client.query(`SELECT 1 FROM stayhub.billing_meter_readings
         WHERE property_id=$1 AND unit_id=$2 AND meter_type=$3 AND period=$4::date`,[propertyId,unitId,meterType,period])
       if(duplicate.rowCount)return {error:'duplicate_reading'}
