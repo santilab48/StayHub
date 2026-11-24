@@ -19,7 +19,8 @@ export default function CloudLeases(){
  const [leases,setLeases]=useState<Lease[]>([])
  const [stayId,setStayId]=useState('')
  const [startsOn,setStartsOn]=useState(today)
- const [endsOn,setEndsOn]=useState('')
+ const oneYear=(date:string)=>{const d=new Date(date+'T00:00:00Z');d.setUTCFullYear(d.getUTCFullYear()+1);return d.toISOString().slice(0,10)}
+ const [endsOn,setEndsOn]=useState(()=>oneYear(today))
  const [rent,setRent]=useState('')
  const [deposit,setDeposit]=useState('0')
  const [busy,setBusy]=useState(false)
@@ -63,13 +64,7 @@ export default function CloudLeases(){
   <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/cloud?tab=residents">StayHub <span>Cloud</span></a><a className={dashboardStyles.back} href="/cloud?tab=residents">กลับหน้าจัดการ</a></header>
   <h1>สัญญาเช่า · StayHub Cloud</h1>
   <p className="muted">ข้อมูลสัญญาเชื่อมกับ PostgreSQL/Neon ผ่าน API เดียวกับระบบบิล ไม่ใช้ Supabase ของหน้าจอเดิม</p>
-  <section className="card section"><label>ที่พัก
-   <select value={propertyId} onChange={e=>setPropertyId(e.target.value)}>
-    <option value="">-- เลือกที่พัก --</option>
-    {properties.map(p=><option value={p.id} key={p.id}>{p.name}</option>)}
-   </select></label>
-   {!properties.length&&<p>ยังไม่มีที่พักที่คุณดูแล <a href="/cloud">ไปสร้างที่พักหรือเข้าสู่ระบบ</a></p>}
-  </section>
+  {!propertyId&&<p className="muted">ยังไม่มีที่พักที่คุณดูแล <a href="/cloud">กลับไปตั้งค่าที่พัก</a></p>}
   {error&&<p className="card section" role="alert" style={{color:'crimson'}}>{error}</p>}
   {notice&&<p className="card section" role="status">{notice}</p>}
   {propertyId&&<section className="card section">
@@ -80,8 +75,8 @@ export default function CloudLeases(){
      <option value="">-- เลือกผู้เช่า --</option>
      {stays.map(s=><option key={s.stay_id} value={s.stay_id}>{s.unit_name} · {s.email}</option>)}
     </select></label>
-    <label>วันเริ่มสัญญา<input type="date" required value={startsOn} onChange={e=>setStartsOn(e.target.value)}/></label>
-    <label>วันสิ้นสุด (เว้นว่างถ้าไม่กำหนด)<input type="date" min={startsOn} value={endsOn} onChange={e=>setEndsOn(e.target.value)}/></label>
+    <label>วันเริ่มสัญญา<input type="date" required value={startsOn} onChange={e=>{setStartsOn(e.target.value);if(e.target.value)setEndsOn(oneYear(e.target.value))}}/></label>
+    <label>วันสิ้นสุด (ค่าเริ่มต้น 1 ปี)<input type="date" min={startsOn} value={endsOn} onChange={e=>setEndsOn(e.target.value)}/></label>
     <label>ค่าเช่าต่อเดือน (บาท)<input type="number" min="0" max="100000000" step="0.01" required value={rent} onChange={e=>setRent(e.target.value)}/></label>
     <label>เงินประกัน (บาท)<input type="number" min="0" max="100000000" step="0.01" required value={deposit} onChange={e=>setDeposit(e.target.value)}/></label>
     <button className="btn" type="submit" disabled={busy||!stayId}>{busy?'กำลังบันทึก...':'สร้างสัญญาเช่า'}</button>
