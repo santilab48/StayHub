@@ -1,4 +1,5 @@
 'use client'
+import dashboardStyles from '../dashboard.module.css'
 import {FormEvent,useCallback,useEffect,useState} from 'react'
 
 type Property={id:string;name:string;role:string}
@@ -58,8 +59,8 @@ export default function CloudLeases(){
   }catch(e){setError(e instanceof Error?e.message:'บันทึกสัญญาไม่ได้')}
   finally{setBusy(false)}
  }
- return <main className="wrap" style={{maxWidth:980}}>
-  <p><a href="/cloud">← จัดการที่พัก</a></p>
+ return <main className={dashboardStyles.detail}><div className={dashboardStyles.detailInner}>
+  <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/cloud?tab=residents">StayHub <span>Cloud</span></a><a className={dashboardStyles.back} href="/cloud?tab=residents">กลับหน้าจัดการ</a></header>
   <h1>สัญญาเช่า · StayHub Cloud</h1>
   <p className="muted">ข้อมูลสัญญาเชื่อมกับ PostgreSQL/Neon ผ่าน API เดียวกับระบบบิล ไม่ใช้ Supabase ของหน้าจอเดิม</p>
   <section className="card section"><label>ที่พัก
@@ -85,7 +86,7 @@ export default function CloudLeases(){
     <label>เงินประกัน (บาท)<input type="number" min="0" max="100000000" step="0.01" required value={deposit} onChange={e=>setDeposit(e.target.value)}/></label>
     <button className="btn" type="submit" disabled={busy||!stayId}>{busy?'กำลังบันทึก...':'สร้างสัญญาเช่า'}</button>
    </form>
-   {!stays.length&&<p className="muted">ยังไม่มีผู้เช่าที่อนุมัติแล้ว <a href="/cloud">กลับไปออก QR และอนุมัติผู้เช่า</a></p>}
+   {!stays.length&&<p className="muted">ยังไม่มีผู้เช่าที่อนุมัติแล้ว <a href="/cloud?tab=residents">กลับไปออก QR และอนุมัติผู้เช่า</a></p>}
   </section>}
   {propertyId&&<section className="card section"><h2>สัญญาทั้งหมด</h2>
    {!leases.length?<p className="muted">ยังไม่มีสัญญา</p>:<div className="list">{leases.map(l=><div key={l.id} className="row">
@@ -94,5 +95,5 @@ export default function CloudLeases(){
    </div>)}</div>}
    <p><a className="btn" href="/cloud/billing">ไปบันทึกมิเตอร์และออกบิล</a></p>
   </section>}
- </main>
+ </div></main>
 }
