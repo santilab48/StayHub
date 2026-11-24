@@ -178,10 +178,14 @@ export async function POST(req:NextRequest,{params}:Params){
       const type=body.type
       if(!name||name.length>120||!['apartment','guesthouse','daily','homestay'].includes(String(type)))return reply({error:'Invalid property'},400)
       const id=await withPostgresTransaction(async c=>{
+        await c.query('SELECT id FROM stayhub.accounts WHERE id=$1 FOR UPDATE',[account.id])
+        const existing=await c.query("SELECT 1 FROM stayhub.properties WHERE owner_account_id=$1 UNION ALL SELECT 1 FROM stayhub.property_memberships WHERE account_id=$1 AND role IN ('owner','admin') LIMIT 1",[account.id])
+        if(existing.rowCount)return null
         const r=await c.query<{id:string}>(`INSERT INTO stayhub.properties(owner_account_id,name,property_type) VALUES($1,$2,$3) RETURNING id`,[account.id,name,type])
         await c.query(`INSERT INTO stayhub.property_memberships(property_id,account_id,role) VALUES($1,$2,'owner')`,[r.rows[0].id,account.id])
         return r.rows[0].id
       })
+      if(!id)return reply({error:'หนึ่งสมาชิกสามารถจัดการที่พักได้หนึ่งแห่ง'},409)
       return reply({id},201)
     }
     const propertyId=body.propertyId
