@@ -119,7 +119,7 @@ export async function GET(req:NextRequest,{params}:Params){
     if(action==='requests'){
       const propertyId=req.nextUrl.searchParams.get('propertyId')
       if(!validId(propertyId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
-      const r=await postgresQuery(`SELECT r.id,r.status,r.created_at,a.email,u.name AS unit_name
+      const r=await postgresQuery(`SELECT r.id,r.status,r.created_at,r.unit_id,a.email,u.name AS unit_name
         FROM stayhub.join_requests r JOIN stayhub.accounts a ON a.id=r.account_id
         LEFT JOIN stayhub.units u ON u.id=r.unit_id AND u.property_id=r.property_id
         WHERE r.property_id=$1 ORDER BY r.created_at DESC LIMIT 100`,[propertyId])
@@ -199,8 +199,8 @@ export async function POST(req:NextRequest,{params}:Params){
     if(action==='create-invite'){
       if(!validId(propertyId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
       const unitId=body.unitId
-      if(unitId!==undefined&&unitId!==null){
-        if(!validId(unitId))return reply({error:'Invalid unit'},400)
+      if(!validId(unitId))return reply({error:'เลือกห้องก่อนสร้าง QR'},400)
+      {
         const u=await postgresQuery('SELECT 1 FROM stayhub.units WHERE id=$1 AND property_id=$2 AND active=true',[unitId,propertyId])
         if(!u.rowCount)return reply({error:'Unit outside property'},403)
       }
@@ -210,10 +210,10 @@ export async function POST(req:NextRequest,{params}:Params){
         await client.query('SELECT id FROM stayhub.properties WHERE id=$1 FOR UPDATE',[propertyId])
         const count=await client.query(`SELECT count(*)::integer AS n FROM stayhub.invites
           WHERE property_id=$1 AND revoked_at IS NULL AND expires_at>now()
-          AND use_count<max_uses`,[propertyId])
+          AND use_count<max_uses AND unit_id=$2`,[propertyId,unitId])
         if(count.rows[0].n>=20)return null
         const r=await client.query<{id:string}>(`INSERT INTO stayhub.invites(property_id,created_by,token_hash,unit_id,expires_at,max_uses)
-          VALUES($1,$2,$3,$4,now()+interval '7 days',100) RETURNING id`,
+          VALUES($1,$2,$3,$4,now()+interval '1 year',100) RETURNING id`,
           [propertyId,account.id,hashToken(raw),unitId||null])
         return r.rows[0].id
       })
@@ -362,9 +362,10 @@ export async function POST(req:NextRequest,{params}:Params){
     if(action==='approve'){
       if(!validId(propertyId)||!validId(body.requestId)||!validId(body.unitId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
       const result=await withPostgresTransaction(async client=>{
-        const r=await client.query<{account_id:string;status:string}>(`SELECT account_id,status FROM stayhub.join_requests
+        const r=await client.query<{account_id:string;status:string;unit_id:string|null}>(`SELECT account_id,status,unit_id FROM stayhub.join_requests
           WHERE id=$1 AND property_id=$2 FOR UPDATE`,[body.requestId,propertyId])
         if(!r.rowCount||r.rows[0].status!=='pending')return 'not_pending'
+        if(r.rows[0].unit_id&&r.rows[0].unit_id!==body.unitId)return 'room_mismatch'
         const availability=await ensureUnitCanAccept(client,propertyId,body.unitId as string)
         if(availability!=='ok')return availability
         const membership=await client.query('SELECT role FROM stayhub.property_memberships WHERE property_id=$1 AND account_id=$2',[propertyId,r.rows[0].account_id])
