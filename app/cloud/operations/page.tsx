@@ -1,4 +1,5 @@
 'use client'
+import dashboardStyles from '../dashboard.module.css'
 import {FormEvent,useCallback,useEffect,useState} from 'react'
 type Property={id:string;name:string;role:string}
 type Stay={id:string;property_id:string;unit_id:string;property_name:string;unit_name:string}
@@ -106,8 +107,8 @@ export default function OperationsPage(){
   {units.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}
  </select></label>
  const itemName=(i:Item)=>i.title||i.carrier||i.plate||i.name||i.note||i.id.slice(0,8)
- return <main className="wrap" style={{maxWidth:1050}}>
-  <p><a href="/cloud">← กลับหน้าจัดการที่พัก</a></p>
+ return <main className={dashboardStyles.detail}><div className={dashboardStyles.detailInner}>
+  <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/cloud?tab=services">StayHub <span>Cloud</span></a><a className={dashboardStyles.back} href="/cloud?tab=services">กลับหน้าจัดการ</a></header>
   <h1>งานบริการ · StayHub Cloud</h1>
   <p className="muted">ข้อมูลจากฐาน PostgreSQL/Neon · ทุกคำขอตรวจสิทธิ์ที่พักและห้องโดย Server</p>
   <div className="subnav">{kinds.map(k=><button className="btn secondary" type="button" key={k} aria-current={kind===k?'page':undefined} onClick={()=>{setKind(k);setFields({});setNotice('');window.history.replaceState(null,'','?kind='+k)}}>{labels[k]}</button>)}</div>
@@ -158,5 +159,5 @@ export default function OperationsPage(){
     {owner&&kind==='documents'&&<button type="button" className="btn secondary" disabled={busy} onClick={()=>{if(window.confirm('ลบข้อความนี้?'))void run({propertyId,action:'document-remove',id:i.id})}}>ลบ</button>}
    </div>)}</div>}
   </section></>}
- </main>
+ </div></main>
 }
