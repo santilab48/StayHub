@@ -52,7 +52,7 @@ export async function POST(req:NextRequest){
   const otherAmount=body.otherAmount===undefined?'0.00':body.otherAmount
   const otherLabel=body.otherLabel===undefined?'ค่าอื่น ๆ':body.otherLabel
   const extraCents=parseMoney(otherAmount as string)
-  if(!uuid(propertyId)||(uuid(leaseId)===uuid(roomContractId))||!period||!key||
+  if(!uuid(propertyId)||!((uuid(leaseId)&&roomContractId===undefined)||(uuid(roomContractId)&&leaseId===undefined))||!period||!key||
      extraCents===null||
      typeof otherLabel!=='string'||otherLabel.trim().length<1||otherLabel.trim().length>120||
      (extraCents>0&&body.otherLabel!==undefined&&otherLabel.trim().length===0))
@@ -82,6 +82,7 @@ export async function POST(req:NextRequest){
         if(rent===null||service===null||extra===null)return {error:'bill_amount_out_of_range'}
         const meters=await client.query<Meter>(`SELECT id,meter_type,usage,unit_rate,amount FROM stayhub.billing_meter_readings WHERE property_id=$1 AND unit_id=$2 AND period=$3::date ORDER BY meter_type FOR UPDATE`,[propertyId,unitId,period])
         if((cents(t.water)??0)>0&&!meters.rows.some(m=>m.meter_type==='water')||(cents(t.electric)??0)>0&&!meters.rows.some(m=>m.meter_type==='electric'))return {error:'meter_readings_required'}
+        if(meters.rows.some(m=>cents(m.unit_rate)!==cents(t[m.meter_type])))return {error:'meter_rate_mismatch'}
         const total=rent+service+extra+meters.rows.reduce((sum,m)=>sum+(cents(m.amount)??NaN),0)
         if(!Number.isSafeInteger(total)||total>999999999999)return {error:'bill_amount_out_of_range'}
         const created=await client.query<{id:string}>(`INSERT INTO stayhub.billing_bills(property_id,unit_id,room_contract_id,period,total,created_by,idempotency_key,request_hash) VALUES($1,$2,$3,$4::date,$5,$6,$7,$8) RETURNING id`,[propertyId,unitId,roomContractId,period,formatCents(total),account.id,key,hash])
