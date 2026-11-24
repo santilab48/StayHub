@@ -1,0 +1,69 @@
+'use client'
+import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react'
+import styles from './guesthouse.module.css'
+
+type Property={id:string;name:string;property_type:string;role:string}
+type Room={id:string;name:string;active:boolean;occupants:number;reserved:boolean;cleaning:boolean;blocked:boolean}
+type Booking={id:string;unit_id:string;unit_name:string;arrival_date:string;departure_date:string;status:string;total_amount:string|null}
+type JoinRequest={id:string;unit_id:string|null;email:string;status:string}
+type Tab='overview'|'bookings'|'rooms'|'arrivals'|'finance'|'reports'|'settings'
+const menus:{id:Tab;label:string;desc:string;icon:string}[]=[
+ {id:'bookings',label:'การจอง',desc:'ปฏิทินและสร้างรายการจอง',icon:'M4 6h16v15H4zM4 10h16M8 3v6M16 3v6'},
+ {id:'rooms',label:'จัดการห้องพัก',desc:'เพิ่มห้องและดูสถานะ',icon:'M3 20V5m0 11h18v4M3 10h6a3 3 0 0 1 3 3v3m0-6h6a3 3 0 0 1 3 3v3'},
+ {id:'arrivals',label:'เช็กอิน / เช็กเอาต์',desc:'จัดการการเข้าพัก',icon:'M4 21h16M7 21V4h10v17M12 12h1'},
+ {id:'finance',label:'รับเงิน / ใบเสร็จ',desc:'ยอดค่าจองและเอกสาร',icon:'M5 3h14v18l-3-2-4 2-4-2-3 2V3M8 8h8m-8 4h8'},
+ {id:'reports',label:'รายงาน',desc:'ภาพรวมการจองและห้องพัก',icon:'M4 20V4m0 16h16M8 15l4-5 4 3 4-7'},
+ {id:'settings',label:'ตั้งค่าที่พัก',desc:'ข้อมูลที่พักและสมาชิก',icon:'M12 3v3m0 12v3M3 12h3m12 0h3M5 5l2 2m10 10 2 2M19 5l-2 2M7 17l-2 2 M12 8a4 4 0 1 0 0 8 4 4 0 1 0 0-8'}
+]
+const labels:Record<string,string>={pending:'รอยืนยัน',confirmed:'จองแล้ว',checked_in:'เข้าพัก',checked_out:'เช็กเอาต์แล้ว',cancelled:'ยกเลิก',no_show:'ไม่มาเข้าพัก'}
+const dateOnly=(d:string)=>String(d).slice(0,10)
+const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())
+const shift=(d:string,n:number)=>new Date(Date.parse(d+'T00:00:00Z')+n*86400000).toISOString().slice(0,10)
+const money=(n:number)=>new Intl.NumberFormat('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n)
+function Icon({path}:{path:string}){return <svg aria-hidden="true" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round"><path d={path}/></svg>}
+async function request<T>(path:string,body?:Record<string,unknown>,key?:string):Promise<T>{
+ const r=await fetch('/api/v2/'+path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:body?{'Content-Type':'application/json',...(key?{'Idempotency-Key':key}:{})}:{},body:body?JSON.stringify(body):undefined})
+ const data=await r.json();if(!r.ok)throw Error(data.error||'ไม่สามารถดำเนินการได้');return data as T
+}
+export default function GuesthouseDashboard({property,onLogout,logoutBusy,logoutError}:{property:Property;onLogout:()=>void;logoutBusy:boolean;logoutError:string}){
+ const [tab,setTab]=useState<Tab>('overview'),[rooms,setRooms]=useState<Room[]>([]),[bookings,setBookings]=useState<Booking[]>([]),[requests,setRequests]=useState<JoinRequest[]>([])
+ const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('')
+ const [unitId,setUnitId]=useState(''),[arrival,setArrival]=useState(today),[departure,setDeparture]=useState(()=>shift(today(),1)),[amount,setAmount]=useState(''),[roomName,setRoomName]=useState(''),[week,setWeek]=useState(today),[joinIds,setJoinIds]=useState<Record<string,string>>({})
+ const pendingKey=useRef<{payload:string;key:string}|null>(null)
+ const load=useCallback(async()=>{
+  const q='?propertyId='+encodeURIComponent(property.id)
+  const [r,b,j]=await Promise.all([request<{items:Room[]}>('occupancy'+q),request<{items:Booking[]}>('reservations'+q),request<{items:JoinRequest[]}>('requests'+q)])
+  setRooms(r.items);setBookings(b.items);setRequests(j.items)
+ },[property.id])
+ useEffect(()=>{setLoading(true);void load().catch(e=>setError(e.message)).finally(()=>setLoading(false))},[load])
+ async function act(task:()=>Promise<void>){if(busy)return;setBusy(true);setError('');setNotice('');try{await task();await load()}catch(e){setError(e instanceof Error?e.message:'ดำเนินการไม่สำเร็จ')}finally{setBusy(false)}}
+ const now=today(),active=rooms.filter(r=>r.active),occupied=active.filter(r=>r.occupants>0),available=active.filter(r=>!r.occupants&&!r.reserved&&!r.cleaning&&!r.blocked),arrivals=bookings.filter(b=>b.status==='confirmed'&&dateOnly(b.arrival_date)===now),departures=bookings.filter(b=>b.status==='checked_in'&&dateOnly(b.departure_date)<=now)
+ const days=Array.from({length:7},(_,i)=>shift(week,i))
+ const bookedValue=bookings.filter(b=>!['cancelled','no_show'].includes(b.status)&&b.total_amount!==null).reduce((n,b)=>n+Number(b.total_amount),0)
+ const metrics=[{label:'ห้องว่าง',value:available.length,kind:'green'},{label:'กำลังเข้าพัก',value:occupied.length,kind:'blue'},{label:'เช็กอินวันนี้',value:arrivals.length,kind:'orange'},{label:'เช็กเอาต์วันนี้ / เกินกำหนด',value:departures.length,kind:'plain'}]
+ const roomStatus=(r:Room)=>!r.active?'ปิดใช้งาน':r.blocked?'ปิดซ่อม':r.cleaning?'ทำความสะอาด':r.occupants?'เข้าพัก':r.reserved?'จองแล้ว':'ว่าง'
+ const roomTone=(r:Room)=>!r.active||r.blocked?'blocked':r.cleaning?'cleaning':r.occupants?'occupied':r.reserved?'reserved':'available'
+ function createBooking(e:FormEvent){e.preventDefault();void act(async()=>{
+  const body={action:'create',propertyId:property.id,unitId,arrival,departure,amount:amount===''?null:Number(amount)}
+  const payload=JSON.stringify(body);if(pendingKey.current?.payload!==payload)pendingKey.current={payload,key:crypto.randomUUID()}
+  await request('reservations',body,pendingKey.current.key);pendingKey.current=null;setAmount('');setNotice('บันทึกการจองแล้ว')
+ })}
+ function changeBooking(b:Booking,action:'cancel'|'check-in'|'check-out'){
+  if(action!=='check-in'&&!window.confirm(action==='cancel'?'ยืนยันยกเลิกการจอง?':'ยืนยันเช็กเอาต์?'))return
+  void act(async()=>{await request('reservations',{action,propertyId:property.id,reservationId:b.id,...(action==='check-in'?{joinRequestId:joinIds[b.id]}:{})});setNotice('บันทึกสถานะแล้ว')})
+ }
+ function bookingList(items:Booking[]){return <div className={styles.list}>{items.length===0?<p className={styles.muted}>ยังไม่มีรายการ</p>:items.map(b=><article className={styles.booking} key={b.id}><div><strong>ห้อง {b.unit_name}</strong><p>{dateOnly(b.arrival_date)} — {dateOnly(b.departure_date)} · {labels[b.status]||b.status}</p><small>{b.total_amount===null?'ยังไม่ระบุค่าจอง':money(Number(b.total_amount))+' บาท'}</small></div><div className={styles.actions}>{b.status==='confirmed'&&<><select aria-label="คำขอผู้เข้าพัก" value={joinIds[b.id]||''} onChange={e=>setJoinIds(v=>({...v,[b.id]:e.target.value}))}><option value="">เลือกคำขอเข้าพัก</option>{requests.filter(j=>j.status==='pending'&&(!j.unit_id||j.unit_id===b.unit_id)).map(j=><option key={j.id} value={j.id}>{j.email} · {j.id.slice(0,8)}</option>)}</select><button disabled={busy||!joinIds[b.id]} onClick={()=>changeBooking(b,'check-in')}>เช็กอิน</button><button className={styles.secondary} disabled={busy} onClick={()=>changeBooking(b,'cancel')}>ยกเลิก</button></>}{b.status==='checked_in'&&<button disabled={busy} onClick={()=>changeBooking(b,'check-out')}>เช็กเอาต์</button>}</div></article>)}</div>}
+ return <main className={styles.shell}><div className={styles.workspace}>
+  <header className={styles.header}><div><a href="/" className={styles.brand}>Stay<span>Hub</span></a><div className={styles.eyebrow}>GUESTHOUSE</div></div><div className={styles.account}><strong>{property.name}</strong><button className={styles.secondary} disabled={logoutBusy} onClick={onLogout}>ออกจากระบบ</button></div></header>
+  <div className={styles.heading}><div><div className={styles.eyebrow}>พื้นที่จัดการเกสต์เฮาส์</div><h1>{tab==='overview'?'ภาพรวมการเข้าพัก':menus.find(m=>m.id===tab)?.label}</h1><p>{new Intl.DateTimeFormat('th-TH',{dateStyle:'full',timeZone:'Asia/Bangkok'}).format(new Date())}</p></div>{tab!=='overview'&&<button className={styles.secondary} onClick={()=>setTab('overview')}>กลับหน้าจัดการ</button>}</div>
+  {loading&&<p role="status">กำลังโหลดข้อมูลจริง...</p>}{(error||logoutError)&&<p role="alert" className={styles.error}>{error||logoutError}</p>}{notice&&<p role="status" className={styles.notice}>{notice}</p>}
+  {tab==='overview'&&<><div className={styles.metrics}>{metrics.map(m=><div className={styles.metric} key={m.label}><span>{m.label}</span><strong className={styles[m.kind]}>{loading?'—':m.value}</strong><small>ห้อง / รายการ</small></div>)}</div><h2 className={styles.sectionTitle}>เมนูจัดการ</h2><nav className={styles.menuGrid} aria-label="เมนูเกสต์เฮาส์">{menus.map(m=><button key={m.id} className={styles.tile} onClick={()=>setTab(m.id)}><Icon path={m.icon}/><strong>{m.label}</strong><small>{m.desc}</small></button>)}</nav><section className={styles.revenue}><div><small>ยอดค่าจองตามรายการที่บันทึก (ไม่ใช่ยอดรับเงินจริง)</small><strong>฿ {loading?'—':money(bookedValue)}</strong></div><button className={styles.secondary} onClick={()=>setTab('finance')}>ดูรายละเอียด</button></section></>}
+  {tab==='bookings'&&<><section className={styles.panel}><div className={styles.heading}><h2>ปฏิทินการจอง</h2><div className={styles.actions}><button className={styles.secondary} onClick={()=>setWeek(v=>shift(v,-7))}>ก่อนหน้า</button><button className={styles.secondary} onClick={()=>setWeek(today())}>วันนี้</button><button className={styles.secondary} onClick={()=>setWeek(v=>shift(v,7))}>ถัดไป</button></div></div><div className={styles.calendar}><table><thead><tr><th>ห้อง</th>{days.map(d=><th key={d}>{d.slice(5)}</th>)}</tr></thead><tbody>{active.map(r=><tr key={r.id}><th>{r.name}</th>{days.map(d=>{const b=bookings.find(b=>b.unit_id===r.id&&['confirmed','checked_in'].includes(b.status)&&dateOnly(b.arrival_date)<=d&&dateOnly(b.departure_date)>d);return <td key={d} className={b?(b.status==='checked_in'?styles.occupied:styles.reserved):styles.empty}>{b?labels[b.status]:'—'}</td>})}</tr>)}</tbody></table>{!active.length&&<p>ยังไม่มีห้องพัก</p>}</div><p className={styles.muted}>ปฏิทินแสดงการจองเท่านั้น ไม่รวมช่วงปิดซ่อมและงานแม่บ้าน; ระบบตรวจความพร้อมอีกครั้งก่อนบันทึก</p></section><section className={styles.panel}><h2>สร้างการจอง</h2><form className={styles.form} onSubmit={createBooking}><label>ห้อง<select required value={unitId} onChange={e=>setUnitId(e.target.value)}><option value="">เลือกห้อง</option>{active.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}</select></label><label>วันเช็กอิน<input required type="date" min={now} value={arrival} onChange={e=>{setArrival(e.target.value);if(departure<=e.target.value&&e.target.value)setDeparture(shift(e.target.value,1))}}/></label><label>วันเช็กเอาต์<input required type="date" min={arrival?shift(arrival,1):now} value={departure} onChange={e=>setDeparture(e.target.value)}/></label><label>ยอดค่าห้องรวม (บาท)<input type="number" min="0" max="100000000" step="0.01" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="ไม่บังคับ"/></label><button disabled={busy||!unitId} type="submit">บันทึกการจอง</button></form></section><section className={styles.panel}><h2>รายการจอง</h2>{bookingList(bookings)}</section></>}
+  {tab==='rooms'&&<><section className={styles.panel}><h2>เพิ่มห้องพัก</h2><form className={styles.form} onSubmit={e=>{e.preventDefault();void act(async()=>{await request('unit',{propertyId:property.id,name:roomName.trim()});setRoomName('');setNotice('เพิ่มห้องแล้ว')})}}><label>เลขห้อง<input required maxLength={80} value={roomName} onChange={e=>setRoomName(e.target.value)} placeholder="101"/></label><button disabled={busy||!roomName.trim()}>เพิ่มห้อง</button></form></section><section className={styles.panel}><h2>สถานะห้องพัก ({rooms.length})</h2><div className={styles.roomGrid}>{rooms.map(r=><article className={styles.room} key={r.id}><strong>{r.name}</strong><span className={styles[roomTone(r)]}>{roomStatus(r)}</span></article>)}</div>{!rooms.length&&<p>ยังไม่มีห้องพัก</p>}</section></>}
+  {tab==='arrivals'&&<section className={styles.panel}><h2>เช็กอิน / เช็กเอาต์</h2><p className={styles.muted}>เช็กอินต้องมีคำขอ QR ที่รออนุมัติและตรงกับห้อง ระบบไม่อนุญาตให้ข้ามการตรวจสิทธิ์ การสร้าง QR สำหรับรายคืนยังไม่เปิดในหน้านี้</p>{bookingList(bookings.filter(b=>['confirmed','checked_in'].includes(b.status)))}</section>}
+  {tab==='finance'&&<section className={styles.panel}><h2>ยอดค่าจอง</h2><p className={styles.total}>฿ {money(bookedValue)}</p><p className={styles.muted}>เป็นยอดค่าจองที่ระบุในรายการ ไม่ใช่เงินที่รับแล้ว ระบบรับชำระรายคืนและใบเสร็จรายคืนยังไม่ได้พัฒนา</p><a className={styles.link} href="/cloud/receipts">ดูใบเสร็จที่มีอยู่เดิม</a></section>}
+  {tab==='reports'&&<section className={styles.panel}><h2>ภาพรวมจากรายการที่โหลด</h2><div className={styles.metrics}>{metrics.map(m=><div className={styles.metric} key={m.label}><span>{m.label}</span><strong>{loading?'—':m.value}</strong></div>)}</div><p className={styles.muted}>รายการจองล่าสุดสูงสุด 300 รายการ · ไม่ใช่รายงานรายได้จากการรับชำระ</p></section>}
+  {tab==='settings'&&<section className={styles.panel}><h2>ข้อมูลที่พัก</h2><p><strong>{property.name}</strong></p><p>ประเภท: เกสต์เฮาส์ · รายคืน</p><div className={styles.actions}><a className={styles.link} href="/membership">สถานะสมาชิก</a><a className={styles.link} href="/cloud/repairs">งานแจ้งซ่อม</a></div></section>}
+  <footer className={styles.footer}>StayHub Guesthouse · {property.name}</footer>
+ </div></main>
+}

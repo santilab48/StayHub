@@ -3,6 +3,7 @@ import {FormEvent,useEffect,useState} from 'react'
 import {accommodationTypes,isAccommodationType,type AccommodationType} from '../../lib/accommodation-types'
 import authStyles from './auth.module.css'
 import dashboardStyles from './dashboard.module.css'
+import GuesthouseDashboard from './guesthouse-dashboard'
 type Property={id:string;name:string;property_type:string;role:string}
 type OnboardingScreen='loading'|'choose'|'auth'|'dashboard'|'unavailable'
 const ONBOARDING_KEY='stayhub_owner_preferred_type_v1'
@@ -134,6 +135,7 @@ export default function CloudOwnerPage(){
     return()=>{active=false}
   },[managedId])
   async function loadRequests(id:string){await run(async()=>{const r=await fetch('/api/v2/requests?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setRequests(data.items)})}
+  if(screen==='dashboard'&&account&&managedProperty?.property_type==='guesthouse')return <GuesthouseDashboard property={managedProperty} onLogout={()=>void run(async()=>{await api('logout',{});setAccount(null);setProperties([]);setSelected('');setInvite(null);setDashboardTab('property');setScreen('auth');setAuthMode('login')})} logoutBusy={busy} logoutError={message}/>
   return <main className={screen==='choose'?'wrap ownerEntryPage ownerDarkEntry':screen==='auth'?authStyles.shell:screen==='dashboard'?dashboardStyles.shell:'wrap'} style={{maxWidth:screen==='auth'||screen==='dashboard'?undefined:screen==='choose'?1240:900}}>
     {screen==='dashboard'?null:screen==='auth'?<a className={authStyles.homeLink} href="/" aria-label="กลับหน้าแรก">หน้าแรก</a>:<a className="ownerBackLink" href="/">กลับหน้าเลือกประเภทที่พัก</a>}
     {screen==='loading'&&<section className="card section" aria-live="polite"><p>กำลังตรวจสอบบัญชีของคุณ...</p></section>}
