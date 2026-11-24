@@ -1,4 +1,5 @@
 'use client'
+import dashboardStyles from '../dashboard.module.css'
 import {FormEvent,useCallback,useEffect,useState} from 'react'
 type Property={id:string;name:string;role:string}
 type Unit={id:string;name:string}
@@ -67,8 +68,8 @@ export default function RoomsPage(){
  })}
  const activeStays=stays.filter(s=>!s.ends_at||new Date(s.ends_at)>new Date())
  const options=rooms.filter(r=>r.active)
- return <main className="wrap" style={{maxWidth:1050}}>
-  <p><a href="/cloud">← จัดการที่พัก</a></p>
+ return <main className={dashboardStyles.detail}><div className={dashboardStyles.detailInner}>
+  <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/cloud?tab=residents">StayHub <span>Cloud</span></a><a className={dashboardStyles.back} href="/cloud?tab=residents">กลับหน้าจัดการ</a></header>
   <h1>ห้องพักและผู้พัก · StayHub Cloud</h1>
   <p className="muted">ข้อมูลจาก PostgreSQL/Neon ชุดเดียวกับระบบ QR และระบบบิล</p>
   <section className="card section"><label>ที่พัก<select value={propertyId} onChange={e=>setPropertyId(e.target.value)}>
@@ -91,7 +92,7 @@ export default function RoomsPage(){
     </div><span className="pill">{r.active?'ใช้งาน':'ปิด'}</span></div>)}</div>}
    </section>
    <section className="card section"><h2>ผู้เข้าพักและประวัติ</h2>
-    {!stays.length?<p>ยังไม่มีผู้เข้าพัก <a href="/cloud">ไปสร้าง QR เชิญและอนุมัติผู้เช่า</a></p>:<div className="list">{stays.map(s=><div key={s.stay_id} className="row">
+    {!stays.length?<p>ยังไม่มีผู้เข้าพัก <a href="/cloud?tab=residents">ไปสร้าง QR เชิญและอนุมัติผู้เช่า</a></p>:<div className="list">{stays.map(s=><div key={s.stay_id} className="row">
      <div><strong>{s.email}</strong><p className="muted">{s.unit_name} · {s.ends_at?'ย้ายออกแล้ว':'เข้าพัก'} · {String(s.starts_at).slice(0,10)}</p></div>
      {!s.ends_at&&<button type="button" className="btn secondary" disabled={busy} onClick={()=>{if(window.confirm('ยืนยันย้ายออก? หากมีสัญญาเช่าอยู่ต้องยุติสัญญาก่อน'))void act(async()=>{await request('/api/v2/checkout',{propertyId,stayId:s.stay_id});setNotice('บันทึกย้ายออกแล้ว')})}}>ย้ายออก</button>}
     </div>)}</div>}
@@ -114,5 +115,5 @@ export default function RoomsPage(){
    </section>
    <section className="card section"><h2>การเงิน</h2><p><a className="btn" href="/cloud/leases">จัดการสัญญาเช่า</a> <a className="btn secondary" href="/cloud/billing">มิเตอร์และทำบิล</a></p></section>
   </>}
- </main>
+ </div></main>
 }
