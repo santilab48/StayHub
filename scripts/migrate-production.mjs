@@ -137,3 +137,6 @@ try {
 // Production deploys must also verify the separate, strictly read-only Neon
 // membership database. This is a SELECT-only preflight, not a Neon migration.
 if(!checkOnly && !dryRun) await import('./check-membership-production.mjs')
+
+// Explicitly authorized one-time recovery, after the existing readiness checks.
+if(!checkOnly && !dryRun && env.STAYHUB_IMPORT_LEGACY_OWNER==='1') await import('./import-legacy-owner.mjs')
