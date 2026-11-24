@@ -1,4 +1,5 @@
 'use client'
+import dashboardStyles from '../dashboard.module.css'
 import {FormEvent,useCallback,useEffect,useRef,useState} from 'react'
 
 type Property={id:string;name:string;role:string}
@@ -134,8 +135,8 @@ export default function CloudBillingPage(){
       setPayAmount('');setNotice('บันทึกรับเงินเรียบร้อย')
     })
   }
-  return <main className="wrap" style={{maxWidth:1050}}>
-    <p><a href="/cloud">← กลับหน้าจัดการที่พัก</a></p>
+  return <main className={dashboardStyles.detail}><div className={dashboardStyles.detailInner}>
+    <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/cloud?tab=finance">StayHub <span>Cloud</span></a><a className={dashboardStyles.back} href="/cloud?tab=finance">กลับหน้าจัดการ</a></header>
     <p><a className="btn secondary" href="/cloud/leases">จัดการสัญญาเช่าก่อนทำบิล</a></p>
     <h1>บิลรายเดือน · StayHub Cloud</h1>
     <p><a className="btn secondary" href="/cloud/receipts">ดูใบเสร็จที่ชำระครบ</a></p>
@@ -191,5 +192,5 @@ export default function CloudBillingPage(){
         </form>}
       </>}
     </section>}
-  </main>
+  </div></main>
 }
