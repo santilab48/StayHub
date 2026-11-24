@@ -1,3 +1,4 @@
+import {createInvoiceDocument} from '../../../../../../lib/invoices/create-invoice'
 import {createHash} from 'node:crypto'
 import {NextRequest,NextResponse} from 'next/server'
 import {accountFromSession,stagingAuthEnabled} from '../../../../../../lib/cloud-identity'
@@ -17,14 +18,18 @@ export async function GET(req:NextRequest,{params}:Params){
   if(!uuid(propertyId)||!uuid(billId))return error(404)
   try{
     return await withPostgresTransaction(async client=>{
-      await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY')
+      const bill=await client.query<{account_id:string|null}>(`SELECT account_id FROM stayhub.billing_bills WHERE property_id=$1 AND id=$2 AND finalized=true FOR UPDATE`,[propertyId,billId])
+      if(bill.rowCount!==1)return error(404)
+      const owner=await canManageProperty(client,account.id,propertyId)
+      if(!owner&&bill.rows[0].account_id!==account.id)return error(404)
+      const existing=await client.query('SELECT 1 FROM stayhub.billing_invoice_documents WHERE property_id=$1 AND bill_id=$2',[propertyId,billId])
+      if(!existing.rowCount)await createInvoiceDocument(client,propertyId,billId)
       const r=await client.query<{pdf:Buffer;filename:string;sha256:string;recipient_account_id:string|null}>(`
         SELECT d.pdf,d.filename,d.sha256,d.recipient_account_id
         FROM stayhub.billing_invoice_documents d
         JOIN stayhub.billing_bills b ON b.property_id=d.property_id AND b.id=d.bill_id
         WHERE d.property_id=$1 AND d.bill_id=$2 AND b.finalized=true`,[propertyId,billId])
       if(r.rowCount!==1)return error(404)
-      const owner=await canManageProperty(client,account.id,propertyId)
       if(!owner&&r.rows[0].recipient_account_id!==account.id)return error(404)
       const doc=r.rows[0]
       if(createHash('sha256').update(doc.pdf).digest('hex')!==doc.sha256)return error(503)
