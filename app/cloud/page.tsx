@@ -1,6 +1,7 @@
 'use client'
 import {FormEvent,useEffect,useState} from 'react'
 import {accommodationTypes,isAccommodationType,type AccommodationType} from '../../lib/accommodation-types'
+import authStyles from './auth.module.css'
 type Property={id:string;name:string;property_type:string;role:string}
 type OnboardingScreen='loading'|'choose'|'auth'|'dashboard'|'unavailable'
 const ONBOARDING_KEY='stayhub_owner_preferred_type_v1'
@@ -124,8 +125,8 @@ export default function CloudOwnerPage(){
   async function loadUnits(id:string){const r=await fetch('/api/v2/units?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setUnits(data.items)}
   async function loadInvites(id:string){const r=await fetch('/api/v2/invites?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setInvites(data.items)}
   async function loadRequests(id:string){await run(async()=>{const r=await fetch('/api/v2/requests?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setRequests(data.items)})}
-  return <main className={screen==='choose'?'wrap ownerEntryPage ownerDarkEntry':screen==='auth'?'ownerAuthShell':'wrap'} style={{maxWidth:screen==='auth'?undefined:screen==='choose'?1240:900}}>
-    {screen==='dashboard'?<><a href="/">← StayHub</a><h1>StayHub Cloud · เจ้าของที่พัก</h1></>:screen==='auth'?<a className="ownerAuthHomeLink" href="/" aria-label="กลับหน้าแรก">หน้าแรก</a>:<a className="ownerBackLink" href="/">กลับหน้าเลือกประเภทที่พัก</a>}
+  return <main className={screen==='choose'?'wrap ownerEntryPage ownerDarkEntry':screen==='auth'?authStyles.shell:'wrap'} style={{maxWidth:screen==='auth'?undefined:screen==='choose'?1240:900}}>
+    {screen==='dashboard'?<><a href="/">← StayHub</a><h1>StayHub Cloud · เจ้าของที่พัก</h1></>:screen==='auth'?<a className={authStyles.homeLink} href="/" aria-label="กลับหน้าแรก">หน้าแรก</a>:<a className="ownerBackLink" href="/">กลับหน้าเลือกประเภทที่พัก</a>}
     {screen==='loading'&&<section className="card section" aria-live="polite"><p>กำลังตรวจสอบบัญชีของคุณ...</p></section>}
     {screen==='unavailable'&&<section className="card section" role="alert"><h2>ระบบบัญชียังไม่พร้อมใช้งาน</h2><p>ไม่สามารถตรวจสอบเซสชันหรือการเชื่อมต่อเซิร์ฟเวอร์ได้ โปรดลองใหม่ภายหลัง</p><button type="button" className="btn secondary" onClick={()=>window.location.reload()}>ลองใหม่</button></section>}
     {screen==='choose'&&<section className="card section">
@@ -144,30 +145,30 @@ export default function CloudOwnerPage(){
       </div>
       <p className="muted">มีบัญชีเจ้าของอยู่แล้ว? <button type="button" className="ownerTextButton" onClick={()=>{setAuthMode('login');setScreen('auth')}}>เข้าสู่ระบบ</button></p>
     </section>}
-    {screen==='auth'&&!account&&<section className="ownerAuthGlass" aria-labelledby="ownerAuthTitle">
-      <div className="ownerAuthTop">
-        <span className="ownerAuthOverline">STAYHUB <span aria-hidden="true">/</span> OWNER ACCESS</span>
+    {screen==='auth'&&!account&&<section className={authStyles.panel} aria-labelledby="ownerAuthTitle">
+      <div className={authStyles.heading}>
+        <span className={authStyles.overline}>STAYHUB <span aria-hidden="true">/</span> OWNER ACCESS</span>
         <h1 id="ownerAuthTitle">{authMode==='register'?'เริ่มต้นจัดการที่พัก':'ยินดีต้อนรับกลับ'}</h1>
         <p>{authMode==='register'?'สมัครบัญชีเพื่อเริ่มใช้งาน StayHub':'เข้าสู่ระบบเพื่อจัดการที่พักของคุณ'}</p>
       </div>
-      {authMode==='register'&&<div className="ownerAuthSelected">
-        <span className="ownerAuthSelectedDot" aria-hidden="true"></span>
-        <div><small>ประเภทที่พักที่เลือก</small><strong>{accommodationTypes[type].label}</strong></div>
-        <button type="button" className="ownerAuthTextButton" onClick={changeType}>เปลี่ยนประเภท</button>
+      {authMode==='register'&&<div className={authStyles.selected}>
+        <span className={authStyles.dot} aria-hidden="true"></span>
+        <div className={authStyles.selectedDetail}><small>ประเภทที่พักที่เลือก</small><strong>{accommodationTypes[type].label}</strong></div>
+        <button type="button" className={authStyles.linkButton} onClick={changeType}>เปลี่ยนประเภท</button>
       </div>}
-      <form className="ownerAuthForm" onSubmit={e=>void sign(e,authMode)}>
+      <form className={authStyles.form} onSubmit={e=>void sign(e,authMode)}>
         <label htmlFor="owner-email">อีเมล
           <input id="owner-email" type="email" autoComplete="email" placeholder="name@example.com" value={email} onChange={e=>setEmail(e.target.value)} required/>
         </label>
         <label htmlFor="owner-password">รหัสผ่าน
-          <span className="ownerPasswordField">
+          <span className={authStyles.passwordField}>
             <input id="owner-password" type={showPassword?'text':'password'} autoComplete={authMode==='register'?'new-password':'current-password'} minLength={6} maxLength={128} placeholder={authMode==='register'?'อย่างน้อย 6 ตัวอักษร':'กรอกรหัสผ่าน'} value={password} onChange={e=>setPassword(e.target.value)} required/>
-            <button type="button" className="ownerPasswordToggle" aria-label={showPassword?'ซ่อนรหัสผ่าน':'แสดงรหัสผ่าน'} aria-pressed={showPassword} onClick={()=>setShowPassword(v=>!v)}>{showPassword?'ซ่อน':'แสดง'}</button>
+            <button type="button" className={authStyles.passwordToggle} aria-label={showPassword?'ซ่อนรหัสผ่าน':'แสดงรหัสผ่าน'} aria-pressed={showPassword} onClick={()=>setShowPassword(v=>!v)}>{showPassword?'ซ่อน':'แสดง'}</button>
           </span>
         </label>
-        <button type="submit" disabled={busy} className="ownerAuthSubmit">{busy?'กำลังดำเนินการ...':authMode==='register'?'สร้างบัญชีและดำเนินการต่อ':'เข้าสู่ระบบ'}<span aria-hidden="true">↗</span></button>
+        <button type="submit" disabled={busy} className={authStyles.submit}>{busy?'กำลังดำเนินการ...':authMode==='register'?'สร้างบัญชีและดำเนินการต่อ':'เข้าสู่ระบบ'}<span aria-hidden="true">↗</span></button>
       </form>
-      <p className="ownerAuthSwitch">{authMode==='register'?'มีบัญชีอยู่แล้ว?':'ยังไม่มีบัญชี?'} <button type="button" className="ownerAuthTextButton" onClick={()=>{setAuthMode(authMode==='register'?'login':'register');setMessage('')}}>{authMode==='register'?'เข้าสู่ระบบ':'สมัครสมาชิก'}</button></p>
+      <p className={authStyles.switch}>{authMode==='register'?'มีบัญชีอยู่แล้ว?':'ยังไม่มีบัญชี?'} <button type="button" className="ownerAuthTextButton" onClick={()=>{setAuthMode(authMode==='register'?'login':'register');setMessage('')}}>{authMode==='register'?'เข้าสู่ระบบ':'สมัครสมาชิก'}</button></p>
     </section>}
     {screen==='dashboard'&&account&&<>
       <section className="card section">
@@ -244,6 +245,6 @@ export default function CloudOwnerPage(){
         </div>}
       </section>
     </>}
-    {message&&<p role="status" className={screen==='auth'?'ownerAuthMessage':'card'}>{message}</p>}
+    {message&&<p role="status" className={screen==='auth'?authStyles.message:'card'}>{message}</p>}
   </main>
 }
