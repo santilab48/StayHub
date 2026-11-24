@@ -20,7 +20,7 @@ export default function CloudLeases(){
  const [stayId,setStayId]=useState('')
  const [startsOn,setStartsOn]=useState(today)
  const oneYear=(date:string)=>{const d=new Date(date+'T00:00:00Z');d.setUTCFullYear(d.getUTCFullYear()+1);return d.toISOString().slice(0,10)}
- const [endsOn,setEndsOn]=useState(()=>oneYear(today))
+ const [endsOn,setEndsOn]=useState(()=>oneYear(today()))
  const [rent,setRent]=useState('')
  const [deposit,setDeposit]=useState('0')
  const [busy,setBusy]=useState(false)
