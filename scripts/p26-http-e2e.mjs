@@ -148,6 +148,13 @@ async function main(){
     extraHeaders:{'idempotency-key':billKey},body:billBody}),201,'issue monthly bill')
  assert.equal(bill.data.total,'4350.00')
  const billId=bill.data.id
+ const pdfPath='/api/v2/bills/'+billId+'/pdf?propertyId='+prop
+ for(const [who,cookie,status] of [['owner',alice,200],['tenant',tenant,200],['other owner',bob,404],['anonymous','',401]]){
+  const pdf=await fetch(BASE+pdfPath,{headers:cookie?{cookie}:{}})
+  assert.equal(pdf.status,status,`${who} invoice access`)
+  if(status===200){assert.equal(pdf.headers.get('content-type'),'application/pdf');assert.equal((await pdf.arrayBuffer()).byteLength>1000,true)}
+ }
+ console.log('PASS invoice PDF owner and approved tenant access; unrelated account and anonymous denied')
  const unpaid=expect(await request('/api/v2/bills/'+billId+'?propertyId='+prop,{cookie:alice}),200,'owner unpaid bill details')
  assert.equal(unpaid.data.bill.status,'unpaid')
  assert.deepEqual(unpaid.data.items.map(x=>x.feeCode).sort(),['electric','other','rent','water'])

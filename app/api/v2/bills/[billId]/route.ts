@@ -34,11 +34,14 @@ export async function GET(req:NextRequest,{params}:Params){
         FROM stayhub.billing_payments WHERE property_id=$1 AND bill_id=$2`,[propertyId,billId])
       const amounts=paymentBalance(bill.total,sum.rows[0].paid)
       const balance={...amounts,outstanding:bill.status==='void'?'0.00':amounts.outstanding}
-      if(!owner)return reply({bill,items:items.rows,...balance})
+      const document=await client.query(`SELECT 1 FROM stayhub.billing_invoice_documents
+        WHERE property_id=$1 AND bill_id=$2`,[propertyId,billId])
+      const hasInvoice=document.rowCount===1
+      if(!owner)return reply({bill,items:items.rows,...balance,hasInvoice})
       const payments=await client.query(`SELECT id,amount,method,confirmed_by,confirmed_at
         FROM stayhub.billing_payments WHERE property_id=$1 AND bill_id=$2
         ORDER BY confirmed_at DESC,id DESC LIMIT 51`,[propertyId,billId])
-      return reply({bill,items:items.rows,...balance,
+      return reply({bill,items:items.rows,...balance,hasInvoice,
         payments:payments.rows.slice(0,50),hasMorePayments:payments.rows.length>50})
     })
   }catch{return reply({error:'Bill detail unavailable'},503)}

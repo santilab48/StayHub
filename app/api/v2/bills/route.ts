@@ -6,6 +6,7 @@ import {lockedBillingIdentity,exclusiveMonthlyStay} from '../../../../lib/db/bil
 import {canManageProperty,periodDate,requestKey,uuid} from '../../../../lib/db/billing-request'
 import {cents,formatCents} from '../../../../lib/db/billing-calculation'
 import {billHistoryArgs,billScope,parseBillHistory} from '../../../../lib/db/billing-history'
+import {createInvoiceDocument} from '../../../../lib/invoices/create-invoice'
 
 export const dynamic='force-dynamic'
 const reply=(value:unknown,status=200)=>NextResponse.json(value,{status,headers:{'Cache-Control':'no-store'}})
@@ -93,6 +94,7 @@ export async function POST(req:NextRequest){
         if(service>0)await insert('other','ค่าบริการตามสัญญา','1',formatCents(service),formatCents(service),null)
         if(extra>0)await insert('other',label,'1',normalizedOther,normalizedOther,null)
         await client.query('UPDATE stayhub.billing_bills SET finalized=true WHERE id=$1 AND property_id=$2',[billId,propertyId])
+        await createInvoiceDocument(client,propertyId,billId)
         return {id:billId,replayed:false,total:formatCents(total)}
       }
       if(!uuid(leaseId))return {error:'lease_not_found'}
@@ -152,6 +154,7 @@ export async function POST(req:NextRequest){
         m.usage,m.unit_rate,m.amount,m.id)
       if(extra!==null&&extra>0)await insert('other',label,'1',normalizedOther,normalizedOther,null)
       await client.query(`UPDATE stayhub.billing_bills SET finalized=true WHERE id=$1 AND property_id=$2`,[billId,propertyId])
+      await createInvoiceDocument(client,propertyId,billId)
       return {id:billId,replayed:false,total:formatCents(total)}
     })
     if('error' in result)return reply({error:result.error},result.error==='forbidden'?403:409)

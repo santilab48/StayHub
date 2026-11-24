@@ -6,7 +6,7 @@ import {FormEvent,useCallback,useEffect,useRef,useState} from 'react'
 type Property={id:string;name:string;role:string}
 type Lease={id:string;unit_id:string;unit_name:string;monthly_rent:string;status:string;source?:string;water?:string;electric?:string;service?:string;water_meter?:string;electric_meter?:string}
 type Bill={id:string;property_id:string;unit_name:string;period:string;total:string;paid:string;outstanding:string;status:string}
-type BillDetail={bill:Bill;items:{feeCode:string;label:string;quantity:string;unitRate:string;amount:string}[];paid:string;outstanding:string;payments?:{id:string;amount:string;method:string;confirmed_at:string}[]}
+type BillDetail={bill:Bill;items:{feeCode:string;label:string;quantity:string;unitRate:string;amount:string}[];paid:string;outstanding:string;hasInvoice?:boolean;payments?:{id:string;amount:string;method:string;confirmed_at:string}[]}
 type MeterType='water'|'electric'
 type Reading={meter_type:MeterType;previous_reading:string;current_reading:string;unit_rate:string;usage:string;amount:string}
 type MeterState={items:Reading[];previous:{meter_type:MeterType;current_reading:string}[]}
@@ -230,7 +230,7 @@ export default function CloudBillingPage(){
     </section>
     {selectedBill&&<section id="bill-detail" className="card section">
       {selectedBill.bill.status==='paid'&&Number(selectedBill.outstanding)===0&&<p><a className="btn secondary" href={'/cloud/receipts/'+encodeURIComponent(selectedBill.bill.id)+'?propertyId='+encodeURIComponent(selectedBill.bill.property_id)}>ใบเสร็จ / พิมพ์ PDF</a></p>}<div className="toolbar"><h2>รายละเอียดบิล {String(selectedBill.bill.period).slice(0,7)}</h2><button type="button" className="btn secondary" onClick={()=>setSelectedBill(null)}>ปิด</button></div>
-      <p>ห้อง {selectedBill.bill.unit_name} · {statusText(selectedBill.bill.status)}</p><button type="button" className="btn secondary" onClick={()=>window.print()}>พิมพ์บิล</button>
+      <p>ห้อง {selectedBill.bill.unit_name} · {statusText(selectedBill.bill.status)}</p>{selectedBill.hasInvoice?<a className="btn secondary" href={'/api/v2/bills/'+encodeURIComponent(selectedBill.bill.id)+'/pdf?propertyId='+encodeURIComponent(selectedBill.bill.property_id)} target="_blank" rel="noopener noreferrer">พิมพ์บิล</a>:<button type="button" className="btn secondary" onClick={()=>window.print()}>พิมพ์บิล</button>}
       <div className="list">{selectedBill.items.map((i,n)=><div key={i.feeCode+n} className="row"><span>{i.label}</span><strong>{money(i.amount)} บาท</strong></div>)}</div>
       <hr/><p><strong>ยอดรวม {money(selectedBill.bill.total)} บาท</strong></p><p>รับแล้ว {money(selectedBill.paid)} บาท · ค้าง {money(selectedBill.outstanding)} บาท</p>
       {owner&&<>
