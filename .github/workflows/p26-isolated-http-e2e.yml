@@ -123,6 +123,8 @@ jobs:
         run: |
           npm install --no-save playwright
           npx playwright install --with-deps chromium
+      - name: Test room contract monthly billing in real Chromium
+        run: node scripts/p26-room-billing-browser-e2e.mjs
       - name: Test member status page in real Chromium
         run: node scripts/p61-membership-browser-e2e.mjs
       - name: Test two independent browser contexts with offline conflict
