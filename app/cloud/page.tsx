@@ -15,7 +15,7 @@ const typeDescriptions:Record<AccommodationType,string>={
   daily:'ที่พักรายวันและห้องพักแบบคิดต่อคืน',
   homestay:'บ้านพักและโฮมสเตย์'
 }
-type RequestItem={id:string;email:string;status:string;unit_name:string|null}
+type RequestItem={id:string;email:string;status:string;unit_name:string|null;unit_id:string|null}
 type Unit={id:string;name:string}
 type InviteItem={id:string;created_at:string;expires_at:string;use_count:number;max_uses:number;revoked_at:string|null;unit_id:string|null}
 async function api(action:string,body?:Record<string,unknown>){
@@ -40,8 +40,8 @@ export default function CloudOwnerPage(){
   const [authMode,setAuthMode]=useState<'register'|'login'>('register')
   const [properties,setProperties]=useState<Property[]>([])
   const [selected,setSelected]=useState('')
-  const [unit,setUnit]=useState('')
-  const [invite,setInvite]=useState<{id:string;url:string;svg:string}|null>(null)
+  const [qrUnit,setQrUnit]=useState('')
+  const [invite,setInvite]=useState<{id:string;url:string;svg:string;roomName:string}|null>(null)
   const [invites,setInvites]=useState<InviteItem[]>([])
   const [requests,setRequests]=useState<RequestItem[]>([])
   const [units,setUnits]=useState<Unit[]>([])
@@ -123,6 +123,16 @@ export default function CloudOwnerPage(){
   async function create(e:FormEvent){e.preventDefault();await run(async()=>{if(properties.some(p=>['owner','admin'].includes(p.role)))throw Error('หนึ่งสมาชิกสามารถจัดการที่พักได้หนึ่งแห่ง');const p=await api('property',{name,type});await load();setSelected(p.id);setMessage('สร้างที่พักแล้ว');await loadUnits(p.id);await loadInvites(p.id)})}
   async function loadUnits(id:string){const r=await fetch('/api/v2/units?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setUnits(data.items)}
   async function loadInvites(id:string){const r=await fetch('/api/v2/invites?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setInvites(data.items)}
+  const managedProperty=properties.find(p=>p.role==='owner')||properties.find(p=>p.role==='admin')
+  const managedId=managedProperty?.id||''
+  useEffect(()=>{
+    let active=true
+    setSelected(managedId);setQrUnit('');setInvite(null);setUnits([]);setInvites([]);setRequests([]);setApproveUnit('')
+    if(managedId){
+      Promise.all([api('units?propertyId='+encodeURIComponent(managedId)),api('invites?propertyId='+encodeURIComponent(managedId)),api('requests?propertyId='+encodeURIComponent(managedId))]).then(([u,i,r])=>{if(active){setUnits(u.items);setInvites(i.items);setRequests(r.items)}}).catch(e=>{if(active)setMessage(e instanceof Error?e.message:'โหลดข้อมูลห้องไม่สำเร็จ')})
+    }
+    return()=>{active=false}
+  },[managedId])
   async function loadRequests(id:string){await run(async()=>{const r=await fetch('/api/v2/requests?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setRequests(data.items)})}
   return <main className={screen==='choose'?'wrap ownerEntryPage ownerDarkEntry':screen==='auth'?authStyles.shell:screen==='dashboard'?dashboardStyles.shell:'wrap'} style={{maxWidth:screen==='auth'||screen==='dashboard'?undefined:screen==='choose'?1240:900}}>
     {screen==='dashboard'?null:screen==='auth'?<a className={authStyles.homeLink} href="/" aria-label="กลับหน้าแรก">หน้าแรก</a>:<a className="ownerBackLink" href="/">กลับหน้าเลือกประเภทที่พัก</a>}
@@ -191,22 +201,25 @@ export default function CloudOwnerPage(){
           </section>
         </div>
         <div hidden={dashboardTab!=='residents'} className={dashboardStyles.grid}><section className="card section"><h2>ห้องพักและผู้พัก</h2><p className="muted">เพิ่มห้อง ดูสถานะห้อง ย้ายห้อง และจัดการย้ายออก ผ่านฐานข้อมูล Cloud</p><a className="btn" href="/cloud/rooms">จัดการห้องพัก</a></section><section className="card section"><h2>จัดการสัญญาเช่า</h2><p className="muted">ผูกผู้เช่าที่อนุมัติแล้วเข้ากับสัญญาเช่า ก่อนจดมิเตอร์และออกบิล</p><a className="btn" href="/cloud/leases">เปิดจัดการสัญญาเช่า</a></section><div className={dashboardStyles.full}><section className="card section"><h2>QR เชิญผู้เช่า</h2>
-        <label>เลือกที่พัก<select value={selected} onChange={e=>{setSelected(e.target.value);setInvite(null);setRequests([]);setInvites([]);setApproveUnit('');if(e.target.value){void loadUnits(e.target.value);void loadInvites(e.target.value)}}}>
-          <option value="">-- เลือกที่พัก --</option>{properties.filter(p=>['owner','admin'].includes(p.role)).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-        </select></label>
-        {selected&&<div className="list section">
-          <label>เพิ่มห้อง<input value={unit} onChange={e=>setUnit(e.target.value)} placeholder="เช่น A101"/></label>
-          <button type="button" disabled={busy||!unit.trim()} className="btn secondary" onClick={()=>void run(async()=>{await api('unit',{propertyId:selected,name:unit});setUnit('');await loadUnits(selected);setMessage('เพิ่มห้องสำเร็จ')})}>เพิ่มห้องพัก</button>
-          <button disabled={busy} className="btn" onClick={()=>void run(async()=>{setInvite(await api('create-invite',{propertyId:selected}));await loadInvites(selected)})}>สร้าง QR ประจำที่พัก (7 วัน)</button>
-          {invite&&<div className="card">
-            <img src={'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(invite.svg)} width="260" height="260" alt="QR สำหรับเข้าร่วมที่พัก"/>
-            <p><a href={invite.url}>{invite.url}</a></p>
-            <p className="muted">QR ผูกกับที่พักนี้และบัญชีเจ้าของในฐานข้อมูลอัตโนมัติ สแกนแล้วรอการอนุมัติก่อนเข้าถึงข้อมูล</p>
+        <p className="muted">สร้าง QR เฉพาะห้อง ผู้เช่าสแกนแล้วระบบจำห้องที่เชิญให้อัตโนมัติ</p>
+        {!selected?<p className="muted">กรุณาตั้งชื่อที่พักก่อนสร้าง QR</p>:<div className="list">
+          <div className={dashboardStyles.qrSetup}>
+            <div><label>เลือกห้องที่จะเชิญ<select value={qrUnit} onChange={e=>{setQrUnit(e.target.value);setInvite(null)}}><option value="">เลือกเลขห้อง</option>{units.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select></label></div>
+            <div className={dashboardStyles.qrExpiry}><small>อายุ QR อัตโนมัติ</small><strong>1 ปี</strong></div>
+            <button type="button" disabled={busy||!qrUnit} className="btn" onClick={()=>void run(async()=>{const room=units.find(u=>u.id===qrUnit);if(!room)return;const result=await api('create-invite',{propertyId:selected,unitId:room.id});setInvite({...result,roomName:room.name});await loadInvites(selected)})}>สร้าง QR ประจำห้อง</button>
+          </div>
+          {!units.length&&<p className="muted">ยังไม่มีห้อง <a href="/cloud/rooms">เพิ่มห้องพักก่อน</a></p>}
+          {invite&&<div className={dashboardStyles.qrResult}>
+            <strong>{managedProperty?.name} · ห้อง {invite.roomName}</strong>
+            <img src={'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(invite.svg)} width="260" height="260" alt={'QR ห้อง '+invite.roomName}/>
+            <a className="btn" download={'StayHub-'+invite.roomName+'.svg'} href={'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(invite.svg)}>บันทึก QR</a>
+            <button type="button" className="btn secondary" onClick={()=>void run(async()=>{await navigator.clipboard.writeText(invite.url);setMessage('คัดลอกลิงก์แล้ว')})}>คัดลอกลิงก์</button>
+            <p className="muted">ผู้เช่าติดตั้งแอปและเปิดดูห้องได้ตามสิทธิ์ที่เจ้าของอนุมัติ</p>
           </div>}
           <section className="card"><h3>QR ที่สร้างแล้ว</h3>
             <p className="muted">ลิงก์ QR เดิมไม่สามารถดึงกลับมาได้ หลังออกจากหน้านี้ต้องสร้าง QR ใหม่เพื่อแชร์อีกครั้ง</p>
             {invites.map(item=><div className="row" key={item.id}>
-              <div><strong>{item.revoked_at?'ยกเลิกแล้ว':new Date(item.expires_at)<=new Date()?'หมดอายุ':'ใช้งานได้'}</strong>
+              <div><strong>{units.find(u=>u.id===item.unit_id)?.name||'QR เดิม'} · {item.revoked_at?'ยกเลิกแล้ว':new Date(item.expires_at)<=new Date()?'หมดอายุ':'ใช้งานได้'}</strong>
                 <p className="muted">ใช้แล้ว {item.use_count}/{item.max_uses} · หมดอายุ {new Date(item.expires_at).toLocaleDateString('th-TH')}</p></div>
               {!item.revoked_at&&new Date(item.expires_at)>new Date()&&<button type="button" className="btn secondary" disabled={busy} onClick={()=>void run(async()=>{
                 await api('revoke-invite',{propertyId:selected,inviteId:item.id})
@@ -219,9 +232,9 @@ export default function CloudOwnerPage(){
           <button className="btn secondary" disabled={busy} onClick={()=>void loadRequests(selected)}>ดูคำขอเข้าร่วม</button>
           {requests.map(r=><div key={r.id} className="card">
             <p>{r.email} · {r.status} {r.unit_name||''}</p>
-            {r.status==='pending'&&<div className="list"><label>เลือกห้องที่จะผูก<select value={approveUnit} onChange={e=>setApproveUnit(e.target.value)}><option value="">-- เลือกห้อง --</option>{units.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select></label>
+            {r.status==='pending'&&<div className="list">{r.unit_id?<strong>ห้อง {r.unit_name}</strong>:<label>เลือกห้องที่จะผูก<select value={approveUnit} onChange={e=>setApproveUnit(e.target.value)}><option value="">-- เลือกห้อง --</option>{units.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select></label>}
               <div className="flow">
-                <button className="btn" disabled={busy||!approveUnit} onClick={()=>void run(async()=>{await api('approve',{propertyId:selected,requestId:r.id,unitId:approveUnit});await loadRequests(selected);setMessage('อนุมัติผูกห้องเรียบร้อยแล้ว')})}>อนุมัติผูกห้อง</button>
+                <button className="btn" disabled={busy||!(r.unit_id||approveUnit)} onClick={()=>void run(async()=>{await api('approve',{propertyId:selected,requestId:r.id,unitId:r.unit_id||approveUnit});await loadRequests(selected);setMessage('อนุมัติผูกห้องเรียบร้อยแล้ว')})}>อนุมัติผูกห้อง</button>
                 <button className="btn secondary" disabled={busy} onClick={()=>void run(async()=>{await api('reject',{propertyId:selected,requestId:r.id});await loadRequests(selected);setMessage('ปฏิเสธคำขอแล้ว')})}>ปฏิเสธ</button>
               </div></div>}
           </div>)}
