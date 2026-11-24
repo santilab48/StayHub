@@ -1,5 +1,5 @@
 'use client'
-import {cents,thousandths,meterCharge} from '../../../lib/db/billing-calculation'
+import {cents,meterCharge} from '../../../lib/db/billing-calculation'
 import dashboardStyles from '../dashboard.module.css'
 import {FormEvent,useCallback,useEffect,useRef,useState} from 'react'
 
@@ -130,7 +130,7 @@ export default function CloudBillingPage(){
     const charge=meterCharge(normalize(d.start),normalize(d.end),normalize(d.rate))
     return charge?charge.amount/100:NaN
   }
-  const missing=(['water','electric'] as const).filter(t=>!existing(t)&&requiredMeter(t)&&!hasInput(t))
+  const missing=(['water','electric'] as const).filter(t=>!existing(t)&&(requiredMeter(t)||hasInput(t)))
   const validOther=cents(normalize(otherAmount))!==null
   const total=Number(activeLease?.monthly_rent||0)+Number(activeLease?.service||0)+meterAmount('water')+meterAmount('electric')+Number(otherAmount)
   const canReview=!!activeLease&&!!meterState&&!meterError&&!missing.length&&validOther&&Number.isFinite(total)&&total>=0&&(Number(otherAmount)===0||!!otherLabel.trim())
@@ -140,18 +140,22 @@ export default function CloudBillingPage(){
     try{await task()}catch(e){setError(e instanceof Error?e.message:'ทำรายการไม่สำเร็จ')}
     finally{setBusy(false)}
   }
+  async function saveMeter(type:MeterType){
+    if(!activeLease||!meterState||busy||existing(type)||!hasInput(type)||!Number.isFinite(meterAmount(type)))return
+    const d=meterDraft[type]
+    setReview(false)
+    await run(async()=>{
+      const body:Record<string,unknown>={propertyId,unitId:activeLease.unit_id,meterType:type,period,currentReading:normalize(d.end),unitRate:normalize(d.rate)}
+      if(!prior(type))body.initialReading=normalize(d.start)
+      try{await request('/api/v2/meter-readings',body)}catch(e){setMeterState(await fetchMeters());throw e}
+      setMeterState(await fetchMeters())
+      setNotice('บันทึกมิเตอร์'+(type==='water'?'น้ำ':'ไฟ')+'เรียบร้อย')
+    },type)
+  }
   async function issueBill(e:FormEvent){
     e.preventDefault();if(!activeLease||!canReview||busy)return
     if(!review){setReview(true);setAction('issue');setError('');setNotice('');return}
     await run(async()=>{
-      for(const type of ['water','electric'] as const){
-        if(existing(type)||!hasInput(type))continue
-        const d=meterDraft[type]
-        const body:Record<string,unknown>={propertyId,unitId:activeLease.unit_id,meterType:type,period,currentReading:normalize(d.end),unitRate:normalize(d.rate)}
-        if(!prior(type))body.initialReading=normalize(d.start)
-        try{await request('/api/v2/meter-readings',body)}catch(e){setMeterState(await fetchMeters());throw e}
-        setMeterState(await fetchMeters())
-      }
       const body={propertyId,...(activeLease.source==='room_contract'?{roomContractId:leaseId}:{leaseId}),period,otherAmount:normalize(otherAmount),otherLabel:otherLabel.trim()||'ค่าอื่น ๆ'}
       const result=await request<{id:string}>('/api/v2/bills',body,stableKey(billReplay,body))
       billReplay.current=null
@@ -203,13 +207,14 @@ export default function CloudBillingPage(){
             <label>อัตราต่อหน่วย (บาท) <input inputMode="decimal" disabled={busy||activeLease.source==='room_contract'} value={d.rate} onChange={e=>change('rate',e.target.value)}/></label>
             {!hasInput(type)&&requiredMeter(type)&&<small>กรุณากรอกเลขมิเตอร์ใหม่เพื่อคำนวณ</small>}
             {hasInput(type)&&!Number.isFinite(meterAmount(type))&&<p role="alert">ตรวจเลขเดิม เลขใหม่ และอัตราต่อหน่วย</p>}
+            <button type="button" className="btn secondary" disabled={busy||!hasInput(type)||!Number.isFinite(meterAmount(type))} onClick={()=>void saveMeter(type)}>{busy&&action===type?'กำลังบันทึก...':type==='water'?'บันทึกมิเตอร์น้ำ':'บันทึกมิเตอร์ไฟ'}</button>
             </>}
-            <div className="row"><span>ยอด{type==='water'?'ค่าน้ำ':'ค่าไฟ'}</span><strong>{Number.isFinite(meterAmount(type))?money(meterAmount(type)):'–'} บาท</strong></div></div>
+            {feedback(type)}<div className="row"><span>ยอด{type==='water'?'ค่าน้ำ':'ค่าไฟ'}</span><strong>{Number.isFinite(meterAmount(type))?money(meterAmount(type)):'–'} บาท</strong></div></div>
           })}</>}
           <label>ค่าอื่น ๆ (บาท) <input inputMode="decimal" value={otherAmount} disabled={busy} onChange={e=>{setOtherAmount(e.target.value);setReview(false)}} required/></label>
           <label>รายละเอียดค่าอื่น ๆ <input maxLength={120} value={otherLabel} disabled={busy} onChange={e=>{setOtherLabel(e.target.value);setReview(false)}} required={Number(otherAmount)>0}/></label>
-          <div className="card section"><h3>ยอดรวมที่ต้องชำระ</h3><strong style={{fontSize:26}}>{canReview?money(total):'–'} บาท</strong>{review&&<p>ตรวจสอบยอดรวมแล้วกดยืนยันเพื่อบันทึกมิเตอร์และออกบิล</p>}</div>
-          {missing.length>0&&<p className="muted">กรอกมิเตอร์{missing.map(t=>t==='water'?'น้ำ':'ไฟ').join('และ')}ก่อนตรวจยอด</p>}
+          <div className="card section"><h3>ยอดรวมที่ต้องชำระ</h3><strong style={{fontSize:26}}>{canReview?money(total):'–'} บาท</strong>{review&&<p>ตรวจสอบยอดรวมแล้วกดยืนยันออกบิล</p>}</div>
+          {missing.length>0&&<p className="muted">บันทึกมิเตอร์{missing.map(t=>t==='water'?'น้ำ':'ไฟ').join('และ')}ก่อนออกบิล</p>}
           <button className="btn" type="submit" disabled={busy||!canReview}>{busy&&action==='issue'?'กำลังออกบิล...':review?'ยืนยันออกบิล':'ตรวจสอบยอดก่อนออกบิล'}</button>{feedback('issue')}
           {review&&<button type="button" className="btn secondary" disabled={busy} onClick={()=>setReview(false)}>กลับไปแก้ไข</button>}</>}
         </form>
