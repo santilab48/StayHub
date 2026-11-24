@@ -1,4 +1,5 @@
 'use client'
+import dashboardStyles from '../dashboard.module.css'
 import {useCallback,useEffect,useState} from 'react'
 type Property={id:string;name:string;role:string}
 type Summary={billCount:number;billedTotal:string;paidTotal:string;outstandingTotal:string;unpaidCount:number}
@@ -52,8 +53,8 @@ export default function ReportsPage(){
   setTimeout(()=>URL.revokeObjectURL(url),1000)
  }
  const occupied=rooms.filter(r=>r.occupants>0).length
- return <main className="wrap" style={{maxWidth:1000}}>
-  <p><a href="/cloud">← จัดการที่พัก</a></p><h1>รายงาน · StayHub Cloud</h1>
+ return <main className={dashboardStyles.detail}><div className={dashboardStyles.detailInner}>
+  <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/cloud?tab=finance">StayHub <span>Cloud</span></a><a className={dashboardStyles.back} href="/cloud?tab=finance">กลับหน้าจัดการ</a></header><h1>รายงาน · StayHub Cloud</h1>
   <section className="card section"><label>ที่พัก<select value={propertyId} onChange={e=>setPropertyId(e.target.value)}>
    <option value="">-- เลือกที่พัก --</option>
    {properties.map(p=><option value={p.id} key={p.id}>{p.name}</option>)}
@@ -73,5 +74,5 @@ export default function ReportsPage(){
    <button type="button" className="btn section" disabled={loading} onClick={exportCsv}>ส่งออก CSV</button>
    <p className="footnote">ส่งออกบิลล่าสุดไม่เกิน 100 รายการ และสถานะห้อง ณ เวลาที่โหลด ไม่ใช่รายการทั้งหมดหากมีมากกว่า 100 บิล</p>
   </section></>}
- </main>
+ </div></main>
 }
