@@ -1,94 +1,19 @@
 'use client'
-import dashboardStyles from '../dashboard.module.css'
-import {FormEvent,useCallback,useEffect,useState} from 'react'
-
-type Property={id:string;name:string;role:string}
-type Stay={stay_id:string;account_id:string;unit_id:string;unit_name:string;email:string;ends_at:string|null}
-type Lease={id:string;stay_id:string;unit_name:string;monthly_rent:string;security_deposit:string;starts_on:string;ends_on:string|null;status:string}
-const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Bangkok'})
-async function api<T>(path:string,body?:Record<string,unknown>):Promise<T>{
- const response=await fetch(path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined})
- const result=await response.json()
- if(!response.ok)throw Error(typeof result.error==='string'?result.error:'ระบบไม่พร้อมใช้งาน')
- return result as T
-}
-export default function CloudLeases(){
- const [properties,setProperties]=useState<Property[]>([])
- const [propertyId,setPropertyId]=useState('')
- const [stays,setStays]=useState<Stay[]>([])
- const [leases,setLeases]=useState<Lease[]>([])
- const [stayId,setStayId]=useState('')
- const [startsOn,setStartsOn]=useState(today)
- const oneYear=(date:string)=>{const d=new Date(date+'T00:00:00Z');d.setUTCFullYear(d.getUTCFullYear()+1);return d.toISOString().slice(0,10)}
- const [endsOn,setEndsOn]=useState(()=>oneYear(today()))
- const [rent,setRent]=useState('')
- const [deposit,setDeposit]=useState('0')
- const [busy,setBusy]=useState(false)
- const [error,setError]=useState('')
- const [notice,setNotice]=useState('')
- const load=useCallback(async(id:string)=>{
-  if(!id){setStays([]);setLeases([]);return}
-  const [residents,existing]=await Promise.all([
-   api<{items:Stay[]}>('/api/v2/residents?propertyId='+encodeURIComponent(id)),
-   api<{items:Lease[]}>('/api/v2/leases?propertyId='+encodeURIComponent(id))
-  ])
-  const active=residents.items.filter(s=>!s.ends_at||new Date(s.ends_at)>new Date())
-  setStays(active);setLeases(existing.items)
-  setStayId(current=>active.some(s=>s.stay_id===current)?current:active[0]?.stay_id||'')
- },[])
- useEffect(()=>{let live=true
-  void api<{items:Property[]}>('/api/v2/properties').then(p=>{
-   if(!live)return
-   const owned=p.items.filter(x=>x.role==='owner'||x.role==='admin')
-   setProperties(owned);setPropertyId(owned[0]?.id||'')
-  }).catch(e=>{if(live)setError(e instanceof Error?e.message:'เข้าสู่ระบบ Cloud ก่อน')})
-  return()=>{live=false}
- },[])
- useEffect(()=>{let live=true;setStays([]);setLeases([]);setError('')
-  void load(propertyId).catch(e=>{if(live)setError(e instanceof Error?e.message:'โหลดข้อมูลสัญญาไม่สำเร็จ')})
-  return()=>{live=false}
- },[propertyId,load])
- async function submit(e:FormEvent){e.preventDefault()
-  if(!propertyId||!stayId||busy)return
-  const monthlyRent=Number(rent),securityDeposit=Number(deposit)
-  if(!Number.isFinite(monthlyRent)||monthlyRent<0||!Number.isFinite(securityDeposit)||securityDeposit<0){setError('กรุณาตรวจยอดเงิน');return}
-  setBusy(true);setError('');setNotice('')
-  try{
-   await api('/api/v2/leases',{propertyId,action:'create',stayId,startsOn,endsOn:endsOn||null,monthlyRent,securityDeposit})
-   await load(propertyId)
-   setNotice('สร้างสัญญาเช่าสำเร็จ สามารถไปจดมิเตอร์และทำบิลได้')
-  }catch(e){setError(e instanceof Error?e.message:'บันทึกสัญญาไม่ได้')}
-  finally{setBusy(false)}
- }
- return <main className={dashboardStyles.detail}><div className={dashboardStyles.detailInner}>
-  <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/cloud?tab=residents">StayHub <span>Cloud</span></a><a className={dashboardStyles.back} href="/cloud?tab=residents">กลับหน้าจัดการ</a></header>
-  <h1>สัญญาเช่า · StayHub Cloud</h1>
-  <p className="muted">ข้อมูลสัญญาเชื่อมกับ PostgreSQL/Neon ผ่าน API เดียวกับระบบบิล ไม่ใช้ Supabase ของหน้าจอเดิม</p>
-  {!propertyId&&<p className="muted">ยังไม่มีที่พักที่คุณดูแล <a href="/cloud">กลับไปตั้งค่าที่พัก</a></p>}
-  {error&&<p className="card section" role="alert" style={{color:'crimson'}}>{error}</p>}
-  {notice&&<p className="card section" role="status">{notice}</p>}
-  {propertyId&&<section className="card section">
-   <h2>สร้างสัญญาเช่า</h2>
-   <p className="muted">ต้องอนุมัติคำขอเข้าร่วมและผูกห้องก่อน จึงจะมีผู้เช่าให้เลือก</p>
-   <form className="list" onSubmit={e=>void submit(e)}>
-    <label>ผู้เช่าที่เข้าพักแล้ว<select required value={stayId} onChange={e=>setStayId(e.target.value)}>
-     <option value="">-- เลือกผู้เช่า --</option>
-     {stays.map(s=><option key={s.stay_id} value={s.stay_id}>{s.unit_name} · {s.email}</option>)}
-    </select></label>
-    <label>วันเริ่มสัญญา<input type="date" required value={startsOn} onChange={e=>{setStartsOn(e.target.value);if(e.target.value)setEndsOn(oneYear(e.target.value))}}/></label>
-    <label>วันสิ้นสุด (ค่าเริ่มต้น 1 ปี)<input type="date" min={startsOn} value={endsOn} onChange={e=>setEndsOn(e.target.value)}/></label>
-    <label>ค่าเช่าต่อเดือน (บาท)<input type="number" min="0" max="100000000" step="0.01" required value={rent} onChange={e=>setRent(e.target.value)}/></label>
-    <label>เงินประกัน (บาท)<input type="number" min="0" max="100000000" step="0.01" required value={deposit} onChange={e=>setDeposit(e.target.value)}/></label>
-    <button className="btn" type="submit" disabled={busy||!stayId}>{busy?'กำลังบันทึก...':'สร้างสัญญาเช่า'}</button>
-   </form>
-   {!stays.length&&<p className="muted">ยังไม่มีผู้เช่าที่อนุมัติแล้ว <a href="/cloud?tab=residents">กลับไปออก QR และอนุมัติผู้เช่า</a></p>}
-  </section>}
-  {propertyId&&<section className="card section"><h2>สัญญาทั้งหมด</h2>
-   {!leases.length?<p className="muted">ยังไม่มีสัญญา</p>:<div className="list">{leases.map(l=><div key={l.id} className="row">
-    <div><strong>{l.unit_name} · {l.status==='active'?'กำลังใช้งาน':l.status}</strong>
-    <p className="muted">ค่าเช่า {Number(l.monthly_rent).toLocaleString('th-TH')} บาท · {String(l.starts_on).slice(0,10)} ถึง {l.ends_on?String(l.ends_on).slice(0,10):'ไม่กำหนด'}</p></div>
-   </div>)}</div>}
-   <p><a className="btn" href="/cloud/billing">ไปบันทึกมิเตอร์และออกบิล</a></p>
-  </section>}
- </div></main>
-}
+import {useEffect,useState,FormEvent} from 'react'
+import styles from '../dashboard.module.css'
+import css from './contracts.module.css'
+type Room={id:string;name:string;active:boolean}
+type Snapshot=Record<string,string>
+type Doc={id:string;snapshot:Snapshot;created_at:string}
+const today=()=>new Date(Date.now()+7*3600000).toISOString().slice(0,10)
+const year=(s:string)=>{const d=new Date(s+'T00:00:00Z');d.setUTCFullYear(d.getUTCFullYear()+1);return d.toISOString().slice(0,10)}
+const initial=():Snapshot=>({signedAt:today(),landlord:'',landlordAddress:'',landlordPhone:'',tenant:'',tenantAddress:'',tenantPhone:'',propertyAddress:'',startsOn:today(),endsOn:year(today()),rent:'',deposit:'0',advance:'0',water:'0',electric:'0',service:'0',dueDay:'5',inventory:'',terms:''})
+async function api<T>(url:string,body?:unknown):Promise<T>{const r=await fetch(url,{cache:'no-store',credentials:'same-origin',method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});const d=await r.json();if(!r.ok)throw Error(d.error||'ระบบไม่พร้อมใช้งาน');return d}
+const fields=[['signedAt','วันที่ทำสัญญา','date'],['landlord','ชื่อผู้ให้เช่า','text'],['landlordAddress','ที่อยู่ผู้ให้เช่า','text'],['landlordPhone','โทรศัพท์ผู้ให้เช่า','tel'],['tenant','ชื่อผู้เช่า','text'],['tenantAddress','ที่อยู่ผู้เช่า','text'],['tenantPhone','โทรศัพท์ผู้เช่า','tel'],['propertyAddress','ที่ตั้งห้องพัก','text'],['startsOn','วันเริ่มสัญญา','date'],['endsOn','วันสิ้นสุดสัญญา','date'],['rent','ค่าเช่าต่อเดือน (บาท)','number'],['deposit','เงินประกัน (บาท)','number'],['advance','ค่าเช่าล่วงหน้า (บาท)','number'],['water','ค่าน้ำต่อหน่วย (บาท)','number'],['electric','ค่าไฟต่อหน่วย (บาท)','number'],['service','ค่าบริการรายเดือน (บาท)','number'],['dueDay','ชำระภายในวันที่ของเดือน','number']]
+function Paper({d}:{d:Snapshot}){return <article className={css.paper}><h2>สัญญาเช่าห้องพักอาศัย</h2><p className={css.right}>ทำที่ {d.propertyName} วันที่ {d.signedAt}</p><p>สัญญาฉบับนี้ทำขึ้นระหว่าง {d.landlord} ที่อยู่ {d.landlordAddress} โทรศัพท์ {d.landlordPhone||'–'} ซึ่งต่อไปเรียกว่า “ผู้ให้เช่า” ฝ่ายหนึ่ง กับ {d.tenant} ที่อยู่ {d.tenantAddress} โทรศัพท์ {d.tenantPhone||'–'} ซึ่งต่อไปเรียกว่า “ผู้เช่า” อีกฝ่ายหนึ่ง ทั้งสองฝ่ายตกลงกันดังต่อไปนี้</p><p><b>ข้อ 1 ทรัพย์สินที่เช่า</b> ผู้ให้เช่าตกลงให้เช่าห้องเลขที่ {d.unitName} ณ {d.propertyName} ที่ตั้ง {d.propertyAddress} เพื่อใช้เป็นที่พักอาศัย</p><p><b>ข้อ 2 ระยะเวลา</b> เริ่มวันที่ {d.startsOn} ถึงวันที่ {d.endsOn}</p><p><b>ข้อ 3 ค่าเช่าและการชำระเงิน</b> ค่าเช่าเดือนละ {d.rent} บาท ชำระภายในวันที่ {d.dueDay} ของเดือน ค่าเช่าล่วงหน้า {d.advance} บาท เงินประกัน {d.deposit} บาท ผู้ให้เช่าออกหลักฐานการรับเงินแก่ผู้เช่า</p><p><b>ข้อ 4 ค่าสาธารณูปโภค</b> ค่าน้ำ {d.water} บาทต่อหน่วย ค่าไฟ {d.electric} บาทต่อหน่วย ค่าบริการอื่น {d.service} บาทต่อเดือน โดยต้องเป็นไปตามอัตราและหลักเกณฑ์ที่กฎหมายกำหนด</p><p><b>ข้อ 5 การใช้และดูแลห้องพัก</b> ผู้เช่าใช้ห้องเพื่ออยู่อาศัย ดูแลทรัพย์สินตามสมควร และแจ้งเหตุชำรุดแก่ผู้ให้เช่า ผู้ให้เช่ารับผิดชอบการซ่อมแซมตามหน้าที่ที่กฎหมายกำหนด การเข้าห้องต้องเคารพสิทธิความเป็นส่วนตัวของผู้เช่า</p><p><b>ข้อ 6 การส่งมอบและคืนเงินประกัน</b> เมื่อสิ้นสุดสัญญา ผู้เช่าส่งคืนห้องและทรัพย์สิน ผู้ให้เช่าคืนเงินประกันตามระยะเวลาที่กฎหมายกำหนด หักได้เฉพาะรายการที่มีสิทธิหักตามกฎหมาย ไม่รวมความเสื่อมสภาพจากการใช้งานปกติ</p><p><b>ข้อ 7 การบอกเลิกสัญญา</b> การบอกเลิก การแจ้งล่วงหน้า และสิทธิของคู่สัญญาเป็นไปตามกฎหมายที่ใช้บังคับ ไม่ตัดสิทธิที่กฎหมายให้แก่ผู้เช่า</p><p><b>ข้อ 8 รายการทรัพย์สิน</b> {d.inventory||'ตามบัญชีส่งมอบที่คู่สัญญาตรวจร่วมกัน'}</p><p><b>ข้อ 9 ข้อตกลงเพิ่มเติม</b> {d.terms||'ไม่มี'} ทั้งนี้ข้อตกลงต้องไม่ขัดต่อกฎหมาย</p><p>คู่สัญญาได้อ่านและเข้าใจข้อความแล้ว จึงลงลายมือชื่อไว้เป็นหลักฐาน และเก็บสัญญาไว้ฝ่ายละหนึ่งฉบับ</p><div className={css.signatures}>{['ผู้ให้เช่า','ผู้เช่า','พยาน','พยาน'].map((v,i)=><div key={i}>ลงชื่อ ................................................ {v}<br/>({i===0?d.landlord:i===1?d.tenant:'................................................'})</div>)}</div></article>}
+export default function Contracts(){const [rooms,setRooms]=useState<Room[]>([]),[unit,setUnit]=useState(''),[room,setRoom]=useState<{property_name:string;unit_name:string;active:boolean}|null>(null),[docs,setDocs]=useState<Doc[]>([]),[form,setForm]=useState(initial),[preview,setPreview]=useState<Snapshot|null>(null),[saved,setSaved]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('')
+useEffect(()=>{let live=true;api<{items:{id:string;role:string}[]}>('/api/v2/properties').then(async p=>{const id=p.items.find(x=>['owner','admin'].includes(x.role))?.id;if(!id)throw Error('ไม่พบที่พักที่ดูแล');const r=await api<{items:Room[]}>('/api/v2/occupancy?propertyId='+encodeURIComponent(id));if(!live)return;setRooms(r.items);const wanted=new URLSearchParams(location.search).get('unitId');setUnit(r.items.find(x=>x.id===wanted)?.id||r.items.find(x=>x.active)?.id||'')}).catch(e=>{if(live)setError(e.message)});return()=>{live=false}},[])
+useEffect(()=>{let live=true;setRoom(null);setDocs([]);setForm(initial());setPreview(null);setSaved(false);setError('');if(unit)api<{room:{property_name:string;unit_name:string;active:boolean};items:Doc[]}>('/api/v2/room-contracts?unitId='+encodeURIComponent(unit)).then(r=>{if(live){setRoom(r.room);setDocs(r.items)}}).catch(e=>{if(live)setError(e.message)});return()=>{live=false}},[unit])
+function review(e:FormEvent){e.preventDefault();if(!room)return;setPreview({...form,propertyName:room.property_name,unitName:room.unit_name});setSaved(false)}
+async function save(){if(!preview||saved||busy)return;setBusy(true);setError('');try{const d=await api<Doc>('/api/v2/room-contracts',{...form,unitId:unit});setDocs(old=>[d,...old]);setPreview(d.snapshot);setSaved(true)}catch(e){setError(e instanceof Error?e.message:'บันทึกไม่สำเร็จ')}finally{setBusy(false)}}
+return <main className={styles.detail}><div className={styles.detailInner}><div className={css.controls}><header className={styles.detailHeader}><a className={styles.detailBrand} href="/cloud">StayHub <span>Cloud</span></a><a className={styles.back} href="/cloud/rooms">กลับห้องพัก</a></header><h1>สัญญาเช่ารายห้อง</h1><section className="card section"><label>เลือกห้อง<select value={unit} disabled={busy} onChange={e=>setUnit(e.target.value)}><option value="">เลือกห้องพัก</option>{rooms.map(r=><option key={r.id} value={r.id}>{r.name}{r.active?'':' (ปิดใช้งาน)'}</option>)}</select></label></section>{error&&<p role="alert">{error}</p>}{room&&<><h2>{room.property_name} · ห้อง {room.unit_name}</h2><section className="card section"><h2>จัดทำสัญญา</h2><p className="muted">สร้างเอกสารได้โดยไม่ต้องมีบัญชีผู้เช่า แบบร่างทั่วไป ต้องตรวจข้อกำหนดที่ใช้กับกิจการก่อนลงนาม</p><form onSubmit={review} className={css.form}>{fields.map(([k,label,type])=><label key={k}>{label}<input type={type} value={form[k]} required={!k.endsWith('Phone')} maxLength={1000} min={type==='number'?(k==='dueDay'?1:0):k==='endsOn'?form.startsOn:undefined} max={type==='number'?(k==='dueDay'?28:100000000):undefined} step={type==='number'?(k==='dueDay'?1:.01):undefined} onChange={e=>{const v=e.target.value;setForm(f=>({...f,[k]:v,...(k==='startsOn'&&v?{endsOn:year(v)}:{})}));setPreview(null);setSaved(false)}}/></label>)}{[['inventory','รายการทรัพย์สิน'],['terms','ข้อตกลงเพิ่มเติม']].map(([k,label])=><label className={css.full} key={k}>{label}<textarea maxLength={4000} rows={4} value={form[k]} onChange={e=>{setForm(f=>({...f,[k]:e.target.value}));setPreview(null);setSaved(false)}}/></label>)}<button className="btn" type="submit" disabled={!room.active||busy}>ตรวจตัวอย่างสัญญา A4</button></form></section><section className="card section"><h2>ประวัติสัญญาห้องนี้</h2>{docs.length===0?<p>ยังไม่มีเอกสาร</p>:docs.map(d=><div className="row" key={d.id}><span>{d.snapshot.tenant} · {d.snapshot.startsOn} – {d.snapshot.endsOn}</span><button className="btn secondary" disabled={busy} onClick={()=>{setPreview(d.snapshot);setSaved(true)}}>เปิดเอกสาร</button></div>)}</section></>}{preview&&<section className="card section"><h2>{saved?'บันทึกแล้ว':'ตรวจสอบก่อนบันทึก'}</h2><div className={css.actions}>{!saved&&<button className="btn" disabled={busy} onClick={()=>void save()}>{busy?'กำลังบันทึก':'บันทึกสัญญา'}</button>}{saved&&<button className="btn" onClick={()=>window.print()}>พิมพ์ / บันทึก PDF</button>}</div><p className="muted">เลือก Save as PDF ในหน้าต่างพิมพ์เพื่อเก็บไฟล์ PDF</p></section>}</div>{preview&&<Paper d={preview}/>}</div></main>}
