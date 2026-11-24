@@ -65,6 +65,8 @@ export default function CloudOwnerPage(){
     let active=true
     const init=async()=>{
       const entry=new URLSearchParams(window.location.search)
+      const requestedTab=entry.get('tab')
+      if(requestedTab==='property'||requestedTab==='residents'||requestedTab==='finance'||requestedTab==='services'||requestedTab==='membership')setDashboardTab(requestedTab)
       const requestedType=entry.get('type')
       const wantsLogin=entry.get('login')==='1'
       let saved:AccommodationType|null=null
