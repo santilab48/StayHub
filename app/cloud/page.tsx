@@ -115,10 +115,6 @@ export default function CloudOwnerPage(){
     setAuthMode('register')
     setScreen('auth')
   }
-  function changeType(){
-    try{localStorage.removeItem(ONBOARDING_KEY)}catch{}
-    setScreen('choose')
-  }
   async function run(fn:()=>Promise<void>){setBusy(true);setMessage('');try{await fn()}catch(e){setMessage(e instanceof Error?e.message:'เกิดข้อผิดพลาด')}finally{setBusy(false)}}
   async function sign(e:{preventDefault:()=>void},action:'register'|'login'){e.preventDefault();await run(async()=>{await api(action,{email,password});setPassword('');setShowPassword(false);await load();setMessage('เข้าสู่ระบบสำเร็จ');const target=new URLSearchParams(window.location.search).get('return');if(target?.startsWith('/join?token='))window.location.assign(target)})}
   async function create(e:FormEvent){e.preventDefault();await run(async()=>{const p=await api('property',{name,type});await load();setShowCreate(false);setSelected(p.id);setMessage('สร้างที่พักแล้ว');await loadUnits(p.id);await loadInvites(p.id)})}
@@ -151,11 +147,6 @@ export default function CloudOwnerPage(){
         <h1 id="ownerAuthTitle">{authMode==='register'?'สมัครสมาชิก':'เข้าสู่ระบบ'}</h1>
         <p>{authMode==='register'?'สมัครบัญชีเพื่อเริ่มใช้งาน StayHub':'เข้าสู่ระบบเพื่อจัดการที่พักของคุณ'}</p>
       </div>
-      {authMode==='register'&&<div className={authStyles.selected}>
-        <span className={authStyles.dot} aria-hidden="true"></span>
-        <div className={authStyles.selectedDetail}><small>ประเภทที่พักที่เลือก</small><strong>{accommodationTypes[type].label}</strong></div>
-        <button type="button" className={authStyles.linkButton} onClick={changeType}>เปลี่ยนประเภท</button>
-      </div>}
       <form className={authStyles.form} onSubmit={e=>void sign(e,authMode)}>
         <label htmlFor="owner-email">อีเมล
           <input id="owner-email" type="email" autoComplete="email" placeholder="name@example.com" value={email} onChange={e=>setEmail(e.target.value)} required/>
@@ -163,7 +154,7 @@ export default function CloudOwnerPage(){
         <label htmlFor="owner-password">รหัสผ่าน
           <span className={authStyles.passwordField}>
             <input id="owner-password" type={showPassword?'text':'password'} autoComplete={authMode==='register'?'new-password':'current-password'} minLength={6} maxLength={128} placeholder={authMode==='register'?'อย่างน้อย 6 ตัวอักษร':'กรอกรหัสผ่าน'} value={password} onChange={e=>setPassword(e.target.value)} required/>
-            <button type="button" className={authStyles.passwordToggle} aria-label={showPassword?'ซ่อนรหัสผ่าน':'แสดงรหัสผ่าน'} aria-pressed={showPassword} onClick={()=>setShowPassword(v=>!v)}>{showPassword?'ซ่อน':'แสดง'}</button>
+            <button type="button" className={authStyles.passwordToggle} aria-label={showPassword?'ซ่อนรหัสผ่าน':'แสดงรหัสผ่าน'} aria-pressed={showPassword} onClick={()=>setShowPassword(v=>!v)}><svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{showPassword?<><path d="M3 3l18 18M10.6 10.7a2 2 0 0 0 2.7 2.7M9.9 5.2A11 11 0 0 1 12 5c6 0 10 7 10 7a16 16 0 0 1-3.2 3.8M6.2 6.2C3.6 8.2 2 12 2 12s4 7 10 7a10 10 0 0 0 4.2-.9"/></>:<><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></>}</svg></button>
           </span>
         </label>
         <button type="submit" disabled={busy} className={authStyles.submit}>{busy?'กำลังดำเนินการ...':authMode==='register'?'สร้างบัญชีและดำเนินการต่อ':'เข้าสู่ระบบ'}</button>
