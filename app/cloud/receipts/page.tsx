@@ -1,4 +1,5 @@
 'use client'
+import dashboardStyles from '../dashboard.module.css'
 import {useEffect,useState} from 'react'
 type Property={id:string;name:string;role:string}
 type Bill={id:string;property_id:string;unit_name:string;period:string;total:string;paid:string;outstanding:string;status:string}
@@ -32,8 +33,8 @@ export default function Receipts(){
   return()=>{active=false}
  },[propertyId,page])
  const paid=bills.filter(b=>b.status==='paid'&&Number(b.outstanding)===0)
- return <main className="wrap" style={{maxWidth:1000}}>
-  <p><a href="/cloud/billing">← กลับระบบบิล</a></p>
+ return <main className={dashboardStyles.detail}><div className={dashboardStyles.detailInner}>
+  <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/cloud?tab=finance">StayHub <span>Cloud</span></a><a className={dashboardStyles.back} href="/cloud?tab=finance">กลับหน้าจัดการ</a></header>
   <h1>ใบเสร็จที่ชำระครบ · StayHub Cloud</h1>
   <p className="muted">ใช้ข้อมูลที่ชำระจริงบน PostgreSQL ไม่สร้างใบเสร็จสำหรับยอดที่ยังค้าง</p>
   {properties.length>0&&<section className="card section"><label>ที่พัก<select value={propertyId} onChange={e=>{setPage(1);setPropertyId(e.target.value)}}>
@@ -49,5 +50,5 @@ export default function Receipts(){
    </div>)}</div>}
    <div className="flow section"><button type="button" className="btn secondary" disabled={page===1} onClick={()=>setPage(p=>p-1)}>ก่อนหน้า</button><span>หน้า {page}</span><button type="button" className="btn secondary" disabled={!more} onClick={()=>setPage(p=>p+1)}>ถัดไป</button></div>
   </section>
- </main>
+ </div></main>
 }
