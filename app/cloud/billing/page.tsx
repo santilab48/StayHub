@@ -3,7 +3,7 @@ import dashboardStyles from '../dashboard.module.css'
 import {FormEvent,useCallback,useEffect,useRef,useState} from 'react'
 
 type Property={id:string;name:string;role:string}
-type Lease={id:string;unit_id:string;unit_name:string;monthly_rent:string;status:string}
+type Lease={id:string;unit_id:string;unit_name:string;monthly_rent:string;status:string;source?:string;water?:string;electric?:string;service?:string;water_meter?:string;electric_meter?:string}
 type Bill={id:string;property_id:string;unit_name:string;period:string;total:string;paid:string;outstanding:string;status:string}
 type BillDetail={bill:Bill;items:{feeCode:string;label:string;quantity:string;unitRate:string;amount:string}[];paid:string;outstanding:string;payments?:{id:string;amount:string;method:string;confirmed_at:string}[]}
 type Summary={billCount:number;billedTotal:string;paidTotal:string;outstandingTotal:string;unpaidCount:number}
@@ -11,12 +11,12 @@ type Summary={billCount:number;billedTotal:string;paidTotal:string;outstandingTo
 async function request<T>(path:string,body?:Record<string,unknown>,key?:string):Promise<T>{
   const response=await fetch(path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:body?{'Content-Type':'application/json',...(key?{'Idempotency-Key':key}:{})}:{},body:body?JSON.stringify(body):undefined})
   const result=await response.json()
-  if(!response.ok)throw Error(result.error||'ไม่สามารถทำรายการได้')
+  if(!response.ok)throw Error(({duplicate_month:'ห้องนี้มีบิลเดือนนี้แล้ว',duplicate_reading:'บันทึกมิเตอร์ประเภทนี้ในเดือนนี้แล้ว',initial_reading_required:'กรุณากรอกเลขมิเตอร์ตั้งต้นเดือนแรก',initial_reading_only_for_first_month:'มีเลขเดือนก่อนแล้ว ไม่ต้องกรอกเลขตั้งต้น',reading_decreased_or_overflow:'เลขมิเตอร์ปัจจุบันต้องไม่น้อยกว่าเลขเดิม',meter_readings_required:'กรุณาบันทึกมิเตอร์น้ำและไฟที่มีอัตราเรียกเก็บก่อนออกบิล',overlapping_contracts:'มีสัญญาห้องซ้อนกันในเดือนนี้ กรุณาตรวจสอบสัญญา',lease_outside_period:'สัญญาไม่ครอบคลุมเดือนที่เลือก',payment_exceeds_bill:'ยอดรับเงินเกินยอดค้าง'} as Record<string,string>)[result.error]||result.error||'ไม่สามารถทำรายการได้')
   return result as T
 }
 const money=(value:string|number|undefined)=>Number(value||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2})
 const statusText=(v:string)=>({unpaid:'ยังไม่ชำระ',partial:'ชำระบางส่วน',paid:'ชำระครบ',void:'ยกเลิก'} as Record<string,string>)[v]||v
-const currentPeriod=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit'}).slice(0,7)
+const currentPeriod=()=>new Date(Date.now()+7*3600000).toISOString().slice(0,7)
 
 export default function CloudBillingPage(){
   const [properties,setProperties]=useState<Property[]>([])
@@ -93,14 +93,18 @@ export default function CloudBillingPage(){
       setSelectedBill(null);setLeaseId('');setLeases([])
       try{
         const params=propertyId?'?propertyId='+encodeURIComponent(propertyId):''
-        const list=await request<{items:Lease[]}>('/api/v2/leases'+params).catch(()=>({items:[]}))
+        const list=propertyId?await request<{items:Lease[]}>('/api/v2/leases'+params+'&billing=1&period='+encodeURIComponent(month)):{items:[]}
         if(alive){setLeases(list.items.filter(l=>l.status==='active'));setLeaseId(list.items.find(l=>l.status==='active')?.id||'')}
         if(alive)await loadBills(propertyId,page)
       }catch(e){if(alive)setError(e instanceof Error?e.message:'โหลดข้อมูลบิลไม่สำเร็จ')}
     }
     void load()
     return()=>{alive=false}
-  },[propertyId,page,loadBills])
+  },[propertyId,page,loadBills,month])
+  useEffect(()=>{
+    setUnitRate(activeLease?.source==='room_contract'?(activeLease[meterType]||''):'')
+    setCurrentReading('');setInitialReading('')
+  },[activeLease,meterType,month])
   async function run(task:()=>Promise<void>){
     setBusy(true);setError('');setNotice('')
     try{await task()}catch(e){setError(e instanceof Error?e.message:'ทำรายการไม่สำเร็จ')}
@@ -117,7 +121,7 @@ export default function CloudBillingPage(){
   }
   async function issueBill(e:FormEvent){e.preventDefault();if(!leaseId)return
     await run(async()=>{
-      const body={propertyId,leaseId,period:month,otherAmount,otherLabel}
+      const body={propertyId,...(activeLease?.source==='room_contract'?{roomContractId:leaseId}:{leaseId}),period:month,otherAmount,otherLabel}
       const result=await request<{id:string}>('/api/v2/bills',body,stableKey(billReplay,body))
       billReplay.current=null
       await loadBills(propertyId,1);setPage(1)
@@ -149,18 +153,18 @@ export default function CloudBillingPage(){
       <section className="card section"><h2>ออกบิลรายเดือน</h2>
         <form className="list" onSubmit={e=>void issueBill(e)}>
           <label>เดือนออกบิล <input type="month" required value={period} onChange={e=>setPeriod(e.target.value)}/></label>
-          <label>สัญญาเช่าที่ใช้งาน <select value={leaseId} onChange={e=>setLeaseId(e.target.value)} required>
-            <option value="">-- เลือกสัญญา --</option>{leases.map(l=><option key={l.id} value={l.id}>{l.unit_name} · ค่าเช่า {money(l.monthly_rent)} บาท</option>)}
+          <label>ห้องพัก <select value={leaseId} onChange={e=>setLeaseId(e.target.value)} required>
+            <option value="">-- เลือกห้อง --</option>{leases.map(l=><option key={l.id} value={l.id}>{l.unit_name} · ค่าเช่า {money(l.monthly_rent)} บาท</option>)}
           </select></label>
           <label>ค่าอื่น ๆ (บาท) <input inputMode="decimal" value={otherAmount} onChange={e=>setOtherAmount(e.target.value)} required/></label>
           <label>รายละเอียดค่าอื่น ๆ <input maxLength={120} value={otherLabel} onChange={e=>setOtherLabel(e.target.value)} required/></label>
-          <button className="btn" type="submit" disabled={busy||!leaseId}>ออกบิล</button>
-          <small className="muted">ค่าเช่าจะถูกดึงจากสัญญา และค่าน้ำ/ไฟจากมิเตอร์ที่บันทึกไว้ในเดือนนี้</small>
+          <button className="btn" type="submit" disabled={busy||!leaseId}>ออกบิล</button>{!leases.length&&<p className="muted">ไม่พบสัญญาที่ครอบคลุมเดือนนี้ <a href="/cloud/leases">ตรวจสัญญารายห้อง</a></p>}
+          <small className="muted">ค่าเช่าและค่าบริการจากสัญญา ค่าน้ำ/ไฟจากมิเตอร์เดือนนี้</small>
         </form>
       </section>
       <section className="card section"><h2>จดมิเตอร์น้ำและไฟ</h2>
         <form className="list" onSubmit={e=>void saveMeter(e)}>
-          <p className="muted">ห้อง: {activeLease?.unit_name||'กรุณาเลือกสัญญาเช่า'} · เดือน {period}</p>
+          <p className="muted">ห้อง: {activeLease?.unit_name||'กรุณาเลือกห้อง'} · เดือน {period}</p>
           <label>ประเภท <select value={meterType} onChange={e=>setMeterType(e.target.value as 'water'|'electric')}><option value="water">น้ำ</option><option value="electric">ไฟฟ้า</option></select></label>
           <label>เลขมิเตอร์ปัจจุบัน <input required inputMode="decimal" value={currentReading} onChange={e=>setCurrentReading(e.target.value)}/></label>
           <label>เลขตั้งต้น (กรอกเฉพาะเดือนแรก) <input inputMode="decimal" value={initialReading} onChange={e=>setInitialReading(e.target.value)}/></label>
