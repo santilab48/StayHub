@@ -8,6 +8,22 @@ export const dynamic='force-dynamic'
 const reply=(value:unknown,status=200)=>NextResponse.json(value,{status,headers:{'Cache-Control':'no-store'}})
 type Reading={id:string;previous_reading:string;current_reading:string;usage:string;unit_rate:string;amount:string}
 
+export async function GET(req:NextRequest){
+  if(!stagingAuthEnabled())return reply({error:'Not enabled'},503)
+  const account=await accountFromSession()
+  if(!account)return reply({error:'Please sign in'},401)
+  const propertyId=req.nextUrl.searchParams.get('propertyId'),unitId=req.nextUrl.searchParams.get('unitId'),period=periodDate(req.nextUrl.searchParams.get('period'))
+  if(!uuid(propertyId)||!uuid(unitId)||!period)return reply({error:'Invalid meter input'},400)
+  try{return await withPostgresTransaction(async client=>{
+    if(!await canManageProperty(client,account.id,propertyId))return reply({error:'Forbidden'},403)
+    const unit=await client.query('SELECT id FROM stayhub.units WHERE property_id=$1 AND id=$2',[propertyId,unitId])
+    if(!unit.rowCount)return reply({error:'unit_not_found'},404)
+    const current=await client.query('SELECT meter_type,previous_reading,current_reading,unit_rate,usage,amount FROM stayhub.billing_meter_readings WHERE property_id=$1 AND unit_id=$2 AND period=$3::date',[propertyId,unitId,period])
+    const previous=await client.query('SELECT DISTINCT ON (meter_type) meter_type,current_reading FROM stayhub.billing_meter_readings WHERE property_id=$1 AND unit_id=$2 AND period<$3::date ORDER BY meter_type,period DESC',[propertyId,unitId,period])
+    return reply({items:current.rows,previous:previous.rows})
+  })}catch{return reply({error:'Meter service unavailable'},503)}
+}
+
 export async function POST(req:NextRequest){
   if(!stagingAuthEnabled())return reply({error:'Not enabled'},503)
   if(!checkOrigin(req))return reply({error:'Invalid origin'},403)
