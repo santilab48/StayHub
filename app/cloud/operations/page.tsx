@@ -1,6 +1,6 @@
 'use client'
 import dashboardStyles from '../dashboard.module.css'
-import {FormEvent,useCallback,useEffect,useState} from 'react'
+import {FormEvent,useCallback,useEffect,useRef,useState} from 'react'
 type Property={id:string;name:string;role:string}
 type Stay={id:string;property_id:string;unit_id:string;property_name:string;unit_name:string}
 type Unit={id:string;name:string}
@@ -12,7 +12,7 @@ const kinds=Object.keys(labels) as Kind[]
 async function api<T>(path:string,body?:Record<string,unknown>):Promise<T>{
  const res=await fetch(path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined})
  const value=await res.json()
- if(!res.ok)throw Error(value.error||'ไม่สามารถทำรายการได้')
+ if(!res.ok)throw Error(({ 'Forbidden':'ไม่มีสิทธิ์ทำรายการ','Please sign in':'กรุณาเข้าสู่ระบบ','Invalid settings':'ตรวจสอบราคาและวันครบกำหนด','Invalid announcement':'กรอกข้อมูลประกาศให้ถูกต้อง','Invalid parcel':'ตรวจสอบห้องและข้อมูลพัสดุ','Invalid vehicle':'ตรวจสอบทะเบียนรถและประเภทรถ','Invalid driver':'ตรวจสอบชื่อและเบอร์โทรคนขับ','Invalid ride request':'ตรวจสอบข้อมูลการเรียกรถ','Invalid document':'ตรวจสอบหัวข้อและห้อง','Module unavailable':'โหลดข้อมูลงานบริการไม่สำเร็จ','Module action unavailable':'บันทึกงานบริการไม่สำเร็จ','Parcel not waiting':'พัสดุไม่ได้อยู่ในสถานะรอรับ','Item conflicts with property or existing record':'ข้อมูลซ้ำหรือไม่ตรงกับที่พัก','Ride state conflict or not found':'สถานะงานเปลี่ยนไปแล้ว กรุณาโหลดใหม่'} as Record<string,string>)[value.error]||value.error||'ไม่สามารถทำรายการได้')
  return value as T
 }
 export default function OperationsPage(){
@@ -31,15 +31,24 @@ export default function OperationsPage(){
  const [busy,setBusy]=useState(false)
  const [error,setError]=useState('')
  const [notice,setNotice]=useState('')
+ const loadSequence=useRef(0)
+ const [loading,setLoading]=useState(false)
+ const [readyKey,setReadyKey]=useState('')
  const update=(key:string,value:string)=>setFields(v=>({...v,[key]:value}))
  const load=useCallback(async(p:string,k:Kind)=>{
-  if(!p){setItems([]);setOwner(false);return}
+  const seq=++loadSequence.current
+  setReadyKey('')
+  if(!p){setItems([]);setOwner(false);setLoading(false);return}
+  setLoading(true)
+  try{
   const value=await api<{items:Item[];owner:boolean}>('/api/v2/operations?kind='+k+'&propertyId='+encodeURIComponent(p))
-  setOwner(value.owner);setItems(value.items)
+  if(seq!==loadSequence.current)return
+  setOwner(value.owner);setItems(value.items);setReadyKey(p+':'+k)
   if(k==='settings'&&value.items[0]){
    const s=value.items[0] as unknown as Settings
    setSettings({water_rate:String(s.water_rate),electric_rate:String(s.electric_rate),due_day:Number(s.due_day),late_fee:String(s.late_fee)})
-  }
+  }else if(k==='settings')setSettings({water_rate:'0',electric_rate:'0',due_day:5,late_fee:'0'})
+  }finally{if(seq===loadSequence.current)setLoading(false)}
  },[])
  useEffect(()=>{
   const params=new URLSearchParams(window.location.search)
@@ -67,7 +76,7 @@ export default function OperationsPage(){
   const managed=properties.some(p=>p.id===propertyId)
   if(managed){
    void api<{items:Unit[]}>('/api/v2/units?propertyId='+encodeURIComponent(propertyId)).then(r=>{
-    if(active){setUnits(r.items);setUnitId(x=>r.items.some(i=>i.id===x)?x:r.items[0]?.id||'')}
+    if(active){setUnits(r.items);setUnitId(x=>r.items.some(i=>i.id===x)?x:'')}
    }).catch(e=>{if(active)setError(e instanceof Error?e.message:'โหลดห้องไม่สำเร็จ')})
   }else{
    const mine=stays.filter(s=>s.property_id===propertyId).map(s=>({id:s.unit_id,name:s.unit_name}))
@@ -76,7 +85,7 @@ export default function OperationsPage(){
   return()=>{active=false}
  },[propertyId,properties,stays])
  async function submit(e:FormEvent){e.preventDefault()
-  if(!propertyId||busy)return
+  if(!propertyId||busy||loading||readyKey!==propertyId+':'+kind)return
   let payload:Record<string,unknown>={propertyId}
   const t=(key:string)=>fields[key]?.trim()||''
   if(kind==='announcements')payload={...payload,action:'announcement-add',unitId:unitId||null,title:t('title'),body:t('body'),pinned}
@@ -86,24 +95,23 @@ export default function OperationsPage(){
   if(kind==='rides')payload={...payload,action:'ride-add',unitId,driverId:fields.driverId||null,note:t('note')}
   if(kind==='documents')payload={...payload,action:'document-add',unitId,title:t('title'),description:t('description')}
   if(kind==='settings')payload={...payload,action:'settings-save',waterRate:Number(settings.water_rate),electricRate:Number(settings.electric_rate),dueDay:Number(settings.due_day),lateFee:Number(settings.late_fee)}
-  await run(payload)
-  setFields({})
+  if(await run(payload)){setFields({});setPinned(false)}
  }
  async function run(payload:Record<string,unknown>){
-  if(busy)return
+  if(busy||loading||readyKey!==propertyId+':'+kind)return false
   setBusy(true);setError('');setNotice('')
   try{
    await api('/api/v2/operations',payload)
    await load(propertyId,kind)
-   setNotice('บันทึกสำเร็จ')
-  }catch(e){setError(e instanceof Error?e.message:'บันทึกไม่สำเร็จ')}
+   setNotice('บันทึกสำเร็จ');return true
+  }catch(e){setError(e instanceof Error?e.message:'บันทึกไม่สำเร็จ');return false}
   finally{setBusy(false)}
  }
  const input=(key:string,label:string,required=true)=><label key={key}>{label}
   <input required={required} value={fields[key]||''} onChange={e=>update(key,e.target.value)}/></label>
  const selector=<label>ห้อง<select value={unitId} onChange={e=>setUnitId(e.target.value)}>
   {kind==='announcements'&&<option value="">ทั้งหมด</option>}
-  {!units.length&&<option value="">-- ไม่มีห้อง --</option>}
+  {kind!=='announcements'&&<option value="">-- เลือกห้อง --</option>}
   {units.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}
  </select></label>
  const itemName=(i:Item)=>i.title||i.carrier||i.plate||i.name||i.note||i.id.slice(0,8)
@@ -111,11 +119,13 @@ export default function OperationsPage(){
   <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/cloud?tab=services">StayHub <span>Cloud</span></a><a className={dashboardStyles.back} href="/cloud?tab=services">กลับหน้าจัดการ</a></header>
   <h1>งานบริการ · StayHub Cloud</h1>
   <p className="muted">ข้อมูลจากฐาน PostgreSQL/Neon · ทุกคำขอตรวจสิทธิ์ที่พักและห้องโดย Server</p>
-  <div className="subnav">{kinds.map(k=><button className="btn secondary" type="button" key={k} aria-current={kind===k?'page':undefined} onClick={()=>{setKind(k);setFields({});setNotice('');window.history.replaceState(null,'','?kind='+k)}}>{labels[k]}</button>)}</div>
+  <div className="subnav">{kinds.map(k=><button className="btn secondary" type="button" key={k} aria-current={kind===k?'page':undefined} disabled={busy} onClick={()=>{setKind(k);setFields({});setPinned(false);setUnitId('');setNotice('');setReadyKey('');window.history.replaceState(null,'','?kind='+k)}}>{labels[k]}</button>)}</div>
   
   {error&&<p role="alert" className="card section" style={{color:'crimson'}}>{error}</p>}
   {notice&&<p role="status" className="card section">{notice}</p>}
-  {propertyId&&<><section className="card section"><h2>{labels[kind]}</h2>
+  {loading&&<p role="status">กำลังโหลดข้อมูล...</p>}
+  {!propertyId&&!error&&!loading&&<p className="muted">ยังไม่มีที่พักที่ได้รับอนุมัติ หรือกำลังตรวจสอบบัญชี</p>}
+  {propertyId&&readyKey===propertyId+':'+kind&&!loading&&<><section className="card section"><h2>{labels[kind]}</h2>
    {(owner&&kind!=='rides'||!owner&&['vehicles','rides'].includes(kind))&&<form onSubmit={e=>void submit(e)} className="list">
     {['announcements','parcels','vehicles','rides','documents'].includes(kind)&&selector}
     {kind==='announcements'&&<>{input('title','หัวข้อ')}<label>รายละเอียด<textarea required maxLength={4000} value={fields.body||''} onChange={e=>update('body',e.target.value)}/></label>
@@ -137,7 +147,7 @@ export default function OperationsPage(){
    </form>}
    {!owner&&kind==='settings'&&<p className="muted">เฉพาะเจ้าของที่พัก</p>}
    <h3 className="section">รายการล่าสุด</h3>
-   {!items.length?<p>ยังไม่มีรายการ</p>:<div className="list">{items.map(i=><div key={i.id} className="row">
+   {kind==='settings'?<p className="muted">{items.length?'มีค่าที่บันทึกแล้ว':'ยังไม่ได้ตั้งราคา'}</p>:!items.length?<p>ยังไม่มีรายการ</p>:<div className="list">{items.map(i=><div key={i.id} className="row">
     <div><strong>{itemName(i)}</strong>
      {i.body&&<p>{i.body}</p>}
      {i.description&&<p>{i.description}</p>}
@@ -151,7 +161,8 @@ export default function OperationsPage(){
     {owner&&kind==='vehicles'&&i.status!=='approved'&&<button type="button" className="btn secondary" disabled={busy} onClick={()=>void run({propertyId,action:'vehicle-review',id:i.id,status:'approved'})}>อนุมัติ</button>}
     {owner&&kind==='vehicles'&&i.status==='approved'&&<button type="button" className="btn secondary" disabled={busy} onClick={()=>void run({propertyId,action:'vehicle-review',id:i.id,status:'revoked'})}>ยกเลิก</button>}
     {owner&&kind==='drivers'&&<button type="button" className="btn secondary" disabled={busy} onClick={()=>void run({propertyId,action:'driver-active',id:i.id,active:!i.active})}>{i.active?'ปิดรับงาน':'เปิดรับงาน'}</button>}
-    {owner&&kind==='rides'&&i.status!=='completed'&&i.status!=='cancelled'&&<button type="button" className="btn secondary" disabled={busy} onClick={()=>void run({propertyId,action:'ride-status',id:i.id,status:i.status==='requested'?'accepted':i.status==='accepted'?'on_the_way':i.status==='on_the_way'?'arrived':'completed'})}>ดำเนินการต่อ</button>}
+    {owner&&kind==='rides'&&i.status!=='completed'&&i.status!=='cancelled'&&<button type="button" className="btn secondary" disabled={busy} onClick={()=>void run({propertyId,action:'ride-status',id:i.id,status:i.status==='requested'?'accepted':i.status==='accepted'?'on_the_way':i.status==='on_the_way'?'arrived':'completed'})}>{i.status==='requested'?'รับงาน':i.status==='accepted'?'เริ่มเดินทาง':i.status==='on_the_way'?'ถึงจุดรับ':'จบงาน'}</button>}
+    {owner&&kind==='rides'&&i.status==='requested'&&<button type="button" className="btn secondary" disabled={busy} onClick={()=>{if(window.confirm('ยกเลิกคำขอนี้?'))void run({propertyId,action:'ride-status',id:i.id,status:'cancelled'})}}>ยกเลิกงาน</button>}
     {owner&&kind==='documents'&&<button type="button" className="btn secondary" disabled={busy} onClick={()=>{if(window.confirm('ลบข้อความนี้?'))void run({propertyId,action:'document-remove',id:i.id})}}>ลบ</button>}
    </div>)}</div>}
   </section></>}
