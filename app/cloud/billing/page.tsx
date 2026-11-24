@@ -14,7 +14,7 @@ type Summary={billCount:number;billedTotal:string;paidTotal:string;outstandingTo
 async function request<T>(path:string,body?:Record<string,unknown>,key?:string):Promise<T>{
   const response=await fetch(path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:body?{'Content-Type':'application/json',...(key?{'Idempotency-Key':key}:{})}:{},body:body?JSON.stringify(body):undefined})
   const result=await response.json()
-  if(!response.ok)throw Error(({duplicate_month:'ห้องนี้มีบิลเดือนนี้แล้ว',duplicate_reading:'บันทึกมิเตอร์ประเภทนี้ในเดือนนี้แล้ว',initial_reading_required:'กรุณากรอกเลขมิเตอร์ตั้งต้นเดือนแรก',initial_reading_only_for_first_month:'มีเลขเดือนก่อนแล้ว ไม่ต้องกรอกเลขตั้งต้น',reading_decreased_or_overflow:'เลขมิเตอร์ปัจจุบันต้องไม่น้อยกว่าเลขเดิม',meter_readings_required:'กรุณาบันทึกมิเตอร์น้ำและไฟที่มีอัตราเรียกเก็บก่อนออกบิล',overlapping_contracts:'มีสัญญาห้องซ้อนกันในเดือนนี้ กรุณาตรวจสอบสัญญา',lease_outside_period:'สัญญาไม่ครอบคลุมเดือนที่เลือก',payment_exceeds_bill:'ยอดรับเงินเกินยอดค้าง'} as Record<string,string>)[result.error]||result.error||'ไม่สามารถทำรายการได้')
+  if(!response.ok)throw Error(({'Invalid meter input':'ข้อมูลมิเตอร์หรือเดือนออกบิลไม่ถูกต้อง','Invalid bill request or Idempotency-Key':'ข้อมูลออกบิลไม่ถูกต้อง',duplicate_month:'ห้องนี้มีบิลเดือนนี้แล้ว',duplicate_reading:'บันทึกมิเตอร์ประเภทนี้ในเดือนนี้แล้ว',initial_reading_required:'กรุณากรอกเลขมิเตอร์ตั้งต้นเดือนแรก',initial_reading_only_for_first_month:'มีเลขเดือนก่อนแล้ว ไม่ต้องกรอกเลขตั้งต้น',reading_decreased_or_overflow:'เลขมิเตอร์ปัจจุบันต้องไม่น้อยกว่าเลขเดิม',meter_readings_required:'กรุณาบันทึกมิเตอร์น้ำและไฟที่มีอัตราเรียกเก็บก่อนออกบิล',overlapping_contracts:'มีสัญญาห้องซ้อนกันในเดือนนี้ กรุณาตรวจสอบสัญญา',lease_outside_period:'สัญญาไม่ครอบคลุมเดือนที่เลือก',payment_exceeds_bill:'ยอดรับเงินเกินยอดค้าง'} as Record<string,string>)[result.error]||result.error||'ไม่สามารถทำรายการได้')
   return result as T
 }
 const money=(value:string|number|undefined)=>Number(value||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2})
@@ -105,7 +105,7 @@ export default function CloudBillingPage(){
     void load()
     return()=>{alive=false}
   },[propertyId,page,loadBills,month])
-  const meterPath=activeLease&&propertyId?'/api/v2/meter-readings?'+new URLSearchParams({propertyId,unitId:activeLease.unit_id,period:month}):''
+  const meterPath=activeLease&&propertyId?'/api/v2/meter-readings?'+new URLSearchParams({propertyId,unitId:activeLease.unit_id,period}):''
   const fetchMeters=useCallback(async()=>request<MeterState>(meterPath),[meterPath])
   useEffect(()=>{
     let alive=true;setMeterState(null);setMeterError('');setReview(false)
@@ -146,12 +146,12 @@ export default function CloudBillingPage(){
       for(const type of ['water','electric'] as const){
         if(existing(type)||!hasInput(type))continue
         const d=meterDraft[type]
-        const body:Record<string,unknown>={propertyId,unitId:activeLease.unit_id,meterType:type,period:month,currentReading:d.end,unitRate:d.rate}
+        const body:Record<string,unknown>={propertyId,unitId:activeLease.unit_id,meterType:type,period,currentReading:d.end,unitRate:d.rate}
         if(!prior(type))body.initialReading=d.start
         try{await request('/api/v2/meter-readings',body)}catch(e){setMeterState(await fetchMeters());throw e}
         setMeterState(await fetchMeters())
       }
-      const body={propertyId,...(activeLease.source==='room_contract'?{roomContractId:leaseId}:{leaseId}),period:month,otherAmount,otherLabel:otherLabel.trim()||'ค่าอื่น ๆ'}
+      const body={propertyId,...(activeLease.source==='room_contract'?{roomContractId:leaseId}:{leaseId}),period,otherAmount,otherLabel:otherLabel.trim()||'ค่าอื่น ๆ'}
       const result=await request<{id:string}>('/api/v2/bills',body,stableKey(billReplay,body))
       billReplay.current=null
       setReview(false);setNotice('ออกบิลเรียบร้อย เลขอ้างอิง '+result.id.slice(0,8))
