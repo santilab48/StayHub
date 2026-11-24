@@ -28,3 +28,42 @@
 .content img{max-width:100%;height:auto}
 .message{max-width:1200px;margin:16px auto;padding:14px 18px;border:1px solid #46566d;border-radius:14px;background:#202b3e;color:#f4f8ff}
 @media(max-width:700px){.grid{grid-template-columns:1fr}.header{margin-bottom:20px}.tabs{margin-bottom:18px}.tab{padding:10px 14px;min-height:48px}.content :global(.section){padding:20px}.brand{font-size:26px}}
+
+/* Shared owner workspace for linked management screens. */
+.detail{min-height:100vh;min-height:100svh;background:#0b101e radial-gradient(ellipse at 12% 0%,#1c304b 0%,transparent 48%);color:#f4f8ff;color-scheme:dark;padding:clamp(18px,4vw,54px)}
+.detailInner{max-width:1100px;margin:auto;min-width:0}
+.detailHeader{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+.detailBrand{font-size:23px;font-weight:800;text-decoration:none;letter-spacing:-.7px;color:#f4f8ff}
+.detailBrand span{color:#8ddfd8;font-size:15px;font-weight:500}
+.back{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:10px 18px;border:1px solid #405067;border-radius:999px;background:#202b3e;color:#edf5ff;text-decoration:none;font-size:13px;font-weight:700}
+.detailInner h1{font-size:clamp(25px,4vw,34px);line-height:1.35;margin:18px 0 12px}
+.detailInner h2{line-height:1.4}
+.detailInner :global(.section){margin-top:18px}
+.detailInner :global(.card),.detailInner :global(.row),.detailInner :global(.metric){background:linear-gradient(145deg,#243147,#141c2d);color:#f4f8ff;border:1px solid #36445b;border-radius:22px;box-shadow:0 12px 30px #0003;min-width:0;overflow-wrap:anywhere}
+.detailInner :global(.row){border-radius:14px;flex-wrap:wrap}
+.detailInner :global(.muted),.detailInner :global(.footnote),.detailInner :global(.metric small){color:#aabbd0}
+.detailInner :global(.btn){background:linear-gradient(120deg,#ffb36b,#ff8b43);color:#28170c;min-height:44px;font:inherit;font-weight:700;border:0;border-radius:12px;cursor:pointer}
+.detailInner :global(.btn.secondary){background:#344258;color:#edf5ff}
+.detailInner :global(.btn):disabled{opacity:.5;cursor:not-allowed}
+.detailInner :global(.btn[aria-current="page"]){background:linear-gradient(120deg,#ffb36b,#ff8b43);color:#28170c}
+.detailInner :global(.subnav){background:#182132;padding:8px;border:1px solid #344259;border-radius:16px}
+.detailInner :global(.subnav) button{white-space:nowrap;flex:none}
+.detailInner input:not([type="checkbox"]):not([type="radio"]),.detailInner select,.detailInner textarea{background:#101a2a;color:#f4f8ff;border:1px solid #46566d;border-radius:12px;min-width:0}
+.detailInner input[type="checkbox"],.detailInner input[type="radio"]{width:auto;accent-color:#ffab64}
+.detailInner input::placeholder,.detailInner textarea::placeholder{color:#93a5bb}
+.detailInner :global(.list){gap:14px}
+.detailInner :global(.flow){flex-wrap:wrap;align-items:end}
+.detailInner :global(.flow span){background:#202b3e;color:#edf5ff;border-color:#46566d}
+.detailInner :global(.infoRow){border-color:#46566d;flex-wrap:wrap;overflow-wrap:anywhere}
+.detailInner :global(.pill){background:#24483e;color:#b9f5da}
+.detailInner :global(.pill.warn){background:#503b23;color:#ffdda0}
+.detailInner :global(.pill.off){background:#502d3a;color:#ffc0c9}
+.detailInner [role="alert"]{color:#ffb0bc!important}
+.detailInner :global(.toolbar){flex-wrap:wrap}
+.detailInner :global(.receiptPaper){background:#fff;color:#162033;color-scheme:light}
+.detailInner :global(.receiptPaper) :global(.muted){color:#526079}
+.detailInner :global(.receiptPaper) :global(.infoRow){border-color:#e4e9f2}
+.detailInner :global(.receiptPaper) hr{border:0;border-top:1px solid #dce4ee}
+.detailInner :focus-visible{outline:2px solid #ffbf90;outline-offset:3px}
+@media(max-width:700px){.detailInner :global(.metricGrid){grid-template-columns:repeat(2,minmax(0,1fr))}.detailInner :global(.card){padding:18px}.detailInner :global(.flow)>label{flex:1 1 160px;min-width:0}}
+@media print{.detail{background:white!important;color:#162033!important;padding:0!important;min-height:0!important;color-scheme:light}.detailInner{max-width:none!important;margin:0!important}.detailHeader{display:none!important}.detailInner :global(.receiptPaper){color:#162033!important;background:white!important;border:0!important;box-shadow:none!important}}
