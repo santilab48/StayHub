@@ -72,10 +72,7 @@ export default function RoomsPage(){
   <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/cloud?tab=residents">StayHub <span>Cloud</span></a><a className={dashboardStyles.back} href="/cloud?tab=residents">กลับหน้าจัดการ</a></header>
   <h1>ห้องพักและผู้พัก · StayHub Cloud</h1>
   <p className="muted">ข้อมูลจาก PostgreSQL/Neon ชุดเดียวกับระบบ QR และระบบบิล</p>
-  <section className="card section"><label>ที่พัก<select value={propertyId} onChange={e=>setPropertyId(e.target.value)}>
-   <option value="">-- เลือกที่พัก --</option>
-   {properties.map(p=><option value={p.id} key={p.id}>{p.name}</option>)}
-  </select></label></section>
+  
   {error&&<p role="alert" className="card section" style={{color:'crimson'}}>{error}</p>}
   {notice&&<p role="status" className="card section">{notice}</p>}
   {propertyId&&<>
