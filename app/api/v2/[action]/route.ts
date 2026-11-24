@@ -218,9 +218,12 @@ export async function POST(req:NextRequest,{params}:Params){
         return r.rows[0].id
       })
       if(!created)return reply({error:'Too many active invitations; revoke an unused QR first'},409)
-      const url=new URL('/join',req.nextUrl.origin)
+      const publicOrigin=process.env.RAILWAY_ENVIRONMENT_ID==='ced39691-4fe7-4707-bba7-6d0e801f1ff8'
+        ?'https://stayhub-fsd-staging.up.railway.app'
+        :new URL(req.headers.get('origin')||req.nextUrl.origin).origin
+      const url=new URL('/join',publicOrigin)
       url.searchParams.set('token',raw)
-      return reply({id:created,url:url.toString(),svg:await QRCode.toString(url.toString(),{type:'svg',margin:2,width:260})},201)
+      return reply({id:created,url:url.toString(),svg:await QRCode.toString(url.toString(),{type:'svg',margin:4,width:320,errorCorrectionLevel:'M'})},201)
     }
     if(action==='revoke-invite'){
       if(!validId(propertyId)||!validId(body.inviteId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
