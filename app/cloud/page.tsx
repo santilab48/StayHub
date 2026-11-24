@@ -38,7 +38,6 @@ export default function CloudOwnerPage(){
   const [type,setType]=useState<AccommodationType>('apartment')
   const [screen,setScreen]=useState<OnboardingScreen>('loading')
   const [authMode,setAuthMode]=useState<'register'|'login'>('register')
-  const [showCreate,setShowCreate]=useState(false)
   const [properties,setProperties]=useState<Property[]>([])
   const [selected,setSelected]=useState('')
   const [unit,setUnit]=useState('')
@@ -119,7 +118,7 @@ export default function CloudOwnerPage(){
   }
   async function run(fn:()=>Promise<void>){setBusy(true);setMessage('');try{await fn()}catch(e){setMessage(e instanceof Error?e.message:'เกิดข้อผิดพลาด')}finally{setBusy(false)}}
   async function sign(e:{preventDefault:()=>void},action:'register'|'login'){e.preventDefault();await run(async()=>{await api(action,{email,password});setPassword('');setShowPassword(false);await load();setMessage('เข้าสู่ระบบสำเร็จ');const target=new URLSearchParams(window.location.search).get('return');if(target?.startsWith('/join?token='))window.location.assign(target)})}
-  async function create(e:FormEvent){e.preventDefault();await run(async()=>{const p=await api('property',{name,type});await load();setShowCreate(false);setSelected(p.id);setMessage('สร้างที่พักแล้ว');await loadUnits(p.id);await loadInvites(p.id)})}
+  async function create(e:FormEvent){e.preventDefault();await run(async()=>{if(properties.some(p=>['owner','admin'].includes(p.role)))throw Error('หนึ่งสมาชิกสามารถจัดการที่พักได้หนึ่งแห่ง');const p=await api('property',{name,type});await load();setSelected(p.id);setMessage('สร้างที่พักแล้ว');await loadUnits(p.id);await loadInvites(p.id)})}
   async function loadUnits(id:string){const r=await fetch('/api/v2/units?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setUnits(data.items)}
   async function loadInvites(id:string){const r=await fetch('/api/v2/invites?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setInvites(data.items)}
   async function loadRequests(id:string){await run(async()=>{const r=await fetch('/api/v2/requests?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setRequests(data.items)})}
@@ -166,7 +165,7 @@ export default function CloudOwnerPage(){
     {screen==='dashboard'&&account&&<div className={dashboardStyles.workspace}>
       <header className={dashboardStyles.header}>
         <div><a href="/" className={dashboardStyles.brand}>StayHub <span>Cloud</span></a><p className={dashboardStyles.subtitle}>พื้นที่จัดการที่พักของคุณ</p></div>
-        <div className={dashboardStyles.account}><span>{account.email}</span><button type="button" className={dashboardStyles.logout} disabled={busy} onClick={()=>void run(async()=>{await api('logout',{});setAccount(null);setProperties([]);setSelected('');setInvite(null);setDashboardTab('property');setScreen('auth');setAuthMode('login')})}>ออกจากระบบ</button></div>
+        <div className={dashboardStyles.account}><span>{properties.find(p=>p.role==='owner')?.name||properties.find(p=>p.role==='admin')?.name||account.email}</span><button type="button" className={dashboardStyles.logout} disabled={busy} onClick={()=>void run(async()=>{await api('logout',{});setAccount(null);setProperties([]);setSelected('');setInvite(null);setDashboardTab('property');setScreen('auth');setAuthMode('login')})}>ออกจากระบบ</button></div>
       </header>
       <nav className={dashboardStyles.tabs} aria-label="หมวดจัดการที่พัก"><button key="property" type="button" className={dashboardStyles.tab} aria-pressed={dashboardTab==='property'} onClick={()=>setDashboardTab('property')}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M5 21V5l7-3 7 3v16M9 9h1m4 0h1M9 13h1m4 0h1M10 21v-4h4v4"/></svg><span>ที่พัก</span></button>
 <button key="residents" type="button" className={dashboardStyles.tab} aria-pressed={dashboardTab==='residents'} onClick={()=>setDashboardTab('residents')}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 20V5m0 11h18v4M3 10h6a3 3 0 0 1 3 3v3m0-6h6a3 3 0 0 1 3 3v3"/></svg><span>ห้องพักและผู้เช่า</span></button>
@@ -175,28 +174,19 @@ export default function CloudOwnerPage(){
 <button key="membership" type="button" className={dashboardStyles.tab} aria-pressed={dashboardTab==='membership'} onClick={()=>setDashboardTab('membership')}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1 3-6Z"/></svg><span>สมาชิก</span></button></nav>
       <div className={dashboardStyles.content} aria-label="เนื้อหาหมวดที่เลือก">
         <div hidden={dashboardTab!=='property'} className={dashboardStyles.grid}>
-          <section className="card section">        {properties.length>0&&!showCreate&&<div className="list">
-          <h2>ที่พักของฉัน</h2>
-          {properties.filter(p=>['owner','admin'].includes(p.role)).map(p=>
-            <div key={p.id} className="row"><strong>{p.name}</strong><span className="muted">{isAccommodationType(p.property_type)?accommodationTypes[p.property_type].label:'ที่พัก'}</span></div>
-          )}
-          <button type="button" className="btn secondary" onClick={()=>setShowCreate(true)}>+ เพิ่มที่พักอีกแห่ง</button>
-        </div>}
-        {(properties.length===0||showCreate)&&<>
-          <h2>{properties.length===0?'ตั้งค่าที่พักแรกของคุณ':'เพิ่มที่พักใหม่'}</h2>
-          <p className="muted">ประเภทที่พัก: <strong>{accommodationTypes[type].label}</strong></p>
-          <form className="list" onSubmit={create}>
-            <label>ชื่อที่พัก<input required maxLength={120} value={name} onChange={e=>setName(e.target.value)} placeholder="เช่น บ้านสวน เรสซิเดนซ์"/></label>
-            {properties.length>0&&<label>ประเภทสำหรับที่พักแห่งใหม่<select value={type} onChange={e=>setType(e.target.value as AccommodationType)}>
-              {(Object.keys(accommodationTypes) as AccommodationType[]).map(key=><option key={key} value={key}>{accommodationTypes[key].label}</option>)}
-            </select></label>}
-            <div className="flow"><button disabled={busy} className="btn" type="submit">บันทึกที่พัก</button>
-              {properties.length>0&&<button type="button" className="btn secondary" onClick={()=>setShowCreate(false)}>ยกเลิก</button>}
-            </div>
-          </form>
-        </>}
-      </section>
-
+          <section className="card section">
+            {properties.some(p=>['owner','admin'].includes(p.role))?<div className="list">
+              <h2>ที่พักของฉัน</h2>
+              {properties.filter(p=>['owner','admin'].includes(p.role)).map(p=><div key={p.id} className="row"><strong>{p.name}</strong><span className="muted">{isAccommodationType(p.property_type)?accommodationTypes[p.property_type].label:'ที่พัก'}</span></div>)}
+            </div>:<>
+              <h2>ตั้งค่าที่พักของคุณ</h2>
+              <p className="muted">ประเภทที่พัก: <strong>{accommodationTypes[type].label}</strong></p>
+              <form className="list" onSubmit={create}>
+                <label>ชื่อที่พัก<input required maxLength={120} value={name} onChange={e=>setName(e.target.value)} placeholder="เช่น บ้านสวน เรสซิเดนซ์"/></label>
+                <div className="flow"><button disabled={busy||!name.trim()} className="btn" type="submit">บันทึกที่พัก</button></div>
+              </form>
+            </>}
+          </section>
         </div>
         <div hidden={dashboardTab!=='residents'} className={dashboardStyles.grid}><section className="card section"><h2>ห้องพักและผู้พัก</h2><p className="muted">เพิ่มห้อง ดูสถานะห้อง ย้ายห้อง และจัดการย้ายออก ผ่านฐานข้อมูล Cloud</p><a className="btn" href="/cloud/rooms">จัดการห้องพัก</a></section><section className="card section"><h2>จัดการสัญญาเช่า</h2><p className="muted">ผูกผู้เช่าที่อนุมัติแล้วเข้ากับสัญญาเช่า ก่อนจดมิเตอร์และออกบิล</p><a className="btn" href="/cloud/leases">เปิดจัดการสัญญาเช่า</a></section><div className={dashboardStyles.full}><section className="card section"><h2>QR เชิญผู้เช่า</h2>
         <label>เลือกที่พัก<select value={selected} onChange={e=>{setSelected(e.target.value);setInvite(null);setRequests([]);setInvites([]);setApproveUnit('');if(e.target.value){void loadUnits(e.target.value);void loadInvites(e.target.value)}}}>
