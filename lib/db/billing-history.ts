@@ -1,4 +1,5 @@
 import {periodDate,uuid} from './billing-request'
+import {tenantBillAccess} from './tenant-contract-access'
 
 export type BillHistoryFilter={propertyId:string|null;period:string|null;unitId:string|null;status:string|null;limit:number;offset:number}
 const statuses=new Set(['unpaid','partial','paid','void'])
@@ -22,7 +23,7 @@ export const billScope=`b.finalized=true
   AND ($2::date IS NULL OR b.period=$2::date)
   AND ($3::uuid IS NULL OR b.unit_id=$3::uuid)
   AND ($4::text IS NULL OR b.status=$4::text)
-  AND ($5::boolean OR b.account_id=$6::uuid)`
+  AND ($5::boolean OR ${tenantBillAccess})`
 
 export function billHistoryArgs(filter:BillHistoryFilter,owner:boolean,accountId:string){
   return [filter.propertyId,filter.period,filter.unitId,filter.status,owner,accountId]

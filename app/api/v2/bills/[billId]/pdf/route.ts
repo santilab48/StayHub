@@ -4,6 +4,7 @@ import {NextRequest,NextResponse} from 'next/server'
 import {accountFromSession,stagingAuthEnabled} from '../../../../../../lib/cloud-identity'
 import {withPostgresTransaction} from '../../../../../../lib/db/postgres'
 import {canManageProperty,uuid} from '../../../../../../lib/db/billing-request'
+import {canReadBill} from '../../../../../../lib/db/tenant-contract-access'
 
 export const dynamic='force-dynamic'
 type Params={params:Promise<{billId:string}>}
@@ -21,7 +22,7 @@ export async function GET(req:NextRequest,{params}:Params){
       const bill=await client.query<{account_id:string|null}>(`SELECT account_id FROM stayhub.billing_bills WHERE property_id=$1 AND id=$2 AND finalized=true FOR UPDATE`,[propertyId,billId])
       if(bill.rowCount!==1)return error(404)
       const owner=await canManageProperty(client,account.id,propertyId)
-      if(!owner&&bill.rows[0].account_id!==account.id)return error(404)
+      if(!owner&&!await canReadBill(client,propertyId,billId,account.id))return error(404)
       const existing=await client.query('SELECT 1 FROM stayhub.billing_invoice_documents WHERE property_id=$1 AND bill_id=$2',[propertyId,billId])
       if(!existing.rowCount)await createInvoiceDocument(client,propertyId,billId)
       const r=await client.query<{pdf:Buffer;filename:string;sha256:string;recipient_account_id:string|null}>(`
@@ -30,7 +31,9 @@ export async function GET(req:NextRequest,{params}:Params){
         JOIN stayhub.billing_bills b ON b.property_id=d.property_id AND b.id=d.bill_id
         WHERE d.property_id=$1 AND d.bill_id=$2 AND b.finalized=true`,[propertyId,billId])
       if(r.rowCount!==1)return error(404)
-      if(!owner&&r.rows[0].recipient_account_id!==account.id)return error(404)
+      // A contract invoice has no recipient in its immutable snapshot. Access
+      // comes from the separate approved contract binding checked above.
+      if(!owner&&bill.rows[0].account_id!==null&&r.rows[0].recipient_account_id!==account.id)return error(404)
       const doc=r.rows[0]
       if(createHash('sha256').update(doc.pdf).digest('hex')!==doc.sha256)return error(503)
       return new NextResponse(new Uint8Array(doc.pdf),{status:200,headers:{

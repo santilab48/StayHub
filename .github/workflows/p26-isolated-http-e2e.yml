@@ -113,6 +113,8 @@ jobs:
         run: node scripts/p26-http-e2e.mjs
       - name: Test QR device pending approval isolation and revocation
         run: node scripts/p26-tenant-device-http-e2e.mjs
+      - name: Test contract bill, PDF, receipt and tenant isolation
+        run: node scripts/p26-tenant-contract-billing-e2e.mjs
       - name: Test separate Neon membership integration and scoped entitlements
         run: node scripts/p60-membership-http-e2e.mjs
       - name: Test server-authorized Platform Admin membership directory and revocation
@@ -129,6 +131,8 @@ jobs:
         run: node scripts/p26-room-billing-browser-e2e.mjs
       - name: Test tenant install and standalone approval flow in mobile Chromium
         run: node scripts/p26-tenant-pwa-browser-e2e.mjs
+      - name: Test six tenant tiles and original contract at 390px
+        run: node scripts/p26-tenant-billing-ui-e2e.mjs
       - name: Test member status page in real Chromium
         run: node scripts/p61-membership-browser-e2e.mjs
       - name: Test two independent browser contexts with offline conflict

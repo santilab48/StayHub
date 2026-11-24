@@ -1,4 +1,5 @@
 'use client'
+import tenant from '../my/tenant.module.css'
 import {useEffect,useState,type FormEvent} from 'react'
 
 type InstallEvent=Event&{prompt:()=>Promise<void>;userChoice:Promise<{outcome:string}>}
@@ -56,7 +57,7 @@ export default function JoinClient({token}:{token:string}){
     }catch(error){setMessage(error instanceof Error?error.message:'ส่งคำขอไม่สำเร็จ')}
     finally{setBusy(false)}
   }
-  return <main style={{minHeight:'100dvh',display:'grid',placeItems:'center',padding:20,background:'#f4f7fb'}}>
+  return <main className={tenant.tenantRoot} style={{minHeight:'100dvh',display:'grid',placeItems:'center',padding:20,background:'#f4f7fb'}}>
     <div style={{width:'100%',maxWidth:390,textAlign:'center',background:'#fff',borderRadius:24,padding:'38px 24px',boxShadow:'0 12px 36px #16203318'}}>
       <img src="/icons/stayhub.svg" alt="StayHub" width="96" height="96" style={{display:'block',margin:'0 auto 20px'}}/>
       {!installed? validInvite===false?<p role="alert">QR ไม่ถูกต้อง กรุณาขอ QR ใหม่จากที่พัก</p>:installPrompt?

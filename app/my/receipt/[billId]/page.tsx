@@ -1,4 +1,5 @@
 'use client'
+import tenant from '../../tenant.module.css'
 import dashboardStyles from '../../../cloud/dashboard.module.css'
 import {useEffect,useState} from 'react'
 import {useParams} from 'next/navigation'
@@ -21,7 +22,7 @@ export default function ReceiptView(){
   return()=>{active=false}
  },[params.billId])
  const paid=bill?.bill.status==='paid'&&Number(bill?.outstanding||NaN)===0
- return <main className={dashboardStyles.detail}><div className={dashboardStyles.detailInner}>
+ return <main className={dashboardStyles.detail+' '+tenant.tenantRoot}><div className={dashboardStyles.detailInner}>
   <style>{'@media print{body{background:white!important}.noPrint{display:none!important}.receiptPaper{border:0!important;box-shadow:none!important}.wrap{max-width:none!important;margin:0!important;padding:0!important}}'}</style>
   <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/my">StayHub <span>ผู้เช่า</span></a><a className={dashboardStyles.back} href="/my">กลับหน้าหลัก</a></header>
   {error&&<p role="alert" className="card">{error}</p>}

@@ -3,6 +3,7 @@ import {accountFromSession,checkOrigin,stagingAuthEnabled} from '../../../../../
 import {withPostgresTransaction} from '../../../../../../lib/db/postgres'
 import {canManageProperty,requestKey,uuid} from '../../../../../../lib/db/billing-request'
 import {cents,formatCents,paymentBalance} from '../../../../../../lib/db/billing-calculation'
+import {canReadBill} from '../../../../../../lib/db/tenant-contract-access'
 
 export const dynamic='force-dynamic'
 const reply=(value:unknown,status=200)=>NextResponse.json(value,{status,headers:{'Cache-Control':'no-store'}})
@@ -25,7 +26,7 @@ export async function GET(req:NextRequest,{params}:Params){
         FROM stayhub.billing_bills WHERE property_id=$1 AND id=$2 AND finalized=true`,[propertyId,billId])
       if(!bill.rowCount)return reply({error:'Bill not found'},404)
       const owner=await canManageProperty(client,account.id,propertyId)
-      if(!owner&&bill.rows[0].account_id!==account.id)return reply({error:'Bill not found'},404)
+      if(!owner&&!await canReadBill(client,propertyId,billId,account.id))return reply({error:'Bill not found'},404)
       const sum=await client.query<{paid:string}>(`SELECT COALESCE(sum(amount),0)::text AS paid
         FROM stayhub.billing_payments WHERE property_id=$1 AND bill_id=$2`,[propertyId,billId])
       const balance=paymentBalance(bill.rows[0].total,sum.rows[0].paid)

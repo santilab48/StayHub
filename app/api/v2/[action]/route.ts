@@ -395,6 +395,22 @@ export async function POST(req:NextRequest,{params}:Params){
           WHERE stayhub.property_memberships.role IN ('resident','guest')`,[propertyId,r.rows[0].account_id])
         await client.query(`UPDATE stayhub.join_requests SET status='approved',reviewed_by=$1,reviewed_at=now(),unit_id=$2 WHERE id=$3`,[account.id,body.unitId,body.requestId])
         const newStay=await client.query('SELECT id FROM stayhub.stays WHERE join_request_id=$1',[body.requestId])
+        // Owner approval binds a device stay to an unambiguous contract in a
+        // separate table. It never changes immutable bill/invoice snapshots.
+        await client.query(`WITH candidates AS (
+          SELECT c.id FROM stayhub.room_contracts c
+          WHERE c.property_id=$1 AND c.unit_id=$2
+            AND (c.snapshot->>'startsOn')::date <= (now() AT TIME ZONE 'Asia/Bangkok')::date
+            AND (c.snapshot->>'endsOn')::date >= (now() AT TIME ZONE 'Asia/Bangkok')::date
+        ) INSERT INTO stayhub.tenant_contract_access(property_id,room_contract_id,stay_id,account_id,unit_id)
+          SELECT $1,id,$3,$4,$2 FROM candidates
+          WHERE (SELECT count(*) FROM candidates)=1
+            AND EXISTS(SELECT 1 FROM stayhub.tenant_devices d WHERE d.join_request_id=$5
+              AND d.property_id=$1 AND d.unit_id=$2 AND d.account_id=$4)
+            AND NOT EXISTS(SELECT 1 FROM stayhub.stays previous
+              WHERE previous.property_id=$1 AND previous.unit_id=$2
+                AND previous.account_id<>$4)
+          ON CONFLICT DO NOTHING`,[propertyId,body.unitId,newStay.rows[0].id,r.rows[0].account_id,body.requestId])
         await client.query(`INSERT INTO stayhub.stay_events(property_id,stay_id,account_id,actor_account_id,event_type,to_unit_id)
           VALUES($1,$2,$3,$4,'approved',$5)`,[propertyId,newStay.rows[0].id,r.rows[0].account_id,account.id,body.unitId])
         return 'approved'

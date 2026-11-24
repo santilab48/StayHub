@@ -40,10 +40,10 @@ if [[ "$original" != "$restored" ]]; then
   exit 1
 fi
 IFS='|' read -r migrations properties units bills payments rest <<< "$restored"
-if [[ "$migrations" != "18" || "$properties" -lt 1 || "$units" -lt 1 || "$bills" -lt 1 || "$payments" -lt 1 ]]; then
+if [[ "$migrations" != "19" || "$properties" -lt 1 || "$units" -lt 1 || "$bills" -lt 1 || "$payments" -lt 1 ]]; then
   echo "FAIL: restored fixture is missing expected migrations or business records" >&2
   exit 1
 fi
 echo "PASS P5.9 isolated PostgreSQL custom-format pg_dump / pg_restore into independent database"
-echo "PASS restored migration ledger 18/18, property/room/bill/payment counts and monetary aggregates match"
+echo "PASS restored migration ledger 19/19, property/room/bill/payment counts and monetary aggregates match"
 echo "NOTE: This proves the CI restore mechanism, not a verified Railway Production backup or PITR policy."

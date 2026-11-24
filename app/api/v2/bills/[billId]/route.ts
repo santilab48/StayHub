@@ -3,6 +3,7 @@ import {accountFromSession,stagingAuthEnabled} from '../../../../../lib/cloud-id
 import {withPostgresTransaction} from '../../../../../lib/db/postgres'
 import {canManageProperty,uuid} from '../../../../../lib/db/billing-request'
 import {paymentBalance} from '../../../../../lib/db/billing-calculation'
+import {canReadBill} from '../../../../../lib/db/tenant-contract-access'
 
 export const dynamic='force-dynamic'
 const reply=(value:unknown,status=200)=>NextResponse.json(value,{status,headers:{'Cache-Control':'no-store'}})
@@ -26,7 +27,7 @@ export async function GET(req:NextRequest,{params}:Params){
         WHERE b.property_id=$1 AND b.id=$2 AND b.finalized=true`,[propertyId,billId])
       if(!r.rowCount)return reply({error:'Bill not found'},404)
       const owner=await canManageProperty(client,account.id,propertyId)
-      if(!owner&&r.rows[0].account_id!==account.id)return reply({error:'Bill not found'},404)
+      if(!owner&&!await canReadBill(client,propertyId,billId,account.id))return reply({error:'Bill not found'},404)
       const bill=r.rows[0]
       const items=await client.query(`SELECT fee_code AS "feeCode",label,quantity,unit_rate AS "unitRate",amount
         FROM stayhub.billing_bill_items WHERE property_id=$1 AND bill_id=$2 ORDER BY fee_code,id`,[propertyId,billId])
