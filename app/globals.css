@@ -52,65 +52,104 @@
 @media(prefers-reduced-motion:reduce){.welcomeChoice{transition:none}.welcomeChoice:hover{transform:none}}
 
 
-/* Home: exactly four tactile, floating web buttons, without extra page chrome. */
+/* Home v2 — four luminous floating navigation controls, no other chrome. */
 .floatingHome{
- min-height:100vh;min-height:100svh;
- display:grid;place-items:center;
- padding:clamp(18px,4vw,56px);
- background:radial-gradient(ellipse at 15% 10%,#e1fbf6 0%,transparent 48%),
-            radial-gradient(ellipse at 87% 88%,#dfebff 0%,transparent 52%),#f5f8fc;
+ min-height:100vh;min-height:100svh;position:relative;isolation:isolate;
+ display:grid;place-items:center;overflow:hidden;
+ padding:clamp(24px,5vw,84px);
+ background:#0b101e;
+}
+.floatingHome::before{
+ content:"";position:absolute;inset:-12%;z-index:-2;pointer-events:none;
+ background:
+  radial-gradient(ellipse 38% 44% at 16% 10%,rgba(52,117,177,.24),transparent 80%),
+  radial-gradient(ellipse 37% 45% at 91% 85%,rgba(106,76,175,.21),transparent 79%),
+  radial-gradient(ellipse 36% 28% at 54% 45%,rgba(21,141,135,.09),transparent 90%);
+}
+.floatingHome::after{
+ content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+ background-image:radial-gradient(circle,rgba(209,228,245,.15) .65px,transparent 1px);
+ background-size:34px 34px;mask-image:linear-gradient(90deg,transparent,black 25%,black 75%,transparent);
+ opacity:.21;
 }
 .floatingHomeGrid{
- width:min(100%,1010px);display:grid;
- grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(18px,3vw,32px);
+ width:min(100%,1040px);
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:clamp(20px,3.1vw,38px);
 }
 .floatingHomeButton{
- --float-shadow:0 20px 38px rgba(28,56,86,.12),0 6px 0 rgba(67,91,113,.09);
- position:relative;isolation:isolate;min-width:0;
- min-height:clamp(190px,26vh,280px);
- display:flex;flex-direction:column;align-items:center;justify-content:center;
- gap:clamp(14px,2vw,22px);padding:24px 42px;
- background:linear-gradient(155deg,#fff 18%,#f9fcff 100%);
- border:1px solid #fff;border-radius:30px;
- box-shadow:var(--float-shadow);
- text-decoration:none;color:#18334d;
+ --accent:#70d3e4;--wash:rgba(70,174,201,.15);
+ position:relative;min-width:0;min-height:clamp(180px,26vh,248px);
+ display:flex;align-items:center;gap:clamp(17px,2.6vw,30px);
+ padding:clamp(24px,3.5vw,40px);
+ color:#f4f8ff;text-decoration:none;
+ background:linear-gradient(134deg,rgba(38,50,73,.88),rgba(19,26,42,.93));
+ border:1px solid rgba(205,226,255,.16);
+ border-radius:clamp(26px,3vw,36px);
+ box-shadow:0 22px 55px rgba(0,0,0,.36),inset 0 1px rgba(255,255,255,.11),inset 0 -1px rgba(255,255,255,.035);
+ -webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);
  transform:translateY(0);
- transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;
+ transition:transform .28s cubic-bezier(.2,.85,.25,1),border-color .25s,box-shadow .3s,background .3s;
 }
 .floatingHomeButton::before{
- content:'';position:absolute;inset:0;border-radius:inherit;
- border:1px solid rgba(153,179,199,.26);pointer-events:none;
+ content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+ background:radial-gradient(circle at 12% 8%,var(--wash),transparent 65%);
+ opacity:.85;
+ transition:opacity .3s;
 }
-.floatingHomeButton:hover,.floatingHomeButton:focus-visible{
- transform:translateY(-8px);
- box-shadow:0 30px 52px rgba(28,56,86,.17),0 8px 0 rgba(54,89,114,.1);
+.floatingHomeButton:nth-child(2){--accent:#caa3ff;--wash:rgba(139,95,211,.20)}
+.floatingHomeButton:nth-child(3){--accent:#95e8bb;--wash:rgba(58,166,116,.18)}
+.floatingHomeButton:nth-child(4){--accent:#ffbf90;--wash:rgba(221,139,83,.17)}
+.floatingHomeButton:nth-child(1){transform:translateY(-9px)}
+.floatingHomeButton:nth-child(2){transform:translateY(12px)}
+.floatingHomeButton:nth-child(3){transform:translateY(-12px)}
+.floatingHomeButton:nth-child(4){transform:translateY(10px)}
+.floatingHomeButton:hover{
+ transform:translateY(-16px) scale(1.025);
+ border-color:color-mix(in srgb,var(--accent) 55%,transparent);
+ box-shadow:0 38px 80px rgba(0,0,0,.48),0 0 44px var(--wash),inset 0 1px rgba(255,255,255,.16);
 }
-.floatingHomeButton:active{transform:translateY(-2px);box-shadow:0 12px 20px rgba(28,56,86,.12)}
-.floatingHomeButton:focus-visible{outline:3px solid #188d88;outline-offset:5px}
+.floatingHomeButton:active{transform:translateY(-5px) scale(.99)}
+.floatingHomeButton:focus-visible{outline:3px solid var(--accent);outline-offset:5px}
 .floatingHomeIcon{
- display:grid;place-items:center;width:clamp(76px,8vw,104px);height:clamp(76px,8vw,104px);
- font-size:clamp(40px,5vw,57px);line-height:1;
- border-radius:26px;background:#eef7ff;
- box-shadow:inset 0 1px 3px rgba(23,59,92,.04);
+ position:relative;flex:none;width:clamp(84px,8vw,112px);height:clamp(84px,8vw,112px);
+ display:grid;place-items:center;border-radius:28px;
+ color:var(--accent);background:var(--wash);
+ border:1px solid color-mix(in srgb,var(--accent) 24%,transparent);
+ box-shadow:inset 0 1px rgba(255,255,255,.12),0 12px 30px rgba(0,0,0,.14);
 }
-.floatingHomeButton2 .floatingHomeIcon{background:#f2ecff}
-.floatingHomeButton3 .floatingHomeIcon{background:#e8f9ef}
-.floatingHomeButton4 .floatingHomeIcon{background:#fff1e6}
-.floatingHomeLabel{font-size:clamp(19px,2.1vw,27px);font-weight:800;letter-spacing:-.35px;text-align:center;line-height:1.4}
+.floatingHomeIcon svg{width:clamp(43px,4.6vw,59px);height:clamp(43px,4.6vw,59px)}
+.floatingHomeLabel{
+ position:relative;flex:1;min-width:0;font-size:clamp(20px,2.1vw,29px);
+ line-height:1.4;font-weight:750;letter-spacing:-.6px;text-wrap:balance;
+}
 .floatingHomeArrow{
- position:absolute;right:25px;top:20px;font-size:25px;font-weight:600;color:#8da6b6;
+ position:absolute;right:24px;top:23px;
+ display:grid;place-items:center;width:37px;height:37px;border-radius:50%;
+ color:rgba(232,241,255,.7);background:rgba(255,255,255,.075);
+ transition:transform .25s,color .25s,background .25s;
 }
-@media(max-width:650px){
- .floatingHome{padding:clamp(14px,4vw,24px)}
- .floatingHomeGrid{gap:clamp(12px,3vw,18px)}
- .floatingHomeButton{min-height:clamp(176px,34svh,250px);padding:18px 12px;border-radius:23px;gap:14px}
- .floatingHomeIcon{width:73px;height:73px;font-size:40px;border-radius:20px}
- .floatingHomeLabel{font-size:clamp(15px,4vw,20px)}
- .floatingHomeArrow{right:14px;top:12px;font-size:17px}
+.floatingHomeButton:hover .floatingHomeArrow{transform:translateX(4px);color:var(--accent);background:var(--wash)}
+@media(max-width:760px){
+ .floatingHome{padding:24px 18px}
+ .floatingHomeGrid{width:min(100%,580px);grid-template-columns:1fr;gap:16px}
+ .floatingHomeButton{min-height:clamp(112px,18svh,155px);border-radius:26px;padding:19px 24px;gap:20px}
+ .floatingHomeButton:nth-child(n){transform:none}
+ .floatingHomeButton:hover{transform:translateY(-4px) scale(1.01)}
+ .floatingHomeIcon{width:74px;height:74px;border-radius:22px}
+ .floatingHomeIcon svg{width:44px;height:44px}
+ .floatingHomeLabel{font-size:clamp(18px,4.7vw,24px);padding-right:18px}
+ .floatingHomeArrow{right:17px;top:14px;width:30px;height:30px}
+ .floatingHomeArrow svg{width:18px;height:18px}
 }
-@media(max-width:350px){
- .floatingHomeButton{min-height:155px;padding:14px 8px}
- .floatingHomeIcon{width:62px;height:62px;font-size:35px}
- .floatingHomeLabel{font-size:14px}
+@media(max-width:380px){
+ .floatingHomeGrid{gap:12px}
+ .floatingHomeButton{min-height:106px;padding:16px;gap:14px}
+ .floatingHomeIcon{width:64px;height:64px;border-radius:19px}
+ .floatingHomeIcon svg{width:39px;height:39px}
+ .floatingHomeLabel{font-size:17px}
 }
-@media(prefers-reduced-motion:reduce){.floatingHomeButton{transition:none}.floatingHomeButton:hover,.floatingHomeButton:focus-visible,.floatingHomeButton:active{transform:none}}
+@media(prefers-reduced-motion:reduce){
+ .floatingHomeButton,.floatingHomeArrow{transition:none}
+ .floatingHomeButton:hover,.floatingHomeButton:active{transform:none}
+}
