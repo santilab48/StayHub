@@ -55,10 +55,7 @@ export default function ReportsPage(){
  const occupied=rooms.filter(r=>r.occupants>0).length
  return <main className={dashboardStyles.detail}><div className={dashboardStyles.detailInner}>
   <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/cloud?tab=finance">StayHub <span>Cloud</span></a><a className={dashboardStyles.back} href="/cloud?tab=finance">กลับหน้าจัดการ</a></header><h1>รายงาน · StayHub Cloud</h1>
-  <section className="card section"><label>ที่พัก<select value={propertyId} onChange={e=>setPropertyId(e.target.value)}>
-   <option value="">-- เลือกที่พัก --</option>
-   {properties.map(p=><option value={p.id} key={p.id}>{p.name}</option>)}
-  </select></label></section>
+  
   {loading&&<p role="status">กำลังโหลด...</p>}
   {error&&<p role="alert" style={{color:'crimson'}}>{error}</p>}
   {summary&&<><div className="metricGrid section">
