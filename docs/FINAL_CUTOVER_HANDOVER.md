@@ -90,3 +90,7 @@ Isolated tests ครอบคลุม desktop Chromium, auth/session, owner/te
 - รายละเอียด: `docs/P64_PLATFORM_ADMIN_DUAL_APPROVAL.md`; GitHub CI E2E `45163671719` และ Build `45163671715` ต้องตรวจผล SUCCESS ก่อนการส่งมอบรอบนี้
 
 **Final Cutover ยังคงไม่ครบ 100%** เพราะ Production Railway Backup/Restore, Production Write E2E, แพ็กเกจ/ราคา/สิทธิ์สมาชิกจริง, การอนุมัติ Super Admin และการทดสอบอุปกรณ์จริงยังไม่ผ่านหลักฐานครบ
+
+## P7 Final migration acceptance — 24 พฤศจิกายน 2026
+
+ตรวจ Remote HEAD `a7ad4ae671b555d222180cd7ddfb8f6591fb6687` และ GitHub Actions `45172514258`, `45172514197` ซึ่งหน้าเว็บแสดง Success. ในสภาพแวดล้อมนี้ Railway/Neon management และ Production database ไม่พร้อมให้ตรวจ; proxy ปฏิเสธ `stayhub.tushub.com` และ Railway URL ด้วย 403. จึงยังไม่มีหลักฐาน Railway Production backup schedule/restore point, การ restore **ข้อมูล Production จริง**, counts และยอดเงินสด, หรือ Production functional/write acceptance. สถานะ Migration Acceptance คือ **BLOCKED / ไม่ครบ 100%**. รายละเอียดและขั้นตอนปิดงานอยู่ใน [P7_FINAL_MIGRATION_ACCEPTANCE.md](P7_FINAL_MIGRATION_ACCEPTANCE.md). ไม่ได้เปลี่ยน Production หรือเริ่ม Feature ใหม่.
