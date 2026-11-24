@@ -6,6 +6,9 @@ type Property={id:string;name:string;role:string}
 type Lease={id:string;unit_id:string;unit_name:string;monthly_rent:string;status:string;source?:string;water?:string;electric?:string;service?:string;water_meter?:string;electric_meter?:string}
 type Bill={id:string;property_id:string;unit_name:string;period:string;total:string;paid:string;outstanding:string;status:string}
 type BillDetail={bill:Bill;items:{feeCode:string;label:string;quantity:string;unitRate:string;amount:string}[];paid:string;outstanding:string;payments?:{id:string;amount:string;method:string;confirmed_at:string}[]}
+type MeterType='water'|'electric'
+type Reading={meter_type:MeterType;previous_reading:string;current_reading:string;unit_rate:string;usage:string;amount:string}
+type MeterState={items:Reading[];previous:{meter_type:MeterType;current_reading:string}[]}
 type Summary={billCount:number;billedTotal:string;paidTotal:string;outstandingTotal:string;unpaidCount:number}
 
 async function request<T>(path:string,body?:Record<string,unknown>,key?:string):Promise<T>{
@@ -26,10 +29,10 @@ export default function CloudBillingPage(){
   const [period,setPeriod]=useState(currentPeriod)
   const [otherAmount,setOtherAmount]=useState('0.00')
   const [otherLabel,setOtherLabel]=useState('ค่าอื่น ๆ')
-  const [meterType,setMeterType]=useState<'water'|'electric'>('water')
-  const [initialReading,setInitialReading]=useState('')
-  const [currentReading,setCurrentReading]=useState('')
-  const [unitRate,setUnitRate]=useState('')
+  const [meterState,setMeterState]=useState<MeterState|null>(null)
+  const [meterError,setMeterError]=useState('')
+  const [meterDraft,setMeterDraft]=useState({water:{start:'',end:'',rate:''},electric:{start:'',end:'',rate:''}})
+  const [review,setReview]=useState(false)
   const [bills,setBills]=useState<Bill[]>([])
   const [summary,setSummary]=useState<Summary|null>(null)
   const [selectedBill,setSelectedBill]=useState<BillDetail|null>(null)
@@ -102,32 +105,60 @@ export default function CloudBillingPage(){
     void load()
     return()=>{alive=false}
   },[propertyId,page,loadBills,month])
+  const meterPath=activeLease&&propertyId?'/api/v2/meter-readings?'+new URLSearchParams({propertyId,unitId:activeLease.unit_id,period:month}):''
+  const fetchMeters=useCallback(async()=>request<MeterState>(meterPath),[meterPath])
   useEffect(()=>{
-    setUnitRate(activeLease?.source==='room_contract'?(activeLease[meterType]||''):'')
-    setCurrentReading('');setInitialReading('')
-  },[activeLease,meterType,month])
+    let alive=true;setMeterState(null);setMeterError('');setReview(false)
+    setMeterDraft({water:{start:'',end:'',rate:activeLease?.water||''},electric:{start:'',end:'',rate:activeLease?.electric||''}})
+    if(meterPath)void fetchMeters().then(data=>{
+      if(!alive)return
+      setMeterState(data)
+      setMeterDraft({water:{start:data.previous.find(x=>x.meter_type==='water')?.current_reading||activeLease?.water_meter||'',end:'',rate:activeLease?.water||''},electric:{start:data.previous.find(x=>x.meter_type==='electric')?.current_reading||activeLease?.electric_meter||'',end:'',rate:activeLease?.electric||''}})
+    }).catch(e=>{if(alive)setMeterError(e instanceof Error?e.message:'โหลดมิเตอร์ไม่สำเร็จ')})
+    return()=>{alive=false}
+  },[meterPath,fetchMeters,activeLease])
+  const existing=(type:MeterType)=>meterState?.items.find(m=>m.meter_type===type)
+  const prior=(type:MeterType)=>meterState?.previous.find(m=>m.meter_type===type)
+  const requiredMeter=(type:MeterType)=>activeLease?.source==='room_contract'&&Number(activeLease[type])>0
+  const hasInput=(type:MeterType)=>meterDraft[type].end.trim()!==''
+  const isDecimal=(s:string,places:number)=>new RegExp('^\\\\d+(\\\\.\\\\d{1,'+places+'})?$').test(s)&&Number.isFinite(Number(s))
+  const meterAmount=(type:MeterType)=>{
+    const saved=existing(type);if(saved)return Number(saved.amount)
+    const d=meterDraft[type]
+    if(!hasInput(type))return 0
+    if(!isDecimal(d.start,3)||!isDecimal(d.end,3)||!isDecimal(d.rate,2)||Number(d.end)<Number(d.start))return NaN
+    return Math.round((Math.round(Number(d.end)*1000)-Math.round(Number(d.start)*1000))*Math.round(Number(d.rate)*100)/1000)/100
+  }
+  const missing=(['water','electric'] as const).filter(t=>!existing(t)&&requiredMeter(t)&&!hasInput(t))
+  const validOther=isDecimal(otherAmount,2)&&Number(otherAmount)>=0
+  const total=Number(activeLease?.monthly_rent||0)+Number(activeLease?.service||0)+meterAmount('water')+meterAmount('electric')+Number(otherAmount)
+  const canReview=!!activeLease&&!!meterState&&!meterError&&!missing.length&&validOther&&Number.isFinite(total)&&total>=0&&(Number(otherAmount)===0||!!otherLabel.trim())
   async function run(task:()=>Promise<void>,area='detail'){
     setAction(area)
     setBusy(true);setError('');setNotice('')
     try{await task()}catch(e){setError(e instanceof Error?e.message:'ทำรายการไม่สำเร็จ')}
     finally{setBusy(false)}
   }
-  async function saveMeter(e:FormEvent){e.preventDefault();if(!activeLease)return
+  async function issueBill(e:FormEvent){
+    e.preventDefault();if(!activeLease||!canReview||busy)return
+    if(!review){setReview(true);setAction('issue');setError('');setNotice('');return}
     await run(async()=>{
-      const body:Record<string,unknown>={propertyId,unitId:activeLease.unit_id,meterType,period:month,currentReading,unitRate}
-      if(initialReading.trim())body.initialReading=initialReading.trim()
-      await request('/api/v2/meter-readings',body)
-      setCurrentReading('');setInitialReading('')
-      setNotice('บันทึกมิเตอร์เรียบร้อย')
-    },'meter')
-  }
-  async function issueBill(e:FormEvent){e.preventDefault();if(!leaseId)return
-    await run(async()=>{
-      const body={propertyId,...(activeLease?.source==='room_contract'?{roomContractId:leaseId}:{leaseId}),period:month,otherAmount,otherLabel:otherLabel.trim()||'ค่าอื่น ๆ'}
+      for(const type of ['water','electric'] as const){
+        if(existing(type)||!hasInput(type))continue
+        const d=meterDraft[type]
+        const body:Record<string,unknown>={propertyId,unitId:activeLease.unit_id,meterType:type,period:month,currentReading:d.end,unitRate:d.rate}
+        if(!prior(type))body.initialReading=d.start
+        try{await request('/api/v2/meter-readings',body)}catch(e){setMeterState(await fetchMeters());throw e}
+        setMeterState(await fetchMeters())
+      }
+      const body={propertyId,...(activeLease.source==='room_contract'?{roomContractId:leaseId}:{leaseId}),period:month,otherAmount,otherLabel:otherLabel.trim()||'ค่าอื่น ๆ'}
       const result=await request<{id:string}>('/api/v2/bills',body,stableKey(billReplay,body))
       billReplay.current=null
-      await loadBills(propertyId,1);setPage(1)
-      setNotice('ออกบิลเรียบร้อย เลขอ้างอิง '+result.id.slice(0,8))
+      setReview(false);setNotice('ออกบิลเรียบร้อย เลขอ้างอิง '+result.id.slice(0,8))
+      const detail=await request<BillDetail>('/api/v2/bills/'+encodeURIComponent(result.id)+'?propertyId='+encodeURIComponent(propertyId))
+      setSelectedBill(detail);setPayAmount(detail.outstanding)
+      await loadBills(propertyId,1)
+      requestAnimationFrame(()=>document.getElementById('bill-detail')?.scrollIntoView({behavior:'smooth'}))
     },'issue')
   }
   async function payBill(e:FormEvent){e.preventDefault();if(!selectedBill)return
@@ -155,25 +186,31 @@ export default function CloudBillingPage(){
       {owner&&<>
       <section className="card section"><h2>ออกบิลรายเดือน</h2>
         <form className="list" onSubmit={e=>void issueBill(e)}>
-          <label>เดือนออกบิล <input type="month" required value={period} onChange={e=>setPeriod(e.target.value)}/></label>
-          <label>ห้องพัก <select value={leaseId} onChange={e=>setLeaseId(e.target.value)} required>
+          <label>เดือนออกบิล <input type="month" required disabled={busy} value={period} onChange={e=>{setPeriod(e.target.value);setReview(false)}}/></label>
+          <label>ห้องพัก <select value={leaseId} disabled={busy} onChange={e=>{setLeaseId(e.target.value);setReview(false)}} required>
             <option value="">-- เลือกห้อง --</option>{leases.map(l=><option key={l.id} value={l.id}>{l.unit_name} · ค่าเช่า {money(l.monthly_rent)} บาท</option>)}
           </select></label>
-          <label>ค่าอื่น ๆ (บาท) <input inputMode="decimal" value={otherAmount} onChange={e=>setOtherAmount(e.target.value)} required/></label>
-          <label>รายละเอียดค่าอื่น ๆ <input maxLength={120} value={otherLabel} onChange={e=>setOtherLabel(e.target.value)} required={Number(otherAmount)>0}/></label>
-          <button className="btn" type="submit" disabled={busy||!leaseId}>{busy&&action==='issue'?'กำลังออกบิล...':'ออกบิล'}</button>{feedback('issue')}{!leases.length&&<p className="muted">ไม่พบสัญญาที่ครอบคลุมเดือนนี้ <a href="/cloud/leases">ตรวจสัญญารายห้อง</a></p>}
-          <small className="muted">ค่าเช่าและค่าบริการจากสัญญา ค่าน้ำ/ไฟจากมิเตอร์เดือนนี้</small>{activeLease?.source==='room_contract'&&(Number(activeLease.water)>0||Number(activeLease.electric)>0)&&<p>กรุณา <a href="#meter-entry">บันทึกมิเตอร์น้ำและไฟ</a> ก่อนออกบิล หากมีการคิดค่าต่อหน่วย</p>}
-        </form>
-      </section>
-      <section id="meter-entry" className="card section"><h2>จดมิเตอร์น้ำและไฟ</h2>
-        <form className="list" onSubmit={e=>void saveMeter(e)}>
-          <p className="muted">ห้อง: {activeLease?.unit_name||'กรุณาเลือกห้อง'} · เดือน {period}</p>
-          <label>ประเภท <select value={meterType} onChange={e=>setMeterType(e.target.value as 'water'|'electric')}><option value="water">น้ำ</option><option value="electric">ไฟฟ้า</option></select></label>
-          <label>เลขมิเตอร์ปัจจุบัน <input required inputMode="decimal" value={currentReading} onChange={e=>setCurrentReading(e.target.value)}/></label>
-          <label>เลขตั้งต้น (กรอกเฉพาะเดือนแรก) <input inputMode="decimal" value={initialReading} onChange={e=>setInitialReading(e.target.value)}/></label>
-          <label>อัตราต่อหน่วย (บาท) <input required inputMode="decimal" value={unitRate} onChange={e=>setUnitRate(e.target.value)}/></label>
-          <button className="btn secondary" type="submit" disabled={busy||!activeLease}>{busy&&action==='meter'?'กำลังบันทึก...':'บันทึกมิเตอร์'}</button>{feedback('meter')}
-          <small className="muted">ต้องบันทึกมิเตอร์ก่อนออกบิล ระบบจะปฏิเสธเลขที่ลดลงและรายการซ้ำ</small>
+          {!leases.length&&<p className="muted">ไม่พบสัญญาที่ครอบคลุมเดือนนี้ <a href="/cloud/leases">ตรวจสัญญารายห้อง</a></p>}
+          {activeLease&&<><div className="row"><span>ค่าเช่าตามสัญญา</span><strong>{money(activeLease.monthly_rent)} บาท</strong></div><div className="row"><span>ค่าบริการตามสัญญา</span><strong>{money(activeLease.service)} บาท</strong></div>
+          {meterError?<p role="alert">{meterError}</p>:!meterState?<p role="status">กำลังโหลดข้อมูลมิเตอร์...</p>:<>{(['water','electric'] as const).map(type=>{
+            const saved=existing(type),prev=prior(type),d=meterDraft[type]
+            const change=(field:'start'|'end'|'rate',value:string)=>{setMeterDraft(old=>({...old,[type]:{...old[type],[field]:value}}));setReview(false)}
+            return <div key={type} className="card section"><h3>{type==='water'?'ค่าน้ำ':'ค่าไฟ'} {saved?'· บันทึกแล้ว':''}</h3>
+            {saved?<p>เลขเดิม {saved.previous_reading} · เลขใหม่ {saved.current_reading} · ใช้ {saved.usage} หน่วย × {money(saved.unit_rate)} บาท</p>:<>
+            <label>เลขมิเตอร์เดิม <input inputMode="decimal" disabled={busy||!!prev} value={d.start} onChange={e=>change('start',e.target.value)}/></label>
+            <label>เลขมิเตอร์ใหม่ <input inputMode="decimal" disabled={busy} value={d.end} onChange={e=>change('end',e.target.value)}/></label>
+            <label>อัตราต่อหน่วย (บาท) <input inputMode="decimal" disabled={busy||activeLease.source==='room_contract'} value={d.rate} onChange={e=>change('rate',e.target.value)}/></label>
+            {!hasInput(type)&&requiredMeter(type)&&<small>กรุณากรอกเลขมิเตอร์ใหม่เพื่อคำนวณ</small>}
+            {hasInput(type)&&!Number.isFinite(meterAmount(type))&&<p role="alert">ตรวจเลขเดิม เลขใหม่ และอัตราต่อหน่วย</p>}
+            </>}
+            <div className="row"><span>ยอด{type==='water'?'ค่าน้ำ':'ค่าไฟ'}</span><strong>{Number.isFinite(meterAmount(type))?money(meterAmount(type)):'–'} บาท</strong></div></div>
+          })}</>}
+          <label>ค่าอื่น ๆ (บาท) <input inputMode="decimal" value={otherAmount} disabled={busy} onChange={e=>{setOtherAmount(e.target.value);setReview(false)}} required/></label>
+          <label>รายละเอียดค่าอื่น ๆ <input maxLength={120} value={otherLabel} disabled={busy} onChange={e=>{setOtherLabel(e.target.value);setReview(false)}} required={Number(otherAmount)>0}/></label>
+          <div className="card section"><h3>ยอดรวมที่ต้องชำระ</h3><strong style={{fontSize:26}}>{canReview?money(total):'–'} บาท</strong>{review&&<p>ตรวจสอบยอดรวมแล้วกดยืนยันเพื่อบันทึกมิเตอร์และออกบิล</p>}</div>
+          {missing.length>0&&<p className="muted">กรอกมิเตอร์{missing.map(t=>t==='water'?'น้ำ':'ไฟ').join('และ')}ก่อนตรวจยอด</p>}
+          <button className="btn" type="submit" disabled={busy||!canReview}>{busy&&action==='issue'?'กำลังออกบิล...':review?'ยืนยันออกบิล':'ตรวจสอบยอดก่อนออกบิล'}</button>{feedback('issue')}
+          {review&&<button type="button" className="btn secondary" disabled={busy} onClick={()=>setReview(false)}>กลับไปแก้ไข</button>}</>}
         </form>
       </section>
       {summary&&<section className="card section"><h2>สรุปบิล</h2><p>บิล {summary.billCount} ใบ · เรียกเก็บ {money(summary.billedTotal)} บาท · รับแล้ว {money(summary.paidTotal)} บาท · ค้าง {money(summary.outstandingTotal)} บาท</p></section>}
@@ -185,9 +222,9 @@ export default function CloudBillingPage(){
       </div>)}</div>}
       <div className="flow"><button className="btn secondary" type="button" disabled={busy||page===1} onClick={()=>setPage(v=>v-1)}>ก่อนหน้า</button><span>หน้า {page}</span><button className="btn secondary" type="button" disabled={busy||!hasMore} onClick={()=>setPage(v=>v+1)}>ถัดไป</button></div>
     </section>
-    {selectedBill&&<section className="card section">
+    {selectedBill&&<section id="bill-detail" className="card section">
       {selectedBill.bill.status==='paid'&&Number(selectedBill.outstanding)===0&&<p><a className="btn secondary" href={'/cloud/receipts/'+encodeURIComponent(selectedBill.bill.id)+'?propertyId='+encodeURIComponent(selectedBill.bill.property_id)}>ใบเสร็จ / พิมพ์ PDF</a></p>}<div className="toolbar"><h2>รายละเอียดบิล {String(selectedBill.bill.period).slice(0,7)}</h2><button type="button" className="btn secondary" onClick={()=>setSelectedBill(null)}>ปิด</button></div>
-      <p>ห้อง {selectedBill.bill.unit_name} · {statusText(selectedBill.bill.status)}</p>
+      <p>ห้อง {selectedBill.bill.unit_name} · {statusText(selectedBill.bill.status)}</p><button type="button" className="btn secondary" onClick={()=>window.print()}>พิมพ์บิล</button>
       <div className="list">{selectedBill.items.map((i,n)=><div key={i.feeCode+n} className="row"><span>{i.label}</span><strong>{money(i.amount)} บาท</strong></div>)}</div>
       <hr/><p><strong>ยอดรวม {money(selectedBill.bill.total)} บาท</strong></p><p>รับแล้ว {money(selectedBill.paid)} บาท · ค้าง {money(selectedBill.outstanding)} บาท</p>
       {owner&&<>
