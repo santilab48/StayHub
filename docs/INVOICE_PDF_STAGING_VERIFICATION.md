@@ -25,3 +25,7 @@ Date: 24 November 2026 (Asia/Bangkok). Branch: `feat/stayhub-p26-readiness`. Bas
 ## CI follow-up
 
 The first pushed commit `a9972da` triggered GitHub Build/Security run `45372761958`, which failed because the existing local-sync contract still expected a literal 16-migration health expression. The production migration limit remains unchanged; the contract was updated to assert Neon Production 13, Railway Production 16, and isolated/Staging 17. The matching local structure, migration, identity, sync, IndexedDB/backup (13/13), P1 audit, typecheck and build checks passed. A new CI run is required for the follow-up commit before claiming GitHub Actions pass.
+
+## GitHub CI result for code commit `b905b96`
+
+The public GitHub Actions pages for this code commit report **Success**: Build/Security runs `45373077989` and `45373064240`; isolated PostgreSQL/HTTP/Chromium run `45373077986`; the earlier isolated run `45373064504` also completed successfully. The initial failed Build/Security run `45372761958` belongs to the preceding commit and was addressed by the health-contract correction. These are CI results only. **Neon Staging migration 017, Railway Staging deployment and live invoice/tenant acceptance remain BLOCKED and unverified** in this environment.
