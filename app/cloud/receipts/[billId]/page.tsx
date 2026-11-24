@@ -1,4 +1,5 @@
 'use client'
+import dashboardStyles from '../../dashboard.module.css'
 import {useEffect,useState} from 'react'
 import {useParams} from 'next/navigation'
 type Line={label:string;quantity:string;unitRate:string;amount:string}
@@ -20,9 +21,9 @@ export default function ReceiptView(){
   return()=>{active=false}
  },[params.billId])
  const paid=bill?.bill.status==='paid'&&Number(bill?.outstanding||NaN)===0
- return <main className="wrap" style={{maxWidth:850}}>
+ return <main className={dashboardStyles.detail}><div className={dashboardStyles.detailInner}>
   <style>{'@media print{body{background:white!important}.noPrint{display:none!important}.receiptPaper{border:0!important;box-shadow:none!important}.wrap{max-width:none!important;margin:0!important;padding:0!important}}'}</style>
-  <div className="noPrint"><p><a href="/cloud/receipts">← ใบเสร็จทั้งหมด</a></p></div>
+  <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/cloud?tab=finance">StayHub <span>Cloud</span></a><a className={dashboardStyles.back} href="/cloud/receipts">ใบเสร็จทั้งหมด</a></header>
   {error&&<p role="alert" className="card">{error}</p>}
   {!bill&&!error&&<p role="status">กำลังตรวจสอบยอดรับชำระ...</p>}
   {bill&&!paid&&<section className="card"><h1>ยังไม่สามารถออกใบเสร็จได้</h1><p>สถานะบิลยังไม่ชำระครบ</p></section>}
@@ -46,5 +47,5 @@ export default function ReceiptView(){
    </>:null}
    <div className="noPrint"><button type="button" className="btn" onClick={()=>window.print()}>พิมพ์ / บันทึกเป็น PDF</button></div>
   </section>}
- </main>
+ </div></main>
 }
