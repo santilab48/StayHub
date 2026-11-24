@@ -112,11 +112,7 @@ export default function OperationsPage(){
   <h1>งานบริการ · StayHub Cloud</h1>
   <p className="muted">ข้อมูลจากฐาน PostgreSQL/Neon · ทุกคำขอตรวจสิทธิ์ที่พักและห้องโดย Server</p>
   <div className="subnav">{kinds.map(k=><button className="btn secondary" type="button" key={k} aria-current={kind===k?'page':undefined} onClick={()=>{setKind(k);setFields({});setNotice('');window.history.replaceState(null,'','?kind='+k)}}>{labels[k]}</button>)}</div>
-  {properties.length===0&&stays.length>1&&<section className="card section"><label>ที่พัก<select value={propertyId} onChange={e=>setPropertyId(e.target.value)}>
-   <option value="">-- เลือกที่พัก --</option>
-   {properties.map(p=><option value={p.id} key={p.id}>{p.name}</option>)}
-   {stays.filter(s=>!properties.some(p=>p.id===s.property_id)).map(s=><option key={s.property_id} value={s.property_id}>{s.property_name} (ผู้พัก)</option>)}
-  </select></label></section>}
+  
   {error&&<p role="alert" className="card section" style={{color:'crimson'}}>{error}</p>}
   {notice&&<p role="status" className="card section">{notice}</p>}
   {propertyId&&<><section className="card section"><h2>{labels[kind]}</h2>
