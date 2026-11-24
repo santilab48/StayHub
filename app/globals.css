@@ -50,3 +50,67 @@
 .ownerPasswordToggle:focus-visible{outline:2px solid #168d89;outline-offset:2px}
 @media(max-width:650px){.welcomePage{padding:16px}.welcomeBrand{font-size:19px}.welcomeLogin{font-size:12px}.welcomeBody{justify-content:flex-start;padding:34px 0 16px}.welcomeIntro{margin-bottom:22px}.welcomeGrid{grid-template-columns:1fr;grid-template-rows:repeat(4,minmax(126px,1fr));gap:12px;min-height:calc(100svh - 244px)}.welcomeChoice{border-radius:20px;padding:18px;gap:16px}.welcomeChoiceIcon{font-size:41px}.welcomeChoiceCopy strong{font-size:19px}.welcomeChoiceCopy small{font-size:12px}.welcomeChoiceArrow{font-size:20px}.welcomeFooter{font-size:12px}.ownerEntryPage .ownerTypeGrid{grid-template-columns:1fr;grid-template-rows:none;min-height:0}.ownerEntryPage .ownerTypeTile{min-height:132px}}
 @media(prefers-reduced-motion:reduce){.welcomeChoice{transition:none}.welcomeChoice:hover{transform:none}}
+
+
+/* Home: exactly four tactile, floating web buttons, without extra page chrome. */
+.floatingHome{
+ min-height:100vh;min-height:100svh;
+ display:grid;place-items:center;
+ padding:clamp(18px,4vw,56px);
+ background:radial-gradient(ellipse at 15% 10%,#e1fbf6 0%,transparent 48%),
+            radial-gradient(ellipse at 87% 88%,#dfebff 0%,transparent 52%),#f5f8fc;
+}
+.floatingHomeGrid{
+ width:min(100%,1010px);display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(18px,3vw,32px);
+}
+.floatingHomeButton{
+ --float-shadow:0 20px 38px rgba(28,56,86,.12),0 6px 0 rgba(67,91,113,.09);
+ position:relative;isolation:isolate;min-width:0;
+ min-height:clamp(190px,26vh,280px);
+ display:flex;flex-direction:column;align-items:center;justify-content:center;
+ gap:clamp(14px,2vw,22px);padding:24px 42px;
+ background:linear-gradient(155deg,#fff 18%,#f9fcff 100%);
+ border:1px solid #fff;border-radius:30px;
+ box-shadow:var(--float-shadow);
+ text-decoration:none;color:#18334d;
+ transform:translateY(0);
+ transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;
+}
+.floatingHomeButton::before{
+ content:'';position:absolute;inset:0;border-radius:inherit;
+ border:1px solid rgba(153,179,199,.26);pointer-events:none;
+}
+.floatingHomeButton:hover,.floatingHomeButton:focus-visible{
+ transform:translateY(-8px);
+ box-shadow:0 30px 52px rgba(28,56,86,.17),0 8px 0 rgba(54,89,114,.1);
+}
+.floatingHomeButton:active{transform:translateY(-2px);box-shadow:0 12px 20px rgba(28,56,86,.12)}
+.floatingHomeButton:focus-visible{outline:3px solid #188d88;outline-offset:5px}
+.floatingHomeIcon{
+ display:grid;place-items:center;width:clamp(76px,8vw,104px);height:clamp(76px,8vw,104px);
+ font-size:clamp(40px,5vw,57px);line-height:1;
+ border-radius:26px;background:#eef7ff;
+ box-shadow:inset 0 1px 3px rgba(23,59,92,.04);
+}
+.floatingHomeButton2 .floatingHomeIcon{background:#f2ecff}
+.floatingHomeButton3 .floatingHomeIcon{background:#e8f9ef}
+.floatingHomeButton4 .floatingHomeIcon{background:#fff1e6}
+.floatingHomeLabel{font-size:clamp(19px,2.1vw,27px);font-weight:800;letter-spacing:-.35px;text-align:center;line-height:1.4}
+.floatingHomeArrow{
+ position:absolute;right:25px;top:20px;font-size:25px;font-weight:600;color:#8da6b6;
+}
+@media(max-width:650px){
+ .floatingHome{padding:clamp(14px,4vw,24px)}
+ .floatingHomeGrid{gap:clamp(12px,3vw,18px)}
+ .floatingHomeButton{min-height:clamp(176px,34svh,250px);padding:18px 12px;border-radius:23px;gap:14px}
+ .floatingHomeIcon{width:73px;height:73px;font-size:40px;border-radius:20px}
+ .floatingHomeLabel{font-size:clamp(15px,4vw,20px)}
+ .floatingHomeArrow{right:14px;top:12px;font-size:17px}
+}
+@media(max-width:350px){
+ .floatingHomeButton{min-height:155px;padding:14px 8px}
+ .floatingHomeIcon{width:62px;height:62px;font-size:35px}
+ .floatingHomeLabel{font-size:14px}
+}
+@media(prefers-reduced-motion:reduce){.floatingHomeButton{transition:none}.floatingHomeButton:hover,.floatingHomeButton:focus-visible,.floatingHomeButton:active{transform:none}}
