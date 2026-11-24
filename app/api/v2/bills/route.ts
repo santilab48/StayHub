@@ -94,6 +94,7 @@ export async function POST(req:NextRequest){
         await client.query('UPDATE stayhub.billing_bills SET finalized=true WHERE id=$1 AND property_id=$2',[billId,propertyId])
         return {id:billId,replayed:false,total:formatCents(total)}
       }
+      if(!uuid(leaseId))return {error:'lease_not_found'}
       const seed=await client.query<{unit_id:string}>(`SELECT unit_id FROM stayhub.leases
         WHERE id=$1 AND property_id=$2`,[leaseId,propertyId])
       if(!seed.rowCount)return {error:'lease_not_found'}
