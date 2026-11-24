@@ -46,7 +46,7 @@ if (neonProduction) {
 const dirname = resolve('db/migrations')
 // Railway Production needs migration 014 for property-scoped idempotent local sync.
 // Neon Production retains 001–013 as a separate rollback target; never migrate it implicitly.
-const productionMigrationLimit = neonProduction ? 13 : 14
+const productionMigrationLimit = neonProduction ? 13 : 19
 const files = readdirSync(dirname)
   .filter(x=>/^\d{3}_[\w-]+\.sql$/.test(x) && Number(x.slice(0,3)) <= productionMigrationLimit)
   .sort()
