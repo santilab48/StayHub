@@ -5,6 +5,7 @@ export const dynamic='force-dynamic'
 const reply=(value:unknown,status=200)=>NextResponse.json(value,{status,headers:{'Cache-Control':'no-store'}})
 const uuid=(v:unknown):v is string=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)
 const keys=['signedAt','landlord','landlordAddress','landlordPhone','tenant','tenantAddress','tenantPhone','propertyAddress','startsOn','endsOn','rent','deposit','advance','water','electric','service','dueDay','inventory','terms'] as const
+const optionalV2=['serviceDetail','smoking','pets','occupants','waterMeter','electricMeter','keys'] as const
 const required=['signedAt','landlord','landlordAddress','tenant','tenantAddress','propertyAddress','startsOn','endsOn','rent','deposit','advance','water','electric','service','dueDay']
 function validDate(v:string){return /^\d{4}-\d{2}-\d{2}$/.test(v)&&!Number.isNaN(Date.parse(v+'T00:00:00Z'))&&new Date(v+'T00:00:00Z').toISOString().slice(0,10)===v}
 async function access(accountId:string,unitId:string){
@@ -31,11 +32,12 @@ export async function POST(req:NextRequest){
  const room=await access(account.id,unitId);if(!room||!room.active)return reply({error:'ไม่มีสิทธิ์หรือห้องปิดใช้งาน'},403)
  const fields:Record<string,string>={}
  for(const key of keys){const value=body[key];if(typeof value!=='string'||value.length>4000)return reply({error:'ข้อมูลไม่ถูกต้อง: '+key},400);fields[key]=value.trim()}
+ for(const key of optionalV2){const value=body[key]??'';if(typeof value!=='string'||value.length>1000)return reply({error:'ข้อมูลไม่ถูกต้อง: '+key},400);fields[key]=value.trim()}
  if(required.some(k=>!fields[k]))return reply({error:'กรุณากรอกข้อมูลให้ครบ'},400)
  if(!['signedAt','startsOn','endsOn'].every(k=>validDate(fields[k]))||fields.endsOn<=fields.startsOn)return reply({error:'วันที่สัญญาไม่ถูกต้อง'},400)
  for(const key of ['rent','deposit','advance','water','electric','service']){if(!/^\d+(\.\d{1,2})?$/.test(fields[key])||Number(fields[key])>100000000)return reply({error:'จำนวนเงินไม่ถูกต้อง'},400)}
  if(!/^\d{1,2}$/.test(fields.dueDay)||Number(fields.dueDay)<1||Number(fields.dueDay)>28)return reply({error:'วันชำระต้องอยู่ระหว่าง 1–28'},400)
- const snapshot={...fields,propertyName:room.property_name,unitName:room.unit_name,templateVersion:'room-rental-draft-v1'}
+ const snapshot={...fields,propertyName:room.property_name,unitName:room.unit_name,templateVersion:'room-rental-draft-v2'}
  const saved=await withPostgresTransaction(async c=>{
  const allowed=await c.query(`SELECT u.id FROM stayhub.units u JOIN stayhub.property_memberships m ON m.property_id=u.property_id WHERE u.id=$1 AND u.property_id=$2 AND u.active AND m.account_id=$3 AND m.role IN ('owner','admin') FOR UPDATE OF u`,[unitId,room.property_id,account.id])
  if(!allowed.rowCount)return null
