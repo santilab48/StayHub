@@ -1,4 +1,5 @@
 'use client'
+import {cents,thousandths,meterCharge} from '../../../lib/db/billing-calculation'
 import dashboardStyles from '../dashboard.module.css'
 import {FormEvent,useCallback,useEffect,useRef,useState} from 'react'
 
@@ -121,16 +122,16 @@ export default function CloudBillingPage(){
   const prior=(type:MeterType)=>meterState?.previous.find(m=>m.meter_type===type)
   const requiredMeter=(type:MeterType)=>activeLease?.source==='room_contract'&&Number(activeLease[type])>0
   const hasInput=(type:MeterType)=>meterDraft[type].end.trim()!==''
-  const isDecimal=(s:string,places:number)=>/^[0-9]+(?:[.][0-9]+)?$/.test(s)&&Number.isFinite(Number(s))&&(s.split('.')[1]?.length||0)<=places
+  const normalize=(s:string)=>s.trim().replace(/^0+(?=[0-9])/,'')
   const meterAmount=(type:MeterType)=>{
     const saved=existing(type);if(saved)return Number(saved.amount)
     const d=meterDraft[type]
     if(!hasInput(type))return 0
-    if(!isDecimal(d.start,3)||!isDecimal(d.end,3)||!isDecimal(d.rate,2)||Number(d.end)<Number(d.start))return NaN
-    return Math.round((Math.round(Number(d.end)*1000)-Math.round(Number(d.start)*1000))*Math.round(Number(d.rate)*100)/1000)/100
+    const charge=meterCharge(normalize(d.start),normalize(d.end),normalize(d.rate))
+    return charge?charge.amount/100:NaN
   }
   const missing=(['water','electric'] as const).filter(t=>!existing(t)&&requiredMeter(t)&&!hasInput(t))
-  const validOther=isDecimal(otherAmount,2)&&Number(otherAmount)>=0
+  const validOther=cents(normalize(otherAmount))!==null
   const total=Number(activeLease?.monthly_rent||0)+Number(activeLease?.service||0)+meterAmount('water')+meterAmount('electric')+Number(otherAmount)
   const canReview=!!activeLease&&!!meterState&&!meterError&&!missing.length&&validOther&&Number.isFinite(total)&&total>=0&&(Number(otherAmount)===0||!!otherLabel.trim())
   async function run(task:()=>Promise<void>,area='detail'){
@@ -146,12 +147,12 @@ export default function CloudBillingPage(){
       for(const type of ['water','electric'] as const){
         if(existing(type)||!hasInput(type))continue
         const d=meterDraft[type]
-        const body:Record<string,unknown>={propertyId,unitId:activeLease.unit_id,meterType:type,period,currentReading:d.end,unitRate:d.rate}
-        if(!prior(type))body.initialReading=d.start
+        const body:Record<string,unknown>={propertyId,unitId:activeLease.unit_id,meterType:type,period,currentReading:normalize(d.end),unitRate:normalize(d.rate)}
+        if(!prior(type))body.initialReading=normalize(d.start)
         try{await request('/api/v2/meter-readings',body)}catch(e){setMeterState(await fetchMeters());throw e}
         setMeterState(await fetchMeters())
       }
-      const body={propertyId,...(activeLease.source==='room_contract'?{roomContractId:leaseId}:{leaseId}),period,otherAmount,otherLabel:otherLabel.trim()||'ค่าอื่น ๆ'}
+      const body={propertyId,...(activeLease.source==='room_contract'?{roomContractId:leaseId}:{leaseId}),period,otherAmount:normalize(otherAmount),otherLabel:otherLabel.trim()||'ค่าอื่น ๆ'}
       const result=await request<{id:string}>('/api/v2/bills',body,stableKey(billReplay,body))
       billReplay.current=null
       setReview(false);setNotice('ออกบิลเรียบร้อย เลขอ้างอิง '+result.id.slice(0,8))
