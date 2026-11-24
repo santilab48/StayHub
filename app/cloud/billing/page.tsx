@@ -121,7 +121,7 @@ export default function CloudBillingPage(){
   const prior=(type:MeterType)=>meterState?.previous.find(m=>m.meter_type===type)
   const requiredMeter=(type:MeterType)=>activeLease?.source==='room_contract'&&Number(activeLease[type])>0
   const hasInput=(type:MeterType)=>meterDraft[type].end.trim()!==''
-  const isDecimal=(s:string,places:number)=>new RegExp('^\\\\d+(\\\\.\\\\d{1,'+places+'})?$').test(s)&&Number.isFinite(Number(s))
+  const isDecimal=(s:string,places:number)=>/^[0-9]+(?:[.][0-9]+)?$/.test(s)&&Number.isFinite(Number(s))&&(s.split('.')[1]?.length||0)<=places
   const meterAmount=(type:MeterType)=>{
     const saved=existing(type);if(saved)return Number(saved.amount)
     const d=meterDraft[type]
