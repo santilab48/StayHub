@@ -86,7 +86,7 @@ export default function RoomsPage(){
     {!rooms.length?<p>ยังไม่มีห้องพัก</p>:<div className="list">{rooms.map(r=><div className="row" key={r.id}><div>
      <strong>{r.name}</strong>
      <p className="muted">ผู้พัก {r.occupants}/{r.capacity} · {r.blocked?'ปิดปรับปรุง':r.cleaning?'รอทำความสะอาด':r.occupants?'มีผู้เข้าพัก':'ว่าง'}</p>
-    </div><span className="pill">{r.active?'ใช้งาน':'ปิด'}</span></div>)}</div>}
+    </div><div className="flow"><span className="pill">{r.active?'ใช้งาน':'ปิด'}</span><a className="btn secondary" href={'/cloud/leases?unitId='+encodeURIComponent(r.id)}>สัญญาเช่า</a></div></div>)}</div>}
    </section>
    <section className="card section"><h2>ผู้เข้าพักและประวัติ</h2>
     {!stays.length?<p>ยังไม่มีผู้เข้าพัก <a href="/cloud?tab=residents">ไปสร้าง QR เชิญและอนุมัติผู้เช่า</a></p>:<div className="list">{stays.map(s=><div key={s.stay_id} className="row">
