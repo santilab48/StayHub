@@ -6,6 +6,7 @@ import dashboardStyles from './dashboard.module.css'
 import GuesthouseDashboard from './guesthouse-dashboard'
 type Property={id:string;name:string;property_type:string;role:string}
 type OnboardingScreen='loading'|'choose'|'auth'|'dashboard'|'unavailable'
+const EMAIL_KEY='stayhub_owner_remembered_email_v1'
 const ONBOARDING_KEY='stayhub_owner_preferred_type_v1'
 const typeIcons:Record<AccommodationType,string>={
   apartment:'🏢',guesthouse:'🛎️',daily:'🛏️',homestay:'🏡'
@@ -38,7 +39,7 @@ export default function CloudOwnerPage(){
   const [name,setName]=useState('')
   const [type,setType]=useState<AccommodationType>('apartment')
   const [screen,setScreen]=useState<OnboardingScreen>('loading')
-  const [authMode,setAuthMode]=useState<'register'|'login'>('register')
+  const [authMode,setAuthMode]=useState<'register'|'login'>('login')
   const [properties,setProperties]=useState<Property[]>([])
   const [selected,setSelected]=useState('')
   const [qrUnit,setQrUnit]=useState('')
@@ -53,6 +54,8 @@ export default function CloudOwnerPage(){
     const a=await api('me')
     const p=await api('properties')
     setAccount(a)
+    setEmail(a.email)
+    try{localStorage.setItem(EMAIL_KEY,a.email)}catch{}
     setProperties(p.items)
     setScreen('dashboard')
     // The server's actual property type takes priority over any device draft.
@@ -71,7 +74,10 @@ export default function CloudOwnerPage(){
       const requestedType=entry.get('type')
       const wantsLogin=entry.get('login')==='1'
       let saved:AccommodationType|null=null
+      let remembered=''
       try{
+        remembered=localStorage.getItem(EMAIL_KEY)||''
+        if(remembered)setEmail(remembered)
         const stored=localStorage.getItem(ONBOARDING_KEY)
         if(isAccommodationType(stored))saved=stored
       }catch{}
@@ -79,7 +85,8 @@ export default function CloudOwnerPage(){
         const a=await api('me')
         const p=await api('properties')
         if(!active)return
-        setAccount(a);setProperties(p.items)
+        setAccount(a);setProperties(p.items);setEmail(a.email)
+        try{localStorage.setItem(EMAIL_KEY,a.email)}catch{}
         if(p.items.length && isAccommodationType(p.items[0].property_type)){
           setType(p.items[0].property_type)
           try{localStorage.setItem(ONBOARDING_KEY,p.items[0].property_type)}catch{}
@@ -98,9 +105,9 @@ export default function CloudOwnerPage(){
         if(isAccommodationType(requestedType)){
           setType(requestedType)
           try{localStorage.setItem(ONBOARDING_KEY,requestedType)}catch{}
-          setAuthMode('register')
+          setAuthMode('login')
           setScreen('auth')
-        }else if(wantsLogin||isTenantReturn){
+        }else if(wantsLogin||isTenantReturn||remembered){
           if(saved)setType(saved)
           setAuthMode('login')
           setScreen('auth')
@@ -116,11 +123,11 @@ export default function CloudOwnerPage(){
   function chooseType(next:AccommodationType){
     setType(next)
     try{localStorage.setItem(ONBOARDING_KEY,next)}catch{}
-    setAuthMode('register')
+    setAuthMode('login')
     setScreen('auth')
   }
   async function run(fn:()=>Promise<void>){setBusy(true);setMessage('');try{await fn()}catch(e){setMessage(e instanceof Error?e.message:'เกิดข้อผิดพลาด')}finally{setBusy(false)}}
-  async function sign(e:{preventDefault:()=>void},action:'register'|'login'){e.preventDefault();await run(async()=>{await api(action,{email,password});setPassword('');setShowPassword(false);await load();setMessage('เข้าสู่ระบบสำเร็จ');const target=new URLSearchParams(window.location.search).get('return');if(target?.startsWith('/join?token='))window.location.assign(target)})}
+  async function sign(e:{preventDefault:()=>void},action:'register'|'login'){e.preventDefault();await run(async()=>{await api(action,{email,password});try{localStorage.setItem(EMAIL_KEY,email.trim().toLowerCase())}catch{};setPassword('');setShowPassword(false);await load();setMessage('เข้าสู่ระบบสำเร็จ');const target=new URLSearchParams(window.location.search).get('return');if(target?.startsWith('/join?token='))window.location.assign(target)})}
   async function create(e:FormEvent){e.preventDefault();await run(async()=>{if(properties.some(p=>['owner','admin'].includes(p.role)))throw Error('หนึ่งสมาชิกสามารถจัดการที่พักได้หนึ่งแห่ง');const p=await api('property',{name,type});await load();setSelected(p.id);setMessage('สร้างที่พักแล้ว');await loadUnits(p.id);await loadInvites(p.id)})}
   async function loadUnits(id:string){const r=await fetch('/api/v2/units?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setUnits(data.items)}
   async function loadInvites(id:string){const r=await fetch('/api/v2/invites?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setInvites(data.items)}

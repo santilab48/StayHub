@@ -23,9 +23,9 @@ export async function verifyPassword(password:string,stored:string){
 }
 export async function issueSession(accountId:string){
   const raw=newToken()
-  await postgresQuery('INSERT INTO stayhub.sessions(account_id,token_hash,expires_at) VALUES($1,$2,now()+interval \'14 days\')',[accountId,hashToken(raw)])
+  await postgresQuery('INSERT INTO stayhub.sessions(account_id,token_hash,expires_at) VALUES($1,$2,now()+interval \'30 days\')',[accountId,hashToken(raw)])
   const jar=await cookies()
-  jar.set(COOKIE,raw,{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax',path:'/',maxAge:14*86400})
+  jar.set(COOKIE,raw,{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax',path:'/',maxAge:30*86400})
 }
 export async function accountFromSession(tenantOnly=false){
   const raw=(await cookies()).get(COOKIE)?.value

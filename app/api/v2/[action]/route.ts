@@ -1,4 +1,5 @@
 import {NextRequest,NextResponse} from 'next/server'
+import {parseRoomDetails} from '../../../../lib/room-details'
 import {postgresQuery,withPostgresTransaction} from '../../../../lib/db/postgres'
 import {accountFromSession,checkOrigin,hashPassword,hashToken,issueSession,newToken,stagingAuthEnabled,verifyPassword} from '../../../../lib/cloud-identity'
 import QRCode from 'qrcode'
@@ -70,6 +71,12 @@ export async function GET(req:NextRequest,{params}:Params){
         JOIN stayhub.properties p ON p.id=r.property_id
         LEFT JOIN stayhub.units u ON u.id=r.unit_id AND u.property_id=r.property_id
         WHERE r.account_id=$1 ORDER BY r.created_at DESC LIMIT 50`,[account.id])
+      return reply({items:r.rows})
+    }
+    if(action==='guesthouse-rooms'){
+      const propertyId=req.nextUrl.searchParams.get('propertyId')
+      if(!validId(propertyId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
+      const r=await postgresQuery(`SELECT u.id,u.room_details,u.capacity FROM stayhub.units u JOIN stayhub.properties p ON p.id=u.property_id WHERE u.property_id=$1 AND p.property_type='guesthouse' ORDER BY u.name LIMIT 500`,[propertyId])
       return reply({items:r.rows})
     }
     if(action==='occupancy'){
@@ -196,6 +203,30 @@ export async function POST(req:NextRequest,{params}:Params){
       return reply({id},201)
     }
     const propertyId=body.propertyId
+    if(action==='guesthouse-room-save'){
+      if(!validId(propertyId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
+      const name=typeof body.name==='string'?body.name.trim():''
+      const details=parseRoomDetails(body.details)
+      const unitId=body.unitId
+      if(!name||name.length>80||!details||(unitId!==undefined&&!validId(unitId))||typeof body.active!=='boolean')return reply({error:'Invalid room details'},400)
+      const result=await withPostgresTransaction(async client=>{
+        const p=await client.query("SELECT id FROM stayhub.properties WHERE id=$1 AND property_type='guesthouse' FOR UPDATE",[propertyId])
+        if(!p.rowCount)return null
+        if(unitId===undefined){
+          const r=await client.query('INSERT INTO stayhub.units(property_id,name,capacity,active,room_details) VALUES($1,$2,$3,$4,$5::jsonb) RETURNING id',[propertyId,name,details.capacity,body.active,JSON.stringify(details)])
+          return r.rows[0]
+        }
+        const locked=await client.query('SELECT id FROM stayhub.units WHERE id=$1 AND property_id=$2 FOR UPDATE',[unitId,propertyId])
+        if(!locked.rowCount)return null
+        const usage=await client.query(`SELECT (SELECT count(*)::int FROM stayhub.stays WHERE property_id=$1 AND unit_id=$2 AND (ends_at IS NULL OR ends_at>now())) AS occupants, EXISTS(SELECT 1 FROM stayhub.reservations WHERE property_id=$1 AND unit_id=$2 AND status IN ('confirmed','checked_in') AND departure_date>(now() AT TIME ZONE 'Asia/Bangkok')::date) AS reserved`,[propertyId,unitId])
+        if(usage.rows[0].occupants>details.capacity||(!body.active&&(usage.rows[0].occupants||usage.rows[0].reserved)))return {conflict:true}
+        const r=await client.query('UPDATE stayhub.units SET name=$3,capacity=$4,active=$5,room_details=$6::jsonb WHERE id=$1 AND property_id=$2 RETURNING id',[unitId,propertyId,name,details.capacity,body.active,JSON.stringify(details)])
+        return r.rows[0]
+      })
+      if(!result)return reply({error:'Guesthouse room not found'},404)
+      if(result.conflict)return reply({error:'ห้องมีผู้เข้าพักหรือการจองอยู่'},409)
+      return reply(result,unitId===undefined?201:200)
+    }
     if(action==='unit'){
       if(!validId(propertyId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
       const name=typeof body.name==='string'?body.name.trim():''
