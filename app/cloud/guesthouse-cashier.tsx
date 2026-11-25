@@ -4,10 +4,11 @@ import {calculateCashBill,type CashReceipt,type ExtraCharge} from '../../lib/cas
 import styles from './guesthouse.module.css'
 import {printCashReceipt} from './print-cash-receipt'
 type Booking={id:string;unit_name:string;arrival_date:string;departure_date:string;status:string;total_amount:string|null;booking_details?:{guestName:string}|null}
-const KEY='stayhub_guesthouse_cash_receipts_v1'
+const BASE_KEY='stayhub_guesthouse_cash_receipts_v1'
 const money=(n:number)=>n.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2})
 export default function GuesthouseCashier({property,bookings,preview,onSettled}:{property:{id:string;name:string};bookings:Booking[];preview:boolean;onSettled:(id:string)=>Promise<void>}){
  const receiptRef=useRef<HTMLDivElement>(null)
+ const KEY=BASE_KEY+(property.id==='preview'?'':':'+property.id)
  const [items,setItems]=useState<CashReceipt[]>([]),[id,setId]=useState(''),[extras,setExtras]=useState<ExtraCharge[]>([]),[deposit,setDeposit]=useState(0),[discount,setDiscount]=useState(0),[method,setMethod]=useState('cash'),[paid,setPaid]=useState(false),[receipt,setReceipt]=useState<CashReceipt|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[ready,setReady]=useState(false),[paper,setPaper]=useState('A5')
  useEffect(()=>{let live=true;async function load(){try{if(preview){const x=JSON.parse(localStorage.getItem(KEY)||'[]');if(live)setItems(Array.isArray(x)?x:[])}else{const r=await fetch('/api/v2/guesthouse-cash-receipts?propertyId='+encodeURIComponent(property.id),{cache:'no-store'});const d=await r.json();if(!r.ok)throw Error(d.error);if(live)setItems(d.items)}if(live)setReady(true)}catch{if(live)setError('โหลดประวัติบิลไม่สำเร็จ')}}void load();return()=>{live=false}},[property.id,preview])
  const choices=bookings.filter(b=>['checked_in','checked_out'].includes(b.status)&&b.total_amount!==null)

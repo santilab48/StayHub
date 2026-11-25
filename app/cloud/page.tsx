@@ -142,7 +142,7 @@ export default function CloudOwnerPage(){
     return()=>{active=false}
   },[managedId])
   async function loadRequests(id:string){await run(async()=>{const r=await fetch('/api/v2/requests?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setRequests(data.items)})}
-  if(screen==='dashboard'&&account&&managedProperty?.property_type==='guesthouse')return <GuesthouseDashboard property={managedProperty} onLogout={()=>void run(async()=>{await api('logout',{});setAccount(null);setProperties([]);setSelected('');setInvite(null);setDashboardTab('property');setScreen('auth');setAuthMode('login')})} logoutBusy={busy} logoutError={message}/>
+  if(screen==='dashboard'&&account&&managedProperty&&isAccommodationType(managedProperty.property_type)&&accommodationTypes[managedProperty.property_type].booking)return <GuesthouseDashboard property={managedProperty} onLogout={()=>void run(async()=>{await api('logout',{});setAccount(null);setProperties([]);setSelected('');setInvite(null);setDashboardTab('property');setScreen('auth');setAuthMode('login')})} logoutBusy={busy} logoutError={message}/>
   return <main className={screen==='choose'?'wrap ownerEntryPage ownerDarkEntry':screen==='auth'?authStyles.shell:screen==='dashboard'?dashboardStyles.shell:'wrap'} style={{maxWidth:screen==='auth'||screen==='dashboard'?undefined:screen==='choose'?1240:900}}>
 
     {screen==='loading'&&<section className="card section" aria-live="polite"><p>กำลังตรวจสอบบัญชีของคุณ...</p></section>}

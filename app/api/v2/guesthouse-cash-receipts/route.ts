@@ -6,7 +6,7 @@ import {calculateCashBill} from '../../../../lib/cash-receipt'
 export const dynamic='force-dynamic'
 const reply=(x:unknown,status=200)=>NextResponse.json(x,{status,headers:{'Cache-Control':'no-store'}})
 const uuid=(v:unknown):v is string=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)
-async function authorized(id:string,p:string){return (await postgresQuery(`SELECT 1 FROM stayhub.property_memberships m JOIN stayhub.properties p ON p.id=m.property_id WHERE m.account_id=$1 AND m.property_id=$2 AND m.role IN ('owner','admin') AND p.property_type='guesthouse'`,[id,p])).rowCount===1}
+async function authorized(id:string,p:string){return (await postgresQuery(`SELECT 1 FROM stayhub.property_memberships m JOIN stayhub.properties p ON p.id=m.property_id WHERE m.account_id=$1 AND m.property_id=$2 AND m.role IN ('owner','admin') AND p.property_type IN ('guesthouse','daily','homestay')`,[id,p])).rowCount===1}
 export async function GET(req:NextRequest){
  if(!stagingAuthEnabled())return reply({error:'Not enabled'},503)
  const a=await accountFromSession();if(!a)return reply({error:'Please sign in'},401)
@@ -26,7 +26,7 @@ export async function POST(req:NextRequest){
  const seed=await client.query('SELECT unit_id FROM stayhub.reservations WHERE id=$1 AND property_id=$2',[d.reservationId,d.propertyId])
  if(!seed.rowCount)return null
  await client.query('SELECT id FROM stayhub.units WHERE id=$1 AND property_id=$2 FOR UPDATE',[seed.rows[0].unit_id,d.propertyId])
- const r=await client.query(`SELECT r.id,r.unit_id,r.status,r.total_amount,r.booking_details,r.arrival_date::text AS arrival,r.departure_date::text AS departure,u.name AS room_name,p.name AS property_name FROM stayhub.reservations r JOIN stayhub.units u ON u.id=r.unit_id AND u.property_id=r.property_id JOIN stayhub.properties p ON p.id=r.property_id WHERE r.id=$1 AND r.property_id=$2 AND p.property_type='guesthouse' FOR UPDATE OF r`,[d.reservationId,d.propertyId])
+ const r=await client.query(`SELECT r.id,r.unit_id,r.status,r.total_amount,r.booking_details,r.arrival_date::text AS arrival,r.departure_date::text AS departure,u.name AS room_name,p.name AS property_name FROM stayhub.reservations r JOIN stayhub.units u ON u.id=r.unit_id AND u.property_id=r.property_id JOIN stayhub.properties p ON p.id=r.property_id WHERE r.id=$1 AND r.property_id=$2 AND p.property_type IN ('guesthouse','daily','homestay') FOR UPDATE OF r`,[d.reservationId,d.propertyId])
  const b=r.rows[0];if(!b||b.unit_id!==seed.rows[0].unit_id||!['checked_in','checked_out'].includes(b.status)||b.total_amount===null)return null
  const bill=calculateCashBill(Number(b.total_amount),d.extras,d.deposit,d.discount);if(!bill)return null
  const snapshot={...bill,property_name:b.property_name,room_name:b.room_name,guest_name:b.booking_details?.guestName||'',arrival:b.arrival,departure:b.departure,method:d.method}

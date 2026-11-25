@@ -76,7 +76,7 @@ export async function GET(req:NextRequest,{params}:Params){
     if(action==='guesthouse-rooms'){
       const propertyId=req.nextUrl.searchParams.get('propertyId')
       if(!validId(propertyId)||!await ownerHasProperty(account.id,propertyId))return reply({error:'Forbidden'},403)
-      const r=await postgresQuery(`SELECT u.id,u.room_details,u.capacity FROM stayhub.units u JOIN stayhub.properties p ON p.id=u.property_id WHERE u.property_id=$1 AND p.property_type='guesthouse' ORDER BY u.name LIMIT 500`,[propertyId])
+      const r=await postgresQuery(`SELECT u.id,u.room_details,u.capacity FROM stayhub.units u JOIN stayhub.properties p ON p.id=u.property_id WHERE u.property_id=$1 AND p.property_type IN ('guesthouse','daily','homestay') ORDER BY u.name LIMIT 500`,[propertyId])
       return reply({items:r.rows})
     }
     if(action==='occupancy'){
@@ -210,7 +210,7 @@ export async function POST(req:NextRequest,{params}:Params){
       const unitId=body.unitId
       if(!name||name.length>80||!details||(unitId!==undefined&&!validId(unitId))||typeof body.active!=='boolean')return reply({error:'Invalid room details'},400)
       const result=await withPostgresTransaction(async client=>{
-        const p=await client.query("SELECT id FROM stayhub.properties WHERE id=$1 AND property_type='guesthouse' FOR UPDATE",[propertyId])
+        const p=await client.query("SELECT id FROM stayhub.properties WHERE id=$1 AND property_type IN ('guesthouse','daily','homestay') FOR UPDATE",[propertyId])
         if(!p.rowCount)return null
         if(unitId===undefined){
           const r=await client.query('INSERT INTO stayhub.units(property_id,name,capacity,active,room_details) VALUES($1,$2,$3,$4,$5::jsonb) RETURNING id',[propertyId,name,details.capacity,body.active,JSON.stringify(details)])
@@ -223,7 +223,7 @@ export async function POST(req:NextRequest,{params}:Params){
         const r=await client.query('UPDATE stayhub.units SET name=$3,capacity=$4,active=$5,room_details=$6::jsonb WHERE id=$1 AND property_id=$2 RETURNING id',[unitId,propertyId,name,details.capacity,body.active,JSON.stringify(details)])
         return r.rows[0]
       })
-      if(!result)return reply({error:'Guesthouse room not found'},404)
+      if(!result)return reply({error:'Nightly room not found'},404)
       if(result.conflict)return reply({error:'ห้องมีผู้เข้าพักหรือการจองอยู่'},409)
       return reply(result,unitId===undefined?201:200)
     }
