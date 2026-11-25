@@ -7,16 +7,16 @@ export const adConfig={
   firstEntryLive:false,
 } as const
 
-// The three reviewed uploads are display banners. Never accept a URL from a
-// tenant, a property, a query string or a network response.
-export const bannerSources={
-  // hta-code-7659305.txt — left Zone IDs 7659305–7659309
-  content:'https://shameful-farm.com/bZXzVfs.d/GAlL0VYmWbco/ZeImT9su/ZzUFl/k_PXT/c/2yNdTLk/zHMZD/U/tHNYz_YT1fONTNMnw/OdQX',
-  // hta-code-7659321.txt — right Zone IDs 7659321–7659325
-  right:'https://shameful-farm.com/bGXcV/s.d/GGl/0RY/WHcL/zeSmP9DuZZ/U/lEkmPiTZc/2CN/TfkzzuM/jzEctRNSzjYM1hOMTcM/yRNDQm',
-  // hta-code-7659337.txt — bottom Zone IDs 7659337–7659341
-  bottom:'https://shameful-farm.com/bNXoVUsfd.GElN0/YBWRcs/Xe/mZ9Uu/ZWUtl/kPPOTmcw2/NcTokQzAM-z-cwtWNwzOYK1BOSTFMC0/MiQZ',
-} as const
+// Only the provider host used in the reviewed Zone files is allowed. Zone
+// scripts are configured by the staging service, never by a property or user.
+export function validatedBannerUrl(raw:unknown):string|null{
+  if(typeof raw!=='string'||raw.length>512)return null
+  try{
+    const u=new URL(raw)
+    if(u.protocol!=='https:'||u.hostname!=='shameful-farm.com'||u.port||u.username||u.password||u.search||u.hash||u.pathname==='/')return null
+    return u.href
+  }catch{return null}
+}
 
 /** Reserved server-side names for future provider URL rotation. */
 export const bannerEnvironmentKeys={

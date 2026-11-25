@@ -42,7 +42,7 @@ try{
     }
     await page.locator('[data-ad-slot="bottom"]').scrollIntoViewIfNeeded()
     await page.locator('[data-ad-slot="bottom"] iframe').waitFor()
-    assert.deepEqual(await page.locator('[data-ad-slot="bottom"] iframe').evaluate(e=>[e.width,e.height]),['300','100'])
+    assert.deepEqual(await page.locator('[data-ad-slot="bottom"] iframe').evaluate(e=>[e.width,e.height]),['300','250'])
    }
    if(path==='/preview/guesthouse'&&width===1920)await page.screenshot({path:'/tmp/stayhub-shared-ads-desktop.png',fullPage:true})
    if(path==='/preview/guesthouse'&&width===390){await page.locator('[data-ad-slot="bottom"]').scrollIntoViewIfNeeded();await page.locator('[data-ad-slot="bottom"] iframe').waitFor();await page.screenshot({path:'/tmp/stayhub-shared-ads-mobile.png',fullPage:true})}
