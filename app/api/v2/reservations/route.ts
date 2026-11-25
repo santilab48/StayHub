@@ -156,8 +156,8 @@ export async function POST(req:NextRequest){
         const blocked=await client.query(`SELECT 1 FROM stayhub.unit_blocks
           WHERE property_id=$1 AND unit_id=$2 AND starts_at<=now() AND ends_at>now() LIMIT 1`,[propertyId,item.unit_id])
         if(blocked.rowCount)return {status:'blocked'}
-        const cleaning=await client.query(`SELECT 1 FROM stayhub.housekeeping_tasks
-          WHERE property_id=$1 AND unit_id=$2 AND status IN ('pending','in_progress') LIMIT 1`,[propertyId,item.unit_id])
+        const cleaning=await client.query(`SELECT 1 FROM stayhub.housekeeping_tasks h JOIN stayhub.properties p ON p.id=h.property_id
+          WHERE h.property_id=$1 AND h.unit_id=$2 AND h.status IN ('pending','in_progress') AND p.property_type<>'guesthouse' LIMIT 1`,[propertyId,item.unit_id])
         if(cleaning.rowCount)return {status:'cleaning'}
         const occupancy=await client.query<{n:number;capacity:number}>(`
           SELECT (SELECT count(*)::integer FROM stayhub.stays

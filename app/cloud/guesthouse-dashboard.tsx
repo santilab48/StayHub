@@ -62,7 +62,7 @@ export default function GuesthouseDashboard({property,onLogout,logoutBusy,logout
  },[property.id])
  useEffect(()=>{if(preview){const t=today();try{const saved=JSON.parse(localStorage.getItem(PREVIEW_ROOMS_KEY)||'null');setRooms(Array.isArray(saved)?saved:demoRooms)}catch{setRooms(demoRooms)};const defaults:Booking[]=[{id:'demo-b1',unit_id:'demo-0',unit_name:'101',arrival_date:shift(t,-1),departure_date:shift(t,3),status:'checked_in',total_amount:'2400'},{id:'demo-b2',unit_id:'demo-1',unit_name:'102',arrival_date:t,departure_date:shift(t,5),status:'confirmed',total_amount:'3500'},{id:'demo-b3',unit_id:'demo-2',unit_name:'103',arrival_date:shift(t,6),departure_date:shift(t,11),status:'confirmed',total_amount:'4500'}];try{const saved=localStorage.getItem(PREVIEW_BOOKINGS_KEY);const parsed=saved?JSON.parse(saved):null;setBookings(Array.isArray(parsed)?parsed:defaults)}catch{setBookings(defaults)}setLoading(false);return}setLoading(true);void load().catch(e=>setError(e.message)).finally(()=>setLoading(false))},[load,preview])
  async function act(task:()=>Promise<void>){if(preview||busy)return;setBusy(true);setError('');setNotice('');try{await task();await load()}catch(e){setError(e instanceof Error?e.message:'ดำเนินการไม่สำเร็จ')}finally{setBusy(false)}}
- const now=today(),active=rooms.filter(r=>r.active),occupied=active.filter(r=>r.occupants>0),available=active.filter(r=>!r.occupants&&!r.reserved&&!r.cleaning&&!r.blocked&&!bookings.some(b=>b.unit_id===r.id&&['confirmed','checked_in'].includes(b.status)&&dateOnly(b.arrival_date)<=now&&dateOnly(b.departure_date)>now)),arrivals=bookings.filter(b=>b.status==='confirmed'&&dateOnly(b.arrival_date)===now),departures=bookings.filter(b=>b.status==='checked_in'&&dateOnly(b.departure_date)<=now)
+ const now=today(),active=rooms.filter(r=>r.active),occupied=active.filter(r=>r.occupants>0),available=active.filter(r=>!r.occupants&&!r.reserved&&!r.blocked&&!bookings.some(b=>b.unit_id===r.id&&['confirmed','checked_in'].includes(b.status)&&dateOnly(b.arrival_date)<=now&&dateOnly(b.departure_date)>now)),arrivals=bookings.filter(b=>b.status==='confirmed'&&dateOnly(b.arrival_date)===now),departures=bookings.filter(b=>b.status==='checked_in'&&dateOnly(b.departure_date)<=now)
  const months=[month,moveMonth(month,1)].map(start=>({start,days:Array.from({length:(Date.parse(moveMonth(start,1))-Date.parse(start))/86400000},(_,i)=>shift(start,i))}))
  const days=months.flatMap(m=>m.days)
  const calendarRef=useRef<HTMLDivElement>(null)
@@ -73,8 +73,8 @@ export default function GuesthouseDashboard({property,onLogout,logoutBusy,logout
 
  const bookedValue=bookings.filter(b=>!['cancelled','no_show'].includes(b.status)&&b.total_amount!==null).reduce((n,b)=>n+Number(b.total_amount),0)
  const metrics=[{label:'ห้องว่าง',value:available.length,kind:'green'},{label:'กำลังเข้าพัก',value:occupied.length,kind:'blue'},{label:'เช็กอินวันนี้',value:arrivals.length,kind:'orange'},{label:'เช็กเอาต์วันนี้ / เกินกำหนด',value:departures.length,kind:'plain'}]
- const roomStatus=(r:Room)=>!r.active?'ปิดใช้งาน':r.blocked?'ปิดซ่อม':r.cleaning?'ทำความสะอาด':r.occupants?'เข้าพัก':r.reserved?'จองแล้ว':'ว่าง'
- const roomTone=(r:Room)=>!r.active||r.blocked?'blocked':r.cleaning?'cleaning':r.occupants?'occupied':r.reserved?'reserved':'available'
+ const roomStatus=(r:Room)=>!r.active?'ปิดใช้งาน':r.blocked?'ปิดซ่อม':r.occupants?'เข้าพัก':r.reserved?'จองแล้ว':'ว่าง'
+ const roomTone=(r:Room)=>!r.active||r.blocked?'blocked':r.occupants?'occupied':r.reserved?'reserved':'available'
  function chooseRoom(id:string){setUnitId(id);const rate=rooms.find(r=>r.id===id)?.room_details?.nightlyRate;if(rate!==undefined)updateGuest('nightlyRate',rate)}
  function saveRoom(e:FormEvent){e.preventDefault();setError('');setNotice('');const name=roomName.trim(),details=parseRoomDetails(roomDetails)
   if(!name||!details){setError('กรุณาตรวจสอบรายละเอียดห้อง');return}
@@ -95,7 +95,7 @@ export default function GuesthouseDashboard({property,onLogout,logoutBusy,logout
    setError('');setNotice('')
    const parsed=parseBookingDetails(guest,nights),room=rooms.find(r=>r.id===unitId&&r.active)
    if(!parsed||!room||arrival<today()||departure<=arrival){setError('กรุณาตรวจสอบข้อมูลผู้จอง ห้องพัก วันที่และราคา');return}
-   if(room.blocked||room.cleaning){setError('ห้องไม่พร้อมให้จอง');return}
+   if(room.blocked){setError('ห้องไม่พร้อมให้จอง');return}
    if(bookings.some(b=>b.unit_id===unitId&&['confirmed','checked_in'].includes(b.status)&&dateOnly(b.arrival_date)<departure&&dateOnly(b.departure_date)>arrival)){setError('ห้องนี้ถูกจองในช่วงวันที่เลือกแล้ว กรุณาเลือกห้องหรือวันใหม่');return}
    // Preview is intentionally browser-local. Do not persist contact information.
    const details={...parsed.details,phone:'',email:'',notes:''}
@@ -108,12 +108,21 @@ export default function GuesthouseDashboard({property,onLogout,logoutBusy,logout
   const payload=JSON.stringify(body);if(pendingKey.current?.payload!==payload)pendingKey.current={payload,key:crypto.randomUUID()}
   await request('reservations',body,pendingKey.current.key);pendingKey.current=null;setGuest(v=>({...v,guestName:'',phone:'',email:'',notes:''}));setNotice('บันทึกการจองแล้ว')
  })}
+ async function settleBooking(id:string){
+  if(!preview){await load();return}
+  const b=bookings.find(x=>x.id===id)
+  if(!b||b.status!=='checked_in')return
+  const next=bookings.map(x=>x.id===id?{...x,status:'checked_out',actualCheckOut:new Date().toISOString()}:x)
+  const nextRooms=rooms.map(r=>r.id===b.unit_id?{...r,occupants:Math.max(0,r.occupants-1),reserved:next.some(x=>x.unit_id===r.id&&x.status==='confirmed'&&dateOnly(x.arrival_date)<=now&&dateOnly(x.departure_date)>now),cleaning:r.occupants<=1?true:r.cleaning}:r)
+  localStorage.setItem(PREVIEW_BOOKINGS_KEY,JSON.stringify(next));localStorage.setItem(PREVIEW_ROOMS_KEY,JSON.stringify(nextRooms))
+  setBookings(next);setRooms(nextRooms)
+ }
  function changeBooking(b:Booking,action:'cancel'|'check-in'|'check-out'){
   if(preview){
    setError('');setNotice('')
    const current=bookings.find(x=>x.id===b.id),room=rooms.find(r=>r.id===b.unit_id)
    if(!current||!room){setError('ไม่พบรายการจองหรือห้องพัก');return}
-   if(action==='check-in'&&(current.status!=='confirmed'||dateOnly(current.arrival_date)>now||dateOnly(current.departure_date)<=now||!room.active||room.blocked||room.cleaning||room.occupants>0)){setError('ห้องยังไม่พร้อม หรืออยู่นอกช่วงวันเข้าพัก');return}
+   if(action==='check-in'&&(current.status!=='confirmed'||dateOnly(current.arrival_date)>now||dateOnly(current.departure_date)<=now||!room.active||room.blocked||room.occupants>0)){setError('ห้องยังไม่พร้อม หรืออยู่นอกช่วงวันเข้าพัก');return}
    if(action==='check-out'&&current.status!=='checked_in'){setError('รายการนี้ยังไม่ได้เช็กอิน');return}
    if(action==='cancel'&&current.status!=='confirmed'){setError('ไม่สามารถยกเลิกรายการนี้');return}
    if(!window.confirm(action==='check-in'?'ยืนยันเช็กอิน?':action==='check-out'?'ยืนยันเช็กเอาต์?':'ยืนยันยกเลิกการจอง?'))return
@@ -122,7 +131,7 @@ export default function GuesthouseDashboard({property,onLogout,logoutBusy,logout
    const next=bookings.map(x=>x.id===b.id?{...x,status,...(action==='check-in'?{actualCheckIn:timestamp}:action==='check-out'?{actualCheckOut:timestamp}:{})}:x)
    const nextRooms=rooms.map(r=>r.id===room.id?{...r,occupants:action==='check-in'?1:action==='check-out'?0:r.occupants,reserved:next.some(x=>x.unit_id===r.id&&x.status==='confirmed'&&dateOnly(x.arrival_date)<=now&&dateOnly(x.departure_date)>now),cleaning:action==='check-out'?true:r.cleaning}:r)
    try{localStorage.setItem(PREVIEW_BOOKINGS_KEY,JSON.stringify(next));localStorage.setItem(PREVIEW_ROOMS_KEY,JSON.stringify(nextRooms))}catch{setError('ไม่สามารถบันทึกข้อมูลตัวอย่างได้');return}
-   setBookings(next);setRooms(nextRooms);setNotice(action==='check-in'?'เช็กอินตัวอย่างสำเร็จ':action==='check-out'?'เช็กเอาต์ตัวอย่างสำเร็จ · ห้องรอทำความสะอาด':'ยกเลิกการจองตัวอย่างแล้ว');return
+   setBookings(next);setRooms(nextRooms);setNotice(action==='check-in'?'เช็กอินตัวอย่างสำเร็จ':action==='check-out'?'เช็กเอาต์ตัวอย่างสำเร็จ · ห้องพร้อมรับจอง':'ยกเลิกการจองตัวอย่างแล้ว');return
   }
   if(action!=='check-in'&&!window.confirm(action==='cancel'?'ยืนยันยกเลิกการจอง?':'ยืนยันเช็กเอาต์?'))return
   void act(async()=>{await request('reservations',{action,propertyId:property.id,reservationId:b.id,...(action==='check-in'?{joinRequestId:joinIds[b.id]}:{})});setNotice('บันทึกสถานะแล้ว')})
@@ -179,7 +188,7 @@ export default function GuesthouseDashboard({property,onLogout,logoutBusy,logout
    const match=arrivalTab==='waiting'?b.status==='confirmed'&&dateOnly(b.arrival_date)<=now&&dateOnly(b.departure_date)>now:arrivalTab==='staying'?b.status==='checked_in':arrivalTab==='departing'?b.status==='checked_in'&&dateOnly(b.departure_date)<=now:['checked_out','cancelled','no_show'].includes(b.status)
    return match&&(!stayDate||dateOnly(b.arrival_date)<=stayDate&&dateOnly(b.departure_date)>=stayDate)&&(!staySearch.trim()||[b.unit_name,b.booking_details?.guestName||''].some(x=>x.toLowerCase().includes(staySearch.trim().toLowerCase())))
   }))}</section><section className={styles.panel}><h2>ห้องรอทำความสะอาด</h2>{rooms.filter(r=>r.cleaning).length?<div className={styles.roomGrid}>{rooms.filter(r=>r.cleaning).map(r=><article className={styles.room} key={r.id}><strong>{r.name}</strong><span className={styles.cleaning}>รอทำความสะอาด</span>{preview&&<button type="button" className={styles.secondary} onClick={()=>{const next=rooms.map(x=>x.id===r.id?{...x,cleaning:false}:x);try{localStorage.setItem(PREVIEW_ROOMS_KEY,JSON.stringify(next));setRooms(next);setNotice('ทำความสะอาดห้องตัวอย่างเสร็จแล้ว')}catch{setError('บันทึกไม่สำเร็จ')}}}>ทำความสะอาดเสร็จ</button>}</article>)}</div>:<p className={styles.muted}>ไม่มีห้องรอทำความสะอาด</p>}</section></>}
-  {tab==='finance'&&<GuesthouseCashier property={property} bookings={bookings} preview={preview}/>}
+  {tab==='finance'&&<GuesthouseCashier property={property} bookings={bookings} preview={preview} onSettled={settleBooking}/>}
   {tab==='reports'&&<section className={styles.panel}><h2>ภาพรวมจากรายการที่โหลด</h2><div className={styles.metrics}>{metrics.map(m=><div className={styles.metric} key={m.label}><span>{m.label}</span><strong>{loading?'—':m.value}</strong></div>)}</div><p className={styles.muted}>รายการจองล่าสุดสูงสุด 300 รายการ · ไม่ใช่รายงานรายได้จากการรับชำระ</p></section>}
   {tab==='settings'&&<section className={styles.panel}><h2>ข้อมูลที่พัก</h2><p><strong>{property.name}</strong></p><p>ประเภท: เกสต์เฮาส์ · รายคืน</p>{!preview&&<div className={styles.actions}><a className={styles.link} href="/membership">สถานะสมาชิก</a><a className={styles.link} href="/cloud/repairs">งานแจ้งซ่อม</a></div>}</section>}
   <footer className={styles.footer}>StayHub Guesthouse · {property.name}</footer>
