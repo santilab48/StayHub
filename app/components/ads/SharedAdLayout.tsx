@@ -2,7 +2,7 @@
 import {useEffect,useState,type ReactNode} from 'react'
 import {adConfig} from '../../../lib/ad-config'
 import ContentBanner from './ContentBanner'
-import InPagePush from './InPagePush'
+import RightBanner from './RightBanner'
 import BottomBanner from './BottomBanner'
 import css from './ads.module.css'
 
@@ -12,7 +12,7 @@ export default function SharedAdLayout({children,enabled=true}:{children:ReactNo
   const [wide,setWide]=useState(false)
   const [dialogOpen,setDialogOpen]=useState(false)
   useEffect(()=>{
-    const width=window.matchMedia('(min-width: 1600px)')
+    const width=window.matchMedia('(min-width: 1280px)')
     const update=()=>{setOnline(navigator.onLine);setWide(width.matches)}
     const checkDialog=()=>setDialogOpen(Boolean(document.querySelector('dialog[open],[role="dialog"],[aria-modal="true"]')))
     update();checkDialog()
@@ -27,7 +27,7 @@ export default function SharedAdLayout({children,enabled=true}:{children:ReactNo
   return <div className={css.layout} data-shared-ad-layout="mock">
     {wide&&<aside className={css.left} aria-label="โฆษณาด้านซ้าย"><ContentBanner/></aside>}
     <div className={css.main}>{children}</div>
-    {wide&&<aside className={css.right} aria-label="โฆษณาด้านขวา"><InPagePush/></aside>}
+    {wide&&<aside className={css.right} aria-label="โฆษณาด้านขวา"><RightBanner/></aside>}
     <aside className={css.bottom} aria-label="โฆษณาด้านล่าง"><BottomBanner/></aside>
   </div>
 }
