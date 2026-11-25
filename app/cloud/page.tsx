@@ -4,6 +4,7 @@ import {accommodationTypes,isAccommodationType,type AccommodationType} from '../
 import authStyles from './auth.module.css'
 import dashboardStyles from './dashboard.module.css'
 import GuesthouseDashboard from './guesthouse-dashboard'
+import SharedAdLayout from '../components/ads/SharedAdLayout'
 type Property={id:string;name:string;property_type:string;role:string}
 type OnboardingScreen='loading'|'choose'|'auth'|'dashboard'|'unavailable'
 const EMAIL_KEY='stayhub_owner_remembered_email_v1'
@@ -143,7 +144,7 @@ export default function CloudOwnerPage(){
   },[managedId])
   async function loadRequests(id:string){await run(async()=>{const r=await fetch('/api/v2/requests?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setRequests(data.items)})}
   if(screen==='dashboard'&&account&&managedProperty&&isAccommodationType(managedProperty.property_type)&&accommodationTypes[managedProperty.property_type].booking)return <GuesthouseDashboard property={managedProperty} onLogout={()=>void run(async()=>{await api('logout',{});setAccount(null);setProperties([]);setSelected('');setInvite(null);setDashboardTab('property');setScreen('auth');setAuthMode('login')})} logoutBusy={busy} logoutError={message}/>
-  return <main className={screen==='choose'?'wrap ownerEntryPage ownerDarkEntry':screen==='auth'?authStyles.shell:screen==='dashboard'?dashboardStyles.shell:'wrap'} style={{maxWidth:screen==='auth'||screen==='dashboard'?undefined:screen==='choose'?1240:900}}>
+  return <SharedAdLayout enabled={screen==='dashboard'}><main className={screen==='choose'?'wrap ownerEntryPage ownerDarkEntry':screen==='auth'?authStyles.shell:screen==='dashboard'?dashboardStyles.shell:'wrap'} style={{maxWidth:screen==='auth'||screen==='dashboard'?undefined:screen==='choose'?1240:900}}>
 
     {screen==='loading'&&<section className="card section" aria-live="polite"><p>กำลังตรวจสอบบัญชีของคุณ...</p></section>}
     {screen==='unavailable'&&<section className="card section" role="alert"><h2>ระบบบัญชียังไม่พร้อมใช้งาน</h2><p>ไม่สามารถตรวจสอบเซสชันหรือการเชื่อมต่อเซิร์ฟเวอร์ได้ โปรดลองใหม่ภายหลัง</p><button type="button" className="btn secondary" onClick={()=>window.location.reload()}>ลองใหม่</button></section>}
@@ -257,5 +258,5 @@ export default function CloudOwnerPage(){
       </div>
     </div>}
     {message&&<p role="status" className={screen==='auth'?authStyles.message:screen==='dashboard'?dashboardStyles.message:'card'}>{message}</p>}
-  </main>
+  </main></SharedAdLayout>
 }
