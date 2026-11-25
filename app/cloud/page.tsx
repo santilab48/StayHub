@@ -137,7 +137,7 @@ export default function CloudOwnerPage(){
   async function loadRequests(id:string){await run(async()=>{const r=await fetch('/api/v2/requests?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setRequests(data.items)})}
   if(screen==='dashboard'&&account&&managedProperty?.property_type==='guesthouse')return <GuesthouseDashboard property={managedProperty} onLogout={()=>void run(async()=>{await api('logout',{});setAccount(null);setProperties([]);setSelected('');setInvite(null);setDashboardTab('property');setScreen('auth');setAuthMode('login')})} logoutBusy={busy} logoutError={message}/>
   return <main className={screen==='choose'?'wrap ownerEntryPage ownerDarkEntry':screen==='auth'?authStyles.shell:screen==='dashboard'?dashboardStyles.shell:'wrap'} style={{maxWidth:screen==='auth'||screen==='dashboard'?undefined:screen==='choose'?1240:900}}>
-    {screen==='dashboard'?null:screen==='auth'?<a className={authStyles.homeLink} href="/" aria-label="กลับหน้าแรก">หน้าแรก</a>:<a className="ownerBackLink" href="/">กลับหน้าเลือกประเภทที่พัก</a>}
+
     {screen==='loading'&&<section className="card section" aria-live="polite"><p>กำลังตรวจสอบบัญชีของคุณ...</p></section>}
     {screen==='unavailable'&&<section className="card section" role="alert"><h2>ระบบบัญชียังไม่พร้อมใช้งาน</h2><p>ไม่สามารถตรวจสอบเซสชันหรือการเชื่อมต่อเซิร์ฟเวอร์ได้ โปรดลองใหม่ภายหลัง</p><button type="button" className="btn secondary" onClick={()=>window.location.reload()}>ลองใหม่</button></section>}
     {screen==='choose'&&<section className="card section">
@@ -178,7 +178,7 @@ export default function CloudOwnerPage(){
     </section>}
     {screen==='dashboard'&&account&&<div className={dashboardStyles.workspace}>
       <header className={dashboardStyles.header}>
-        <div><a href="/" className={dashboardStyles.brand}>StayHub <span>Cloud</span></a><p className={dashboardStyles.subtitle}>พื้นที่จัดการที่พักของคุณ</p></div>
+        <div><div className={dashboardStyles.brand}>StayHub <span>Cloud</span></div><p className={dashboardStyles.subtitle}>พื้นที่จัดการที่พักของคุณ</p></div>
         <div className={dashboardStyles.account}><span>{properties.find(p=>p.role==='owner')?.name||properties.find(p=>p.role==='admin')?.name||account.email}</span><button type="button" className={dashboardStyles.logout} disabled={busy} onClick={()=>void run(async()=>{await api('logout',{});setAccount(null);setProperties([]);setSelected('');setInvite(null);setDashboardTab('property');setScreen('auth');setAuthMode('login')})}>ออกจากระบบ</button></div>
       </header>
       <nav className={dashboardStyles.tabs} aria-label="หมวดจัดการที่พัก"><button key="property" type="button" className={dashboardStyles.tab} aria-pressed={dashboardTab==='property'} onClick={()=>setDashboardTab('property')}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M5 21V5l7-3 7 3v16M9 9h1m4 0h1M9 13h1m4 0h1M10 21v-4h4v4"/></svg><span>ที่พัก</span></button>

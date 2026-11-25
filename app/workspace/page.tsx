@@ -103,7 +103,7 @@ export default function WorkspacePage() {
   }
 
   return <main className="wrap" style={{ maxWidth: 980 }}>
-    <div className="toolbar"><a href="/" className="muted">StayHub</a><span className="pill">{online ? 'ออนไลน์' : 'ออฟไลน์'}</span></div>
+    <div className="toolbar"><span className="muted">StayHub</span><span className="pill">{online ? 'ออนไลน์' : 'ออฟไลน์'}</span></div>
     {loading ? <section className="card">กำลังเปิดพื้นที่ใช้งาน...</section> : !workspace ?
       <section className="card"><h1>ยังไม่มีพื้นที่ใช้งาน</h1><a className="btn" href="/start">เริ่มต้นใช้งาน</a></section> : <>
         <section className="card"><a href="/workspace/backup">ข้อมูลและการสำรอง</a><h1>{workspace.dormName}</h1><p className="muted">{accommodationLabel(workspace.accommodationType)} · ผู้ดูแล {workspace.ownerName}</p><span className="pill">บันทึกในเครื่อง</span></section>

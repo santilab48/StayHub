@@ -22,7 +22,7 @@ export default function StartPage(){
     }catch(e){setError(e instanceof Error?e.message:'บันทึกข้อมูลไม่ได้')}finally{setSaving(false)}
   }
   return <main className="wrap" style={{maxWidth:680}}>
-    <a href="/" className="muted">← StayHub</a>
+    <span className="muted">StayHub</span>
     <section className="card section">
       <span className="badge">เริ่มต้นใช้งาน</span>
       <h1>สร้างพื้นที่ที่พักของคุณ</h1>
