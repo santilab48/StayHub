@@ -35,3 +35,5 @@
 .legend{color:#aabbd0}.legendToday{background:#ffb36b}.selection{background:#202b3e;border:1px solid #46566d;color:#f4f8ff}
 .available,.occupied{background:#24483e;color:#b9f5da}.reserved{background:#263f65;color:#c4dcff}.cleaning{background:#503b23;color:#ffdda0}.blocked,.error{background:#502d3a;color:#ffc0c9}.notice{background:#24483e;color:#b9f5da}.shell :focus-visible{outline:2px solid #ffbf90;outline-offset:2px}
 @media(max-width:700px){.panel{padding:20px}.metric,.room{padding:15px}}
+
+.formSection{grid-column:1/-1;margin:8px 0 0}.shell textarea{background:#101a2a;color:#f4f8ff;border:1px solid #46566d;border-radius:12px;padding:12px;font:inherit;width:100%;resize:vertical}.shell input[readonly]{background:#202b3e;color:#ffb36b}

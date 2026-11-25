@@ -2,6 +2,7 @@ import {NextRequest,NextResponse} from 'next/server'
 import {accountFromSession,checkOrigin,stagingAuthEnabled} from '../../../../lib/cloud-identity'
 import {postgresQuery,withPostgresTransaction} from '../../../../lib/db/postgres'
 import {endStay} from '../../../../lib/stay-lifecycle'
+import {parseBookingDetails} from '../../../../lib/booking-details'
 
 export const dynamic='force-dynamic'
 const reply=(value:unknown,status=200)=>NextResponse.json(value,{status,headers:{'Cache-Control':'no-store'}})
@@ -17,15 +18,15 @@ async function canManage(accountId:string,propertyId:string){
     [accountId,propertyId])
   return r.rowCount===1
 }
-async function preflight(client:import('pg').PoolClient,propertyId:string,unitId:string,arrival:string,departure:string){
+async function preflight(client:import('pg').PoolClient,propertyId:string,unitId:string,arrival:string,departure:string,checkInTime:string,checkOutTime:string){
   const locked=await client.query(`SELECT id FROM stayhub.units
     WHERE property_id=$1 AND id=$2 AND active=true FOR UPDATE`,[propertyId,unitId])
   if(!locked.rowCount)return 'invalid_unit'
   const b=await client.query(`SELECT 1 FROM stayhub.unit_blocks
     WHERE property_id=$1 AND unit_id=$2
-      AND starts_at < ($4::date + time '12:00') AT TIME ZONE 'Asia/Bangkok'
-      AND ends_at > ($3::date + time '12:00') AT TIME ZONE 'Asia/Bangkok'
-    LIMIT 1`,[propertyId,unitId,arrival,departure])
+      AND starts_at < ($4::date + $6::time) AT TIME ZONE 'Asia/Bangkok'
+      AND ends_at > ($3::date + $5::time) AT TIME ZONE 'Asia/Bangkok'
+    LIMIT 1`,[propertyId,unitId,arrival,departure,checkInTime,checkOutTime])
   if(b.rowCount)return 'blocked'
   // Until reservation-backed check-in is built, never allocate rooms with an
   // active stay; this conservative rule prevents double-booking.
@@ -48,7 +49,7 @@ export async function GET(req:NextRequest){
   const propertyId=req.nextUrl.searchParams.get('propertyId')
   if(!uuid(propertyId)||!await canManage(account.id,propertyId))return reply({error:'Forbidden'},403)
   const r=await postgresQuery(`SELECT r.id,r.unit_id,u.name AS unit_name,
-    r.arrival_date,r.departure_date,r.status,r.total_amount,r.created_at,st.id AS stay_id
+    r.arrival_date,r.departure_date,r.status,r.total_amount,r.created_at,r.booking_details,st.id AS stay_id
     FROM stayhub.reservations r JOIN stayhub.units u ON u.id=r.unit_id AND u.property_id=r.property_id
     LEFT JOIN stayhub.stays st ON st.reservation_id=r.id AND st.property_id=r.property_id
     WHERE r.property_id=$1 ORDER BY r.arrival_date DESC LIMIT 300`,[propertyId])
@@ -79,29 +80,32 @@ export async function POST(req:NextRequest){
       const idempotency=req.headers.get('idempotency-key')
       if(!idempotency||idempotency.length>120||!/^[-\w]{12,120}$/.test(idempotency))
         return reply({error:'Idempotency-Key header required (12–120 safe characters)'},400)
-      const amount=data.amount
+      const parsed=data.details===undefined?null:parseBookingDetails(data.details,nights)
+      if(data.details!==undefined&&!parsed)return reply({error:'Invalid booking details'},400)
+      const details=parsed?.details??null
+      const amount=parsed?parsed.total:data.amount
       if(amount!==undefined&&amount!==null&&(
         typeof amount!=='number'||!Number.isFinite(amount)||amount<0||amount>100000000
       ))return reply({error:'Invalid total'},400)
       const result=await withPostgresTransaction(async client=>{
-        const existing=await client.query(`SELECT id,unit_id,arrival_date,departure_date,total_amount,status
+        const existing=await client.query(`SELECT id,unit_id,arrival_date,departure_date,total_amount,status,booking_details
           FROM stayhub.reservations WHERE property_id=$1 AND idempotency_key=$2 FOR UPDATE`,
           [propertyId,idempotency])
         if(existing.rowCount)return {status:'existing',item:existing.rows[0]}
-        const check=await preflight(client,propertyId,unitId,arrival,departure)
+        const check=await preflight(client,propertyId,unitId,arrival,departure,details?.checkInTime??'12:00',details?.checkOutTime??'12:00')
         if(check!=='ok'){
           // When an identical request races the first insert, the unit lock
           // makes its committed idempotency record visible now.
-          const replay=await client.query(`SELECT id,unit_id,arrival_date,departure_date,total_amount,status
+          const replay=await client.query(`SELECT id,unit_id,arrival_date,departure_date,total_amount,status,booking_details
             FROM stayhub.reservations WHERE property_id=$1 AND idempotency_key=$2`,
             [propertyId,idempotency])
           if(replay.rowCount)return {status:'existing',item:replay.rows[0]}
           return {status:check}
         }
         const created=await client.query(`INSERT INTO stayhub.reservations
-          (property_id,unit_id,arrival_date,departure_date,status,total_amount,idempotency_key)
-          VALUES($1,$2,$3,$4,'confirmed',$5,$6) RETURNING id`,
-          [propertyId,unitId,arrival,departure,amount??null,idempotency])
+          (property_id,unit_id,arrival_date,departure_date,status,total_amount,idempotency_key,booking_details)
+          VALUES($1,$2,$3,$4,'confirmed',$5,$6,$7::jsonb) RETURNING id`,
+          [propertyId,unitId,arrival,departure,amount??null,idempotency,details===null?null:JSON.stringify(details)])
         return {status:'created',id:created.rows[0].id}
       })
       if(result.status==='existing'){
@@ -109,7 +113,8 @@ export async function POST(req:NextRequest){
         if(previous.unit_id!==unitId||
            new Date(previous.arrival_date as string).toISOString().slice(0,10)!==arrival||
            new Date(previous.departure_date as string).toISOString().slice(0,10)!==departure||
-           (previous.total_amount===null?null:Number(previous.total_amount))!==(amount??null))
+           (previous.total_amount===null?null:Number(previous.total_amount))!==(amount??null)||
+           (details===null?previous.booking_details!==null:(!previous.booking_details||Object.entries(details).some(([k,v])=>previous.booking_details[k]!==v))))
           return reply({error:'Idempotency key reused with different reservation'},409)
         return reply({id:previous.id,status:previous.status,replayed:true})
       }
