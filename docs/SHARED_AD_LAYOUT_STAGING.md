@@ -1,14 +1,14 @@
 # StayHub Shared Ad Layout — staging mock verification
 
-The owner dashboard for apartment, guesthouse, daily and homestay uses one shared layout. The staging environment ID enables **mock creatives only** at build time. Production and all live ad flags remain disabled. No HilltopAds URL, external script, customer data, session or token is sent to a creative.
+The owner dashboard for apartment, guesthouse, daily and homestay uses one shared layout. The staging environment ID enables mock creatives. Three fixed banner URLs are now integrated behind disabled live flags and a server-side all-ages approval gate. No customer data, session or token is sent to a creative.
 
 ## Placement and behavior
 
-- From 1600px, the layout mounts a 300×250 left mock and a 300×300 right mock. At 1840px and above the main column caps at 1200px with symmetric side gutters.
+- From 1600px, the layout mounts 300×250 left and right banners at native size. At 1840px and above the main column caps at 1200px with symmetric side gutters.
 - Below 1600px, side components are not mounted. The 300×100 bottom mock is available on desktop and mobile.
-- Each creative is a sandboxed `srcDoc` iframe with a restrictive CSP and no scripts. IntersectionObserver delays iframe mounting until the slot nears the viewport.
+- Each creative is a sandboxed `srcDoc` iframe with a restrictive CSP. The mock uses only an isolated origin probe. IntersectionObserver delays iframe mounting until the slot nears the viewport.
 - Offline, open dialogs, disabled mock mode and print mode remove or hide the ad layout without reserving side gutters. Login, registration, QR entry and printable documents never mount this layout.
-- No live provider script is configured. Domain approval, zone approval, creative content policy and provider behavior in a sandbox remain unverified.
+- The user reports staging domain and zone approval for Website 932445. Provider console verification, all-ages category controls and live creative behavior in a sandbox remain unverified; live flags and the all-ages gate stay off.
 
 ## Isolated verification
 

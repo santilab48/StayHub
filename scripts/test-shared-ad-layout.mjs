@@ -12,7 +12,9 @@ try{
  const context=await browser.newContext({baseURL:base})
  const page=await context.newPage()
  const errors=[]
+ const vendorRequests=[]
  page.on('pageerror',error=>errors.push(error.message))
+ page.on('request',request=>{if(request.url().includes('shameful-farm.com'))vendorRequests.push(request.url())})
  for(const path of paths){
   for(const width of widths){
    await page.setViewportSize({width,height:900})
@@ -20,7 +22,7 @@ try{
    const layout=page.locator('[data-shared-ad-layout="mock"]')
    await layout.waitFor()
    const sides=page.locator('[data-ad-slot="content"], [data-ad-slot="right"]')
-   assert.equal(await sides.count(),width>=1280?2:0,`${path} ${width}: side mount`)
+   assert.equal(await sides.count(),width>=1600?2:0,`${path} ${width}: side mount`)
    assert.equal(await page.locator('[data-ad-slot="bottom"]').count(),1)
    await page.locator('[data-ad-slot="bottom"]').scrollIntoViewIfNeeded()
    const bottomFrame=page.locator('[data-ad-slot="bottom"] iframe');await bottomFrame.waitFor()
@@ -30,13 +32,13 @@ try{
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,`${path} ${width}: horizontal overflow`)
    if(width===1920){
     const rect=await layout.evaluate(el=>{const x=el.getBoundingClientRect();const m=el.querySelector('[class*=main]')?.getBoundingClientRect();return {left:m?.left-x.left,right:x.right-(m?.right||0),main:m?.width}})
-    assert.ok(rect.main>=1200)
+    assert.equal(rect.main,1200)
     assert.ok(Math.abs(rect.left-rect.right)<=1,`${path}: symmetric gutters`)
     const sides=page.locator('[data-ad-slot="content"] iframe,[data-ad-slot="right"] iframe')
     await sides.first().waitFor();await sides.last().waitFor()
     assert.deepEqual(await sides.evaluateAll(els=>els.map(e=>[e.width,e.height])),[['300','250'],['300','250']])
     for(const frame of await sides.all()){
-     const box=await frame.boundingBox();assert.ok(box&&Math.abs(box.width-180)<=1&&Math.abs(box.height-150)<=1)
+     const box=await frame.boundingBox();assert.ok(box&&Math.abs(box.width-300)<=1&&Math.abs(box.height-250)<=1)
     }
     await page.locator('[data-ad-slot="bottom"]').scrollIntoViewIfNeeded()
     await page.locator('[data-ad-slot="bottom"] iframe').waitFor()
@@ -83,5 +85,6 @@ try{
   assert.equal(await page.locator('[data-ad-slot="content"]').count(),1,`apartment tab ${i}`)
  }
  assert.deepEqual(errors,[],'browser JavaScript errors')
+ assert.deepEqual(vendorRequests,[],'mock mode makes no vendor requests')
  console.log('PASS shared ads: apartment, guesthouse, daily, homestay; nine widths; print, offline, dialog, login, no script errors')
 }finally{await browser.close()}
