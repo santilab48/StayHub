@@ -22,7 +22,7 @@ try{
    const layout=page.locator('[data-shared-ad-layout="mock"]')
    await layout.waitFor()
    const sides=page.locator('[data-ad-slot="content"], [data-ad-slot="right"]')
-   assert.equal(await sides.count(),width>=1600?2:0,`${path} ${width}: side mount`)
+   assert.equal(await sides.count(),width>=1280?2:0,`${path} ${width}: side mount`)
    assert.equal(await page.locator('[data-ad-slot="bottom"]').count(),1)
    await page.locator('[data-ad-slot="bottom"]').scrollIntoViewIfNeeded()
    const bottomFrame=page.locator('[data-ad-slot="bottom"] iframe');await bottomFrame.waitFor()
@@ -38,7 +38,7 @@ try{
     await sides.first().waitFor();await sides.last().waitFor()
     assert.deepEqual(await sides.evaluateAll(els=>els.map(e=>[e.width,e.height])),[['300','250'],['300','250']])
     for(const frame of await sides.all()){
-     const box=await frame.boundingBox();assert.ok(box&&Math.abs(box.width-300)<=1&&Math.abs(box.height-250)<=1)
+     const box=await frame.boundingBox();assert.ok(box&&Math.abs(box.width-180)<=1&&Math.abs(box.height-150)<=1)
     }
     await page.locator('[data-ad-slot="bottom"]').scrollIntoViewIfNeeded()
     await page.locator('[data-ad-slot="bottom"] iframe').waitFor()

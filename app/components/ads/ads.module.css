@@ -3,6 +3,16 @@
 .left,.right{display:none;min-width:0}
 .bottom{grid-column:1;display:flex;justify-content:center;min-width:0;padding:18px 12px 28px}
 .frame{margin-inline:auto;overflow:visible}.iframe{display:block;border:0;max-width:100%;border-radius:16px}
-@media(min-width:1600px){.layout[data-side-ads="true"]{grid-template-columns:300px minmax(0,1200px) 300px}.left,.right{display:block;position:sticky;top:16px;grid-row:1;margin-top:16px}.left{grid-column:1}.right{grid-column:3}.layout[data-side-ads="true"] .main{grid-column:2}.layout[data-side-ads="true"] .bottom{grid-column:1/-1}}
-@media(max-width:1599px){.left,.right{display:none!important}}
+@media(min-width:1280px){
+  .layout[data-side-ads="both"]{grid-template-columns:180px minmax(0,1200px) 180px}
+  .layout[data-side-ads="left"]{grid-template-columns:180px minmax(0,1200px)}
+  .layout[data-side-ads="right"]{grid-template-columns:minmax(0,1200px) 180px}
+  .left,.right{display:block;position:sticky;top:16px;grid-row:1;margin-top:16px}
+  .left{grid-column:1}
+  .layout[data-side-ads="both"] .right{grid-column:3}
+  .layout[data-side-ads="right"] .right{grid-column:2}
+  .layout[data-side-ads="both"] .main,.layout[data-side-ads="left"] .main{grid-column:2}
+  .bottom{grid-column:1/-1}
+}
+@media(max-width:1279px){.left,.right{display:none!important}}
 @media print{.layout{display:block;background:transparent;padding:0;overflow:visible}.left,.right,.bottom{display:none!important}.main{width:100%;max-width:none}}

@@ -7,13 +7,23 @@ export const adConfig={
   firstEntryLive:false,
 } as const
 
-// Only the provider host used in the reviewed Zone files is allowed. Zone
-// scripts are configured by the staging service, never by a property or user.
-export function validatedBannerUrl(raw:unknown):string|null{
+export const defaultBannerHosts=['shameful-farm.com'] as const
+
+/** Exact provider hosts configured by the operator; wildcards and IPs are refused. */
+export function providerHosts(raw:unknown):string[]{
+  if(raw===undefined||raw==='')return [...defaultBannerHosts]
+  if(typeof raw!=='string'||raw.length>512)return []
+  const hosts=raw.split(',').map(x=>x.trim().toLowerCase())
+  if(hosts.length<1||hosts.length>8||hosts.some(x=>!/^([a-z0-9-]+\.)+[a-z]{2,}$/.test(x)))return []
+  return [...new Set(hosts)]
+}
+
+// Zone scripts are configured by the staging service, never by a property or user.
+export function validatedBannerUrl(raw:unknown,allowedHosts:readonly string[]=defaultBannerHosts):string|null{
   if(typeof raw!=='string'||raw.length>512)return null
   try{
     const u=new URL(raw)
-    if(u.protocol!=='https:'||u.hostname!=='shameful-farm.com'||u.port||u.username||u.password||u.search||u.hash||u.pathname==='/')return null
+    if(u.protocol!=='https:'||!allowedHosts.includes(u.hostname)||u.port||u.username||u.password||u.search||u.hash||u.pathname==='/')return null
     return u.href
   }catch{return null}
 }

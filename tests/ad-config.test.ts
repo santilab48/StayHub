@@ -1,6 +1,6 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
-import {validatedBannerUrl} from '../lib/ad-config'
+import {providerHosts,validatedBannerUrl} from '../lib/ad-config'
 
 test('banner URL accepts only HTTPS on the reviewed provider host',()=>{
   assert.equal(validatedBannerUrl('https://shameful-farm.com/reviewed-zone'),'https://shameful-farm.com/reviewed-zone')
@@ -13,4 +13,13 @@ test('banner URL accepts only HTTPS on the reviewed provider host',()=>{
     'javascript:alert(1)',
     '',
   ])assert.equal(validatedBannerUrl(value),null,value)
+})
+
+test('an operator can allow multiple exact provider hosts',()=>{
+  const hosts=providerHosts('shameful-farm.com,ads.reviewed.example')
+  assert.deepEqual(hosts,['shameful-farm.com','ads.reviewed.example'])
+  assert.equal(validatedBannerUrl('https://ads.reviewed.example/banner',hosts),'https://ads.reviewed.example/banner')
+  assert.equal(validatedBannerUrl('https://other.reviewed.example/banner',hosts),null)
+  assert.deepEqual(providerHosts('*.reviewed.example'),[])
+  assert.deepEqual(providerHosts('localhost'),[])
 })
