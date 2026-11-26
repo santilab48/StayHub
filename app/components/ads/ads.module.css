@@ -3,6 +3,7 @@
 .left,.right{display:none;min-width:0}
 .bottom{grid-column:1;display:flex;justify-content:center;min-width:0;padding:18px 12px 28px}
 .frame{margin-inline:auto;overflow:visible}.iframe{display:block;border:0;max-width:100%;border-radius:16px}
+.label{display:block;color:#b7c8de;font-size:11px;line-height:16px;text-align:center}
 @media(min-width:1280px){
   .layout[data-side-ads="both"]{grid-template-columns:180px minmax(0,1200px) 180px}
   .layout[data-side-ads="left"]{grid-template-columns:180px minmax(0,1200px)}

@@ -1,18 +1,18 @@
 'use client'
 import {useCallback,useEffect,useState,type ReactNode} from 'react'
-import {adConfig,providerHosts,validatedBannerUrl} from '../../../lib/ad-config'
 import ContentBanner from './ContentBanner'
 import RightBanner from './RightBanner'
 import BottomBanner from './BottomBanner'
+import AdsenseFrame from './AdsenseFrame'
 import css from './ads.module.css'
 
 export default function SharedAdLayout({children,enabled=true}:{children:ReactNode;enabled?:boolean}){
   const [online,setOnline]=useState(false)
   const [runtimeMock,setRuntimeMock]=useState(false)
   const [runtimeLive,setRuntimeLive]=useState(false)
-  const [hosts,setHosts]=useState<string[]>([])
+  const [adsense,setAdsense]=useState(false)
+  const [adsenseSlots,setAdsenseSlots]=useState({left:null as string|null,right:null as string|null,bottom:null as string|null})
   const [slots,setSlots]=useState({left:true,right:true,bottom:true})
-  const [urls,setUrls]=useState<{content:string|null;right:string|null;bottom:string|null}>({content:null,right:null,bottom:null})
   const [failed,setFailed]=useState<string[]>([])
   const [wide,setWide]=useState(false)
   const [dialogOpen,setDialogOpen]=useState(false)
@@ -23,14 +23,11 @@ export default function SharedAdLayout({children,enabled=true}:{children:ReactNo
     update();checkDialog()
     setRuntimeMock(document.documentElement.dataset.adMock==='true')
     setRuntimeLive(document.documentElement.dataset.adLive==='true')
-    const allowed=providerHosts(document.documentElement.dataset.adHosts)
-    setHosts(allowed)
+    setAdsense(document.documentElement.dataset.adProvider==='adsense')
+    setAdsenseSlots({left:document.documentElement.dataset.adsenseLeftSlot??null,right:document.documentElement.dataset.adsenseRightSlot??null,bottom:document.documentElement.dataset.adsenseBottomSlot??null})
     setSlots({left:document.documentElement.dataset.adEnableLeft!=='false',
       right:document.documentElement.dataset.adEnableRight!=='false',
       bottom:document.documentElement.dataset.adEnableBottom!=='false'})
-    setUrls({content:validatedBannerUrl(document.documentElement.dataset.adLeftUrl,allowed),
-      right:validatedBannerUrl(document.documentElement.dataset.adRightUrl,allowed),
-      bottom:validatedBannerUrl(document.documentElement.dataset.adBottomUrl,allowed)})
     width.addEventListener('change',update)
     window.addEventListener('online',update);window.addEventListener('offline',update)
     const observer=new MutationObserver(checkDialog)
@@ -38,18 +35,18 @@ export default function SharedAdLayout({children,enabled=true}:{children:ReactNo
     return()=>{width.removeEventListener('change',update);window.removeEventListener('online',update);window.removeEventListener('offline',update);observer.disconnect()}
   },[])
   const onFailed=useCallback((kind:'content'|'right'|'bottom')=>setFailed(old=>old.includes(kind)?old:[...old,kind]),[])
-  const mock=runtimeMock||adConfig.mock
-  const contentLive=runtimeLive&&adConfig.contentLive&&!!urls.content
-  const rightLive=runtimeLive&&adConfig.rightLive&&!!urls.right
-  const bottomLive=runtimeLive&&adConfig.bottomLive&&!!urls.bottom
+  const mock=runtimeMock
+  const contentLive=adsense&&runtimeLive&&!!adsenseSlots.left
+  const rightLive=adsense&&runtimeLive&&!!adsenseSlots.right
+  const bottomLive=adsense&&runtimeLive&&!!adsenseSlots.bottom
   const left=wide&&slots.left&&(mock||contentLive)&&!failed.includes('content')
   const right=wide&&slots.right&&(mock||rightLive)&&!failed.includes('right')
   const bottom=slots.bottom&&(mock||bottomLive)&&!failed.includes('bottom')
   if(!enabled||!online||dialogOpen||(!left&&!right&&!bottom))return <>{children}</>
   return <div className={css.layout} data-shared-ad-layout={(left&&contentLive)||(right&&rightLive)||(bottom&&bottomLive)?'live':'mock'} data-side-ads={left&&right?'both':left?'left':right?'right':'none'}>
-    {left&&<aside className={css.left} aria-label="โฆษณาด้านซ้าย"><ContentBanner live={contentLive} url={urls.content??undefined} allowedHosts={hosts} onFailed={onFailed}/></aside>}
+    {left&&<aside className={css.left} aria-label="โฆษณาด้านซ้าย">{contentLive?<AdsenseFrame kind="content" slot={adsenseSlots.left!} onFailed={onFailed}/>:<ContentBanner onFailed={onFailed}/>}</aside>}
     <div className={css.main}>{children}</div>
-    {right&&<aside className={css.right} aria-label="โฆษณาด้านขวา"><RightBanner live={rightLive} url={urls.right??undefined} allowedHosts={hosts} onFailed={onFailed}/></aside>}
-    {bottom&&<aside className={css.bottom} aria-label="โฆษณาด้านล่าง"><BottomBanner live={bottomLive} url={urls.bottom??undefined} allowedHosts={hosts} onFailed={onFailed}/></aside>}
+    {right&&<aside className={css.right} aria-label="โฆษณาด้านขวา">{rightLive?<AdsenseFrame kind="right" slot={adsenseSlots.right!} onFailed={onFailed}/>:<RightBanner onFailed={onFailed}/>}</aside>}
+    {bottom&&<aside className={css.bottom} aria-label="โฆษณาด้านล่าง">{bottomLive?<AdsenseFrame kind="bottom" slot={adsenseSlots.bottom!} onFailed={onFailed}/>:<BottomBanner onFailed={onFailed}/>}</aside>}
   </div>
 }

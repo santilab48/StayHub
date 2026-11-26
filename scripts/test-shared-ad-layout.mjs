@@ -14,7 +14,7 @@ try{
  const errors=[]
  const vendorRequests=[]
  page.on('pageerror',error=>errors.push(error.message))
- page.on('request',request=>{if(request.url().includes('shameful-farm.com'))vendorRequests.push(request.url())})
+ page.on('request',request=>{if(/shameful-farm\.com|googlesyndication\.com|doubleclick\.net/.test(request.url()))vendorRequests.push(request.url())})
  for(const path of paths){
   for(const width of widths){
    await page.setViewportSize({width,height:900})

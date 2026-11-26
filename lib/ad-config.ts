@@ -9,6 +9,11 @@ export const adConfig={
 
 export const defaultBannerHosts=['shameful-farm.com'] as const
 
+export const adsenseClientId='ca-pub-6386708667648997'
+export function validAdsenseSlot(raw:unknown):string|null{
+  return typeof raw==='string'&&/^\d{10}$/.test(raw)?raw:null
+}
+
 /** Exact provider hosts configured by the operator; wildcards and IPs are refused. */
 export function providerHosts(raw:unknown):string[]{
   if(raw===undefined||raw==='')return [...defaultBannerHosts]
