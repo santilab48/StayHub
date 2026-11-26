@@ -13,7 +13,7 @@ if(process.env.CI!=='true'||base!=='http://127.0.0.1:3000'||
     new URL(db).pathname!=='/stayhub_p26_ci')
   throw new Error('REFUSED: receipt/browser PDF audit requires isolated localhost CI database')
 
-const browser=await chromium.launch({headless:true})
+const browser=await chromium.launch({headless:true,...(process.env.STAYHUB_CHROMIUM_PATH?{executablePath:process.env.STAYHUB_CHROMIUM_PATH}:{})})
 const owner=await browser.newContext({baseURL:base,serviceWorkers:'block'})
 const tenant=await browser.newContext({baseURL:base,serviceWorkers:'block'})
 const other=await browser.newContext({baseURL:base,serviceWorkers:'block'})

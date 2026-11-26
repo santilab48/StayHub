@@ -24,7 +24,7 @@ try{
  assert.equal(approval.status(),200)
  const page=await tenant.newPage()
  await page.goto('/my')
- await page.getByRole('link',{name:/เอกสาร/}).waitFor()
+ await page.locator('a[class*="tile"]').filter({hasText:'เอกสาร'}).waitFor()
  const tiles=page.locator('a[class*="tile"]')
  assert.equal(await tiles.count(),6)
  assert.deepEqual(await tiles.locator('strong').allTextContents(),['บิลของฉัน','แจ้งซ่อม','พัสดุ','ประกาศ','รถของห้อง','เอกสาร'])
@@ -36,7 +36,7 @@ try{
   assert.equal(css.color,'rgb(40, 23, 12)')
   assert.ok(css.href.startsWith('/my/'))
  }
- await page.getByRole('link',{name:/เอกสาร/}).click()
+ await page.locator('a[class*="tile"]').filter({hasText:'เอกสาร'}).click()
  await page.getByRole('button',{name:'เปิดสัญญา'}).click()
  assert.equal(await page.locator('article').getByText('ข้อ 15',{exact:false}).count()>0,true)
  assert.equal(await page.getByRole('button',{name:'พิมพ์ / บันทึก PDF'}).count(),1)
