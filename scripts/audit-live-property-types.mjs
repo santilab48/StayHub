@@ -2,18 +2,24 @@
 import assert from 'node:assert/strict'
 import {randomBytes} from 'node:crypto'
 import {chromium} from 'playwright'
+import {PDFDocument} from 'pdf-lib'
 
 const base=process.env.P26_E2E_BASE,raw=process.env.DATABASE_URL
 if(process.env.CI!=='true'||base!=='http://127.0.0.1:3000'||!raw||new URL(raw).hostname!=='127.0.0.1'||new URL(raw).pathname!=='/stayhub_p26_ci')throw Error('Isolated localhost CI only')
 const browser=await chromium.launch({headless:true,...(process.env.STAYHUB_CHROMIUM_PATH?{executablePath:process.env.STAYHUB_CHROMIUM_PATH}:{})})
 const tag=randomBytes(5).toString('hex')
+const propertyTypes=process.env.UI_AUDIT_TYPES==='guesthouse'?['guesthouse']:['guesthouse','daily','homestay']
 try{
- for(const type of ['guesthouse','daily','homestay']){
+ for(const type of propertyTypes){
   const context=await browser.newContext({baseURL:base,viewport:{width:390,height:844}})
   const post=async(path,data)=>{const r=await context.request.post(path,{data,headers:{origin:base}});assert.equal(r.status(),201,`${type} ${path}: ${await r.text()}`);return r.json()}
   await post('/api/v2/register',{email:`audit-${type}-${tag}@example.invalid`,password:'CI-audit-123456'})
   const property=(await post('/api/v2/property',{name:`Audit ${type} ${tag}`,type})).id
   const page=await context.newPage()
+  if(process.env.UI_AUDIT_PRINT==='true')await page.addInitScript(()=>{
+   window.addEventListener('message',e=>{if(e.data?.type==='stayhub-audit-print')window.__auditPrint=e.data.html})
+   window.print=()=>{if(window.parent!==window)window.parent.postMessage({type:'stayhub-audit-print',html:document.documentElement.outerHTML},'*')}
+  })
   page.setDefaultTimeout(20000)
   const errors=[]
   page.on('pageerror',e=>errors.push(e.message))
@@ -127,6 +133,24 @@ try{
   await page.getByRole('button',{name:'ปิด',exact:true}).click()
   await page.getByRole('button',{name:'เปิด / พิมพ์ซ้ำ'}).click()
   await page.getByRole('heading',{name:'ตัวอย่างบิลเงินสด'}).waitFor()
+  if(process.env.UI_AUDIT_PRINT==='true'){
+   for(const [paper,expectedWidth] of [['A4',595.28],['A5',419.53],['80mm',226.77],['58mm',164.41]]){
+    await page.getByRole('combobox',{name:'ขนาดกระดาษ'}).selectOption(paper)
+    await page.evaluate(()=>{window.__auditPrint=null})
+    await page.getByRole('button',{name:'พิมพ์บิล',exact:true}).click()
+    await page.waitForFunction(()=>Boolean(window.__auditPrint))
+    const html=await page.evaluate(()=>window.__auditPrint)
+    const printPage=await context.newPage()
+    await printPage.setContent(html)
+    const pdf=await PDFDocument.load(await printPage.pdf({preferCSSPageSize:true,printBackground:true}))
+    const actualWidth=pdf.getPage(0).getWidth()
+    assert.ok(Math.abs(actualWidth-expectedWidth)<2,`${paper}: expected ${expectedWidth}pt, got ${actualWidth}pt`)
+    assert.equal(await printPage.locator('main').getByText('Checked In Guest').count()>0,true)
+    assert.equal(await printPage.locator('main').evaluate(el=>el.scrollWidth<=el.clientWidth+1),true,`${paper}: receipt content overflow`)
+    await printPage.close()
+    console.log(`PASS cash print ${paper}: ${Math.round(actualWidth)}pt PDF`)
+   }
+  }
   for(const width of [360,390,768,1280,1920]){
    await page.setViewportSize({width,height:850})
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,`${type} ${width}: overflow`)
