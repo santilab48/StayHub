@@ -1,1 +1,2 @@
-export default function Page(){return <main className="wrap"><a href="/">← กลับ</a><div className="card" style={{marginTop:18}}><h1>ข่าวสาร</h1><p className="muted">ประกาศหอพัก กฎระเบียบ น้ำไฟหยุด ซ่อมส่วนกลาง และกิจกรรม</p></div></main>}
+import {redirect} from 'next/navigation'
+export default function Page(){redirect('/my')}

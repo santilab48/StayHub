@@ -1,6 +1,7 @@
 'use client'
 import tenant from '../../tenant.module.css'
 import dashboardStyles from '../../../cloud/dashboard.module.css'
+import TenantTabs from '../../TenantTabs'
 import {useEffect,useState} from 'react'
 import {useParams} from 'next/navigation'
 type Line={label:string;quantity:string;unitRate:string;amount:string}
@@ -10,8 +11,11 @@ export default function ReceiptView(){
  const params=useParams<{billId:string}>()
  const [bill,setBill]=useState<Detail|null>(null)
  const [error,setError]=useState('')
+ const [tabContext,setTabContext]=useState<{propertyId:string;unitId:string}|null>(null)
  useEffect(()=>{let active=true
-  const propertyId=new URLSearchParams(window.location.search).get('propertyId')||''
+  const query=new URLSearchParams(window.location.search)
+  const propertyId=query.get('propertyId')||''
+  if(query.get('unitId'))setTabContext({propertyId,unitId:query.get('unitId')||''})
   if(!propertyId){setError('ไม่พบรหัสที่พัก');return}
   const path='/api/v2/bills/'+encodeURIComponent(params.billId)+'?tenant=1&propertyId='+encodeURIComponent(propertyId)
   void fetch(path,{credentials:'same-origin',cache:'no-store'}).then(async r=>{
@@ -25,6 +29,7 @@ export default function ReceiptView(){
  return <main className={dashboardStyles.detail+' '+tenant.tenantRoot}><div className={dashboardStyles.detailInner}>
   <style>{'@media print{body{background:white!important}.noPrint{display:none!important}.receiptPaper{border:0!important;box-shadow:none!important}.wrap{max-width:none!important;margin:0!important;padding:0!important}}'}</style>
   <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/my">StayHub <span>ผู้เช่า</span></a><a className={dashboardStyles.back} href="/my">กลับหน้าหลัก</a></header>
+  {tabContext&&<TenantTabs {...tabContext} current="billing"/>}
   {error&&<p role="alert" className="card">{error}</p>}
   {!bill&&!error&&<p role="status">กำลังตรวจสอบยอดรับชำระ...</p>}
   {bill&&!paid&&<section className="card"><h1>ยังไม่สามารถออกใบเสร็จได้</h1><p>สถานะบิลยังไม่ชำระครบ</p></section>}
