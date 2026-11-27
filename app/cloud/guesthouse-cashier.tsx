@@ -3,6 +3,7 @@ import {useEffect,useRef,useState} from 'react'
 import {calculateCashBill,type CashReceipt} from '../../lib/cash-receipt'
 import styles from './guesthouse.module.css'
 import {printCashReceipt} from './print-cash-receipt'
+import {userFacingError} from '../../lib/user-facing-error'
 type Booking={id:string;unit_name:string;arrival_date:string;departure_date:string;status:string;total_amount:string|null;booking_details?:{guestName:string}|null}
 const BASE_KEY='stayhub_guesthouse_cash_receipts_v1'
 const money=(n:number)=>n.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2})
@@ -10,7 +11,7 @@ export default function GuesthouseCashier({property,bookings,preview,onSettled}:
  const receiptRef=useRef<HTMLDivElement>(null)
  const KEY=BASE_KEY+(property.id==='preview'?'':':'+property.id)
  const [items,setItems]=useState<CashReceipt[]>([]),[id,setId]=useState(''),[extras,setExtras]=useState<{name:string;amount:string}[]>([]),[deposit,setDeposit]=useState(''),[discount,setDiscount]=useState(''),[method,setMethod]=useState('cash'),[paid,setPaid]=useState(false),[receipt,setReceipt]=useState<CashReceipt|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[ready,setReady]=useState(false),[paper,setPaper]=useState('A5')
- useEffect(()=>{let live=true;async function load(){try{if(preview){const x=JSON.parse(localStorage.getItem(KEY)||'[]');if(live)setItems(Array.isArray(x)?x:[])}else{const r=await fetch('/api/v2/guesthouse-cash-receipts?propertyId='+encodeURIComponent(property.id),{cache:'no-store'});const d=await r.json();if(!r.ok)throw Error(d.error);if(live)setItems(d.items)}if(live)setReady(true)}catch{if(live)setError('โหลดประวัติบิลไม่สำเร็จ')}}void load();return()=>{live=false}},[property.id,preview])
+ useEffect(()=>{let live=true;async function load(){try{if(preview){const x=JSON.parse(localStorage.getItem(KEY)||'[]');if(live)setItems(Array.isArray(x)?x:[])}else{const r=await fetch('/api/v2/guesthouse-cash-receipts?propertyId='+encodeURIComponent(property.id),{cache:'no-store'});const d=await r.json();if(!r.ok)throw Error(userFacingError(d.error));if(live)setItems(d.items)}if(live)setReady(true)}catch{if(live)setError('โหลดประวัติบิลไม่สำเร็จ')}}void load();return()=>{live=false}},[property.id,preview])
  const choices=bookings.filter(b=>['checked_in','checked_out'].includes(b.status)&&b.total_amount!==null)
  const selected=choices.find(b=>b.id===id),numericExtras=extras.map(x=>({...x,amount:Number(x.amount)})),bill=selected?calculateCashBill(Number(selected.total_amount),numericExtras,Number(deposit),Number(discount)):null
  function choose(b:Booking){setId(b.id);setExtras([]);setDeposit('');setDiscount('');setPaid(false);setError('');setReceipt(items.find(x=>x.reservation_id===b.id)||null)}
@@ -18,7 +19,7 @@ export default function GuesthouseCashier({property,bookings,preview,onSettled}:
  if(items.some(x=>x.reservation_id===id))throw Error('ออกบิลแล้ว')
  let x:CashReceipt
  if(preview){x={...bill,id:crypto.randomUUID(),reservation_id:id,number:'DEMO-'+String(items.length+1).padStart(5,'0'),issued_at:new Date().toISOString(),property_name:property.name,room_name:selected.unit_name,guest_name:selected.booking_details?.guestName||'',arrival:selected.arrival_date.slice(0,10),departure:selected.departure_date.slice(0,10),method};localStorage.setItem(KEY,JSON.stringify([x,...items]))}
- else{const r=await fetch('/api/v2/guesthouse-cash-receipts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({propertyId:property.id,reservationId:id,extras:numericExtras,deposit:Number(deposit),discount:Number(discount),method,confirmPaid:true})});const d=await r.json();if(!r.ok)throw Error(d.error);x=d}
+ else{const r=await fetch('/api/v2/guesthouse-cash-receipts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({propertyId:property.id,reservationId:id,extras:numericExtras,deposit:Number(deposit),discount:Number(discount),method,confirmPaid:true})});const d=await r.json();if(!r.ok)throw Error(userFacingError(d.error));x=d}
  setItems(v=>[x,...v]);setReceipt(x);await onSettled(x.reservation_id)
  }catch(e){setError(e instanceof Error?e.message:'ออกบิลไม่สำเร็จ')}finally{setBusy(false)}}
  const methods:Record<string,string>={cash:'เงินสด',transfer:'โอนเงิน',card:'บัตร'}

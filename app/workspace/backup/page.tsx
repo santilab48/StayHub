@@ -69,14 +69,14 @@ export default function BackupPage() {
       {preview && <div><p>สำรองเมื่อ {preview.createdAt} · ห้อง {preview.counts.units ?? 0} · ผู้เช่า {preview.counts.residents ?? 0} · บิล {preview.counts.bills ?? 0} · รวม {preview.totalRecords} รายการ</p>
         <p>ที่พักในไฟล์ {preview.propertyIds.length} แห่ง</p>
         {preview.currentDataIsNewer && <p role="alert">ข้อมูลในเครื่องบางรายการใหม่กว่าไฟล์นี้</p>}
-        <p>การกู้คืนจะแทนที่ข้อมูลในเครื่อง และต้องตรวจการเชื่อมที่พักกับ Server ใหม่ก่อนซิงก์</p>
+        <p>การกู้คืนจะแทนที่ข้อมูลในเครื่อง และต้องตรวจการเชื่อมที่พักกับบัญชีออนไลน์อีกครั้งก่อนซิงก์</p>
         <button disabled={busy} onClick={() => void run(async () => {
           if (!window.confirm('ยืนยันกู้คืนและแทนที่ข้อมูลในเครื่องทั้งหมดหรือไม่')) return
           await restoreBackup(file!, restorePassword, true)
           setPreview(null)
           setMessage('กู้คืนข้อมูลในเครื่องสำเร็จ')
           await refresh()
-        })}>ยืนยัน Restore</button></div>}
+        })}>ยืนยันกู้คืนข้อมูล</button></div>}
     </section>
     <section className="card section"><h2>ดูข้อมูลที่จัดเก็บ</h2>
       <button disabled={busy} onClick={() => void run(refresh)}>อัปเดตจำนวนข้อมูล</button>

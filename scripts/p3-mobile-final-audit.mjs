@@ -8,12 +8,13 @@ import pg from 'pg'
 const base=process.env.P26_E2E_BASE,raw=process.env.DATABASE_URL,phase=process.env.P3_MOBILE_PHASE
 if(process.env.CI!=='true'||base!=='http://127.0.0.1:3000'||!raw||new URL(raw).hostname!=='127.0.0.1'||new URL(raw).pathname!=='/stayhub_p26_ci'||!['before','after'].includes(phase))throw Error('Isolated mobile audit only')
 const sizes=[[320,568],[360,800],[375,812],[390,844],[430,932]]
-const out='docs/screenshots/mobile-final-audit'
+const out=process.env.P42_TEXT_AUDIT==='true'?'/tmp/stayhub-p42-browser':'docs/screenshots/mobile-final-audit'
 mkdirSync(out,{recursive:true})
 const browser=await chromium.launch({headless:true,...(process.env.STAYHUB_CHROMIUM_PATH?{executablePath:process.env.STAYHUB_CHROMIUM_PATH}:{})})
 const sql=new pg.Client({connectionString:raw})
 const tag=randomBytes(5).toString('hex')
 const findings=[]
+const technicalText=/PostgreSQL|Neon|Railway|Database|Migration|Staging|\bAPI\b|\bServer\b|\bDraft\b|\bRestore\b/i
 const post=async(ctx,path,data)=>{const r=await ctx.request.post(path,{data,headers:{origin:base}});assert.equal(r.status(),201,`${path}: ${await r.text()}`);return r.json()}
 const inspect=async(page,where,width)=>{
  const result=await page.evaluate(()=>{
@@ -48,11 +49,13 @@ try{
   await nav.waitFor()
   const roomGrid=page.locator('section[aria-label="สถานะห้องพัก"] [class*="grid"]')
   await roomGrid.waitFor()
-  await page.locator('[data-ad-slot="bottom"][data-ad-mode="mock"]').waitFor()
-  await page.evaluate(()=>{const dialog=document.createElement('div');dialog.setAttribute('role','dialog');dialog.id='p3-audit-dialog';document.body.append(dialog)})
-  await page.locator('[data-ad-slot="bottom"]').waitFor({state:'detached'})
-  await page.locator('#p3-audit-dialog').evaluate(e=>e.remove())
-  await page.locator('[data-ad-slot="bottom"][data-ad-mode="mock"]').waitFor()
+  if(process.env.P42_TEXT_AUDIT!=='true'){
+   await page.locator('[data-ad-slot="bottom"][data-ad-mode="mock"]').waitFor()
+   await page.evaluate(()=>{const dialog=document.createElement('div');dialog.setAttribute('role','dialog');dialog.id='p3-audit-dialog';document.body.append(dialog)})
+   await page.locator('[data-ad-slot="bottom"]').waitFor({state:'detached'})
+   await page.locator('#p3-audit-dialog').evaluate(e=>e.remove())
+   await page.locator('[data-ad-slot="bottom"][data-ad-mode="mock"]').waitFor()
+  }
   assert.equal(await roomGrid.locator('[data-tone]').count(),6)
   const tones=await roomGrid.locator('[data-tone]').evaluateAll(es=>es.map(e=>({name:e.querySelector('strong')?.textContent,tone:e.getAttribute('data-tone'),label:e.querySelector('small')?.textContent})))
   assert.deepEqual(tones.map(x=>x.tone).sort(),['available','occupied','reserved','repair','cleaning','inactive'].sort())
@@ -60,8 +63,9 @@ try{
    await page.setViewportSize({width,height})
    await page.goto(`/cloud?type=${type}`)
    await roomGrid.waitFor()
-   await page.locator('[data-ad-slot="bottom"][data-ad-mode="mock"]').waitFor()
+   if(process.env.P42_TEXT_AUDIT!=='true')await page.locator('[data-ad-slot="bottom"][data-ad-mode="mock"]').waitFor()
    await inspect(page,`${type}:overview`,width)
+   if(process.env.P42_TEXT_AUDIT==='true')assert.doesNotMatch(await page.locator('body').innerText(),technicalText,`${type} overview ${width}`)
    const cards=await roomGrid.locator('[data-tone]').evaluateAll(es=>es.slice(0,3).map(e=>Math.round(e.getBoundingClientRect().top)))
    if(new Set(cards).size!==1)findings.push({where:`${type}:overview`,width,issue:'first three room cards not on one row',cards})
    const bottom=page.locator('[data-ad-slot="bottom"]')
@@ -70,6 +74,7 @@ try{
    for(const tab of await nav.locator('button').all()){
     await tab.click()
     await inspect(page,`${type}:${(await tab.textContent()).trim()}`,width)
+    if(process.env.P42_TEXT_AUDIT==='true')assert.doesNotMatch(await page.locator('body').innerText(),technicalText,`${type} ${(await tab.textContent()).trim()} ${width}`)
    }
    await nav.locator('button').first().click()
   }

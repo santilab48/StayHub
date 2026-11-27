@@ -47,6 +47,7 @@ try{
    await page.unroute('**/api/v2/my-stays?*')
   }
   await page.getByRole('heading',{name:label,exact:true}).waitFor()
+  if(process.env.P42_TEXT_AUDIT==='true')assert.doesNotMatch(await page.locator('body').innerText(),/PostgreSQL|Neon|Railway|Database|Migration|Staging|\bAPI\b|\bServer\b|\bDraft\b|\bRestore\b/i,`tenant ${key}`)
   assert.equal(await page.locator('nav[aria-label="เมนูผู้เช่า"] a[aria-current="page"]').textContent(),label)
   for(const width of mobilePhase?[320,360,375,390,430]:[360,390,768,1280,1920]){
    await page.setViewportSize({width,height:844})
@@ -67,12 +68,14 @@ try{
    await page.getByLabel('รายละเอียด').fill('ตรวจรอยรั่ว')
    await page.getByRole('button',{name:'ส่งคำขอ'}).click()
    await page.getByRole('status').getByText('บันทึกสำเร็จ').waitFor()
+   if(process.env.P42_TEXT_AUDIT==='true')await page.getByText('ส่งเรื่องแล้ว').waitFor()
   }
   if(key==='vehicles'){
    await page.getByLabel('ทะเบียนรถ').fill('กข-1234')
    await page.getByLabel('ประเภทรถ').fill('รถยนต์')
    await page.getByRole('button',{name:'ส่งคำขอ'}).click()
    await page.getByRole('status').getByText('บันทึกสำเร็จ').waitFor()
+   if(process.env.P42_TEXT_AUDIT==='true')await page.getByText('รออนุมัติ').waitFor()
   }
   if(key==='documents'){
    await page.getByRole('button',{name:'เปิดสัญญา'}).click()

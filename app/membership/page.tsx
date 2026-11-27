@@ -50,7 +50,7 @@ export default function MembershipPage(){
   return <main className={dashboardStyles.detail}><div className={dashboardStyles.detailInner}>
     <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/cloud?tab=membership">StayHub <span>Cloud</span></a><a className={dashboardStyles.back} href="/cloud?tab=membership">กลับหน้าจัดการ</a></header>
     <h1>สมาชิกและสิทธิพิเศษ</h1>
-    <p className="muted">ข้อมูลแพ็กเกจและสิทธิพิเศษจัดเก็บใน Neon ส่วนบัญชีและข้อมูลที่พักยังอยู่ใน Railway</p>
+    <p className="muted">ดูแพ็กเกจและสิทธิพิเศษของบัญชีคุณได้ที่นี่</p>
     <section className="card section" aria-live="polite">
       {view==='loading'&&<p role="status">กำลังตรวจสอบสถานะสมาชิก...</p>}
       {view==='signed-out'&&<>

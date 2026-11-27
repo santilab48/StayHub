@@ -1,6 +1,8 @@
 'use client'
 import dashboardStyles from '../dashboard.module.css'
 import {FormEvent,useCallback,useEffect,useRef,useState} from 'react'
+import {userFacingError} from '../../../lib/user-facing-error'
+import {recordStatusLabel} from '../../../lib/record-status-label'
 type Property={id:string;name:string;role:string}
 type Stay={id:string;property_id:string;unit_id:string;property_name:string;unit_name:string}
 type Unit={id:string;name:string}
@@ -12,7 +14,7 @@ const kinds=Object.keys(labels) as Kind[]
 async function api<T>(path:string,body?:Record<string,unknown>):Promise<T>{
  const res=await fetch(path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined})
  const value=await res.json()
- if(!res.ok)throw Error(({ 'Forbidden':'ไม่มีสิทธิ์ทำรายการ','Please sign in':'กรุณาเข้าสู่ระบบ','Invalid settings':'ตรวจสอบราคาและวันครบกำหนด','Invalid announcement':'กรอกข้อมูลประกาศให้ถูกต้อง','Invalid parcel':'ตรวจสอบห้องและข้อมูลพัสดุ','Invalid vehicle':'ตรวจสอบทะเบียนรถและประเภทรถ','Invalid driver':'ตรวจสอบชื่อและเบอร์โทรคนขับ','Invalid ride request':'ตรวจสอบข้อมูลการเรียกรถ','Invalid document':'ตรวจสอบหัวข้อและห้อง','Module unavailable':'โหลดข้อมูลงานบริการไม่สำเร็จ','Module action unavailable':'บันทึกงานบริการไม่สำเร็จ','Parcel not waiting':'พัสดุไม่ได้อยู่ในสถานะรอรับ','Item conflicts with property or existing record':'ข้อมูลซ้ำหรือไม่ตรงกับที่พัก','Ride state conflict or not found':'สถานะงานเปลี่ยนไปแล้ว กรุณาโหลดใหม่'} as Record<string,string>)[value.error]||value.error||'ไม่สามารถทำรายการได้')
+ if(!res.ok)throw Error(({ 'Forbidden':'ไม่มีสิทธิ์ทำรายการ','Please sign in':'กรุณาเข้าสู่ระบบ','Invalid settings':'ตรวจสอบราคาและวันครบกำหนด','Invalid announcement':'กรอกข้อมูลประกาศให้ถูกต้อง','Invalid parcel':'ตรวจสอบห้องและข้อมูลพัสดุ','Invalid vehicle':'ตรวจสอบทะเบียนรถและประเภทรถ','Invalid driver':'ตรวจสอบชื่อและเบอร์โทรคนขับ','Invalid ride request':'ตรวจสอบข้อมูลการเรียกรถ','Invalid document':'ตรวจสอบหัวข้อและห้อง','Module unavailable':'โหลดข้อมูลงานบริการไม่สำเร็จ','Module action unavailable':'บันทึกงานบริการไม่สำเร็จ','Parcel not waiting':'พัสดุไม่ได้อยู่ในสถานะรอรับ','Item conflicts with property or existing record':'ข้อมูลซ้ำหรือไม่ตรงกับที่พัก','Ride state conflict or not found':'สถานะงานเปลี่ยนไปแล้ว กรุณาโหลดใหม่'} as Record<string,string>)[value.error]||userFacingError(value.error))
  return value as T
 }
 export default function OperationsPage(){
@@ -118,7 +120,7 @@ export default function OperationsPage(){
  return <main className={dashboardStyles.detail}><div className={dashboardStyles.detailInner}>
   <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/cloud?tab=services">StayHub <span>Cloud</span></a><a className={dashboardStyles.back} href="/cloud?tab=services">กลับหน้าจัดการ</a></header>
   <h1>งานบริการ · StayHub Cloud</h1>
-  <p className="muted">ข้อมูลจากฐาน PostgreSQL/Neon · ทุกคำขอตรวจสิทธิ์ที่พักและห้องโดย Server</p>
+  <p className="muted">แสดงเฉพาะข้อมูลของที่พักและห้องที่คุณมีสิทธิ์</p>
   <div className="subnav">{kinds.map(k=><button className="btn secondary" type="button" key={k} aria-current={kind===k?'page':undefined} disabled={busy} onClick={()=>{setKind(k);setFields({});setPinned(false);setUnitId('');setNotice('');setReadyKey('');window.history.replaceState(null,'','?kind='+k)}}>{labels[k]}</button>)}</div>
   
   {error&&<p role="alert" className="card section" style={{color:'crimson'}}>{error}</p>}
@@ -142,7 +144,7 @@ export default function OperationsPage(){
      <label>ค่าไฟ/หน่วย<input type="number" min="0" step="0.01" required value={settings.electric_rate} onChange={e=>setSettings(s=>({...s,electric_rate:e.target.value}))}/></label>
      <label>วันครบกำหนด<input type="number" min="1" max="28" required value={settings.due_day} onChange={e=>setSettings(s=>({...s,due_day:e.target.value}))}/></label>
      <label>ค่าปรับ<input type="number" min="0" step="0.01" required value={settings.late_fee} onChange={e=>setSettings(s=>({...s,late_fee:e.target.value}))}/></label>
-     <p className="muted">ค่าที่ตั้งนี้เป็นค่าเริ่มต้นเพื่อดูแลหอพัก ขณะนี้ API บิลใช้ค่าอัตราจากแต่ละครั้งที่บันทึกมิเตอร์</p></>}
+     <p className="muted">อัตราในหน้านี้เป็นค่าเริ่มต้น ยอดบิลใช้อัตราที่บันทึกพร้อมมิเตอร์แต่ละครั้ง</p></>}
     <button type="submit" className="btn" disabled={busy||(!unitId&&['parcels','vehicles','rides','documents'].includes(kind))}>{busy?'กำลังบันทึก...':'บันทึก '+labels[kind]}</button>
    </form>}
    {!owner&&kind==='settings'&&<p className="muted">เฉพาะเจ้าของที่พัก</p>}
@@ -151,7 +153,7 @@ export default function OperationsPage(){
     <div><strong>{itemName(i)}</strong>
      {i.body&&<p>{i.body}</p>}
      {i.description&&<p>{i.description}</p>}
-     <p className="muted">{i.status||''} {i.tracking||''} {i.phone||''} {i.vehicle_type||''} {i.active===false?'ปิดรับงาน':''}</p>
+     <p className="muted">{i.status?recordStatusLabel(i.status):''} {i.tracking||''} {i.phone||''} {i.vehicle_type||''} {i.active===false?'ปิดรับงาน':''}</p>
     </div>
     {owner&&kind==='announcements'&&<button type="button" className="btn secondary" disabled={busy} onClick={()=>{if(window.confirm('หยุดแสดงประกาศนี้?'))void run({propertyId,action:'announcement-archive',id:i.id})}}>เก็บประกาศ</button>}
     {owner&&kind==='parcels'&&i.status==='waiting'&&<div className="flow">

@@ -1,6 +1,7 @@
 'use client'
 import dashboardStyles from '../dashboard.module.css'
 import {useCallback,useEffect,useState} from 'react'
+import {userFacingError} from '../../../lib/user-facing-error'
 type Property={id:string;name:string;role:string}
 type Summary={billCount:number;billedTotal:string;paidTotal:string;outstandingTotal:string;unpaidCount:number}
 type Bill={id:string;unit_name:string;period:string;total:string;paid:string;outstanding:string;status:string}
@@ -8,7 +9,7 @@ type Occupancy={id:string;name:string;capacity:number;occupants:number;active:bo
 async function get<T>(path:string):Promise<T>{
  const response=await fetch(path,{credentials:'same-origin',cache:'no-store'})
  const data=await response.json()
- if(!response.ok)throw Error(data.error||'Report unavailable')
+ if(!response.ok)throw Error(userFacingError(data.error,'โหลดรายงานไม่สำเร็จ กรุณาลองใหม่'))
  return data as T
 }
 const csvCell=(value:string|number)=>'"'+String(value).replace(/^[=+\-@]/,'\t$&').replace(/"/g,'""')+'"'

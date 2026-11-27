@@ -2,6 +2,7 @@
 import dashboardStyles from '../../dashboard.module.css'
 import {useEffect,useState} from 'react'
 import {useParams} from 'next/navigation'
+import {userFacingError} from '../../../../lib/user-facing-error'
 type Line={label:string;quantity:string;unitRate:string;amount:string}
 type Detail={bill:{id:string;property_id:string;unit_name:string;period:string;created_at:string;total:string;status:string};items:Line[];paid:string;outstanding:string;payments?:{id:string;amount:string;method:string;confirmed_at:string}[]}
 const money=(s:string)=>Number(s).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2})
@@ -15,7 +16,7 @@ export default function ReceiptView(){
   const path='/api/v2/bills/'+encodeURIComponent(params.billId)+'?propertyId='+encodeURIComponent(propertyId)
   void fetch(path,{credentials:'same-origin',cache:'no-store'}).then(async r=>{
    const data=await r.json()
-   if(!r.ok)throw Error(data.error||'ไม่สามารถตรวจสอบบิลได้')
+   if(!r.ok)throw Error(userFacingError(data.error,'ตรวจสอบบิลไม่สำเร็จ กรุณาลองใหม่'))
    if(active)setBill(data)
   }).catch(e=>{if(active)setError(e instanceof Error?e.message:'โหลดบิลไม่ได้')})
   return()=>{active=false}

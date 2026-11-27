@@ -8,6 +8,7 @@ import {accommodationLabel} from '../../lib/accommodation-types'
 import SharedAdLayout from '../components/ads/SharedAdLayout'
 import {type RoomDetails,defaultRoomDetails,parseRoomDetails,roomAmenities} from '../../lib/room-details'
 import {type BookingDetails,bookingSources,parseBookingDetails} from '../../lib/booking-details'
+import {userFacingError} from '../../lib/user-facing-error'
 
 type Property={id:string;name:string;property_type:string;role:string}
 type Room={id:string;name:string;active:boolean;occupants:number;reserved:boolean;cleaning:boolean;blocked:boolean;room_details?:RoomDetails|null;capacity?:number}
@@ -37,7 +38,7 @@ const money=(n:number)=>new Intl.NumberFormat('th-TH',{minimumFractionDigits:2,m
 function Icon({path}:{path:string}){return <svg aria-hidden="true" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round"><path d={path}/></svg>}
 async function request<T>(path:string,body?:Record<string,unknown>,key?:string):Promise<T>{
  const r=await fetch('/api/v2/'+path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:body?{'Content-Type':'application/json',...(key?{'Idempotency-Key':key}:{})}:{},body:body?JSON.stringify(body):undefined})
- const data=await r.json();if(!r.ok)throw Error(data.error||'ไม่สามารถดำเนินการได้');return data as T
+ const data=await r.json();if(!r.ok)throw Error(userFacingError(data.error));return data as T
 }
 export default function GuesthouseDashboard({property,onLogout,logoutBusy,logoutError,preview=false}:{property:Property;onLogout:()=>void;logoutBusy:boolean;logoutError:string;preview?:boolean}){
  const typeLabel=accommodationLabel(property.property_type)
@@ -178,8 +179,8 @@ export default function GuesthouseDashboard({property,onLogout,logoutBusy,logout
   {tab==='rooms'&&<><section className={styles.panel} id="guesthouse-room-form"><h2>{editRoomId?'แก้ไขรายละเอียดห้องพัก '+(rooms.find(r=>r.id===editRoomId)?.name||''):'เพิ่มห้องพัก'}</h2>{editRoomId&&<div className={styles.actions}><button type="button" className={styles.secondary} onClick={()=>{chooseRoom(editRoomId);setTab('bookings')}}>สร้างการจองห้องนี้</button>{!preview&&<a className={styles.link} href={'/cloud/repairs?unitId='+encodeURIComponent(editRoomId)}>งานแจ้งซ่อมห้องนี้</a>}</div>}<form className={styles.form} onSubmit={saveRoom}>
 <label>เลขห้อง / ชื่อห้อง<input required maxLength={80} value={roomName} onChange={e=>setRoomName(e.target.value)} placeholder="101"/></label>
 <label>ชั้น<input maxLength={30} value={roomDetails.floor} onChange={e=>updateRoom('floor',e.target.value)} placeholder="1"/></label>
-<label>ประเภทห้อง<input required maxLength={60} value={roomDetails.roomType} onChange={e=>updateRoom('roomType',e.target.value)} placeholder="Standard / Deluxe / Family"/></label>
-<label>ประเภทเตียง<input required maxLength={60} value={roomDetails.bedType} onChange={e=>updateRoom('bedType',e.target.value)} placeholder="Double / Twin / King"/></label>
+<label>ประเภทห้อง<input required maxLength={60} value={roomDetails.roomType} onChange={e=>updateRoom('roomType',e.target.value)} placeholder="เช่น ห้องมาตรฐาน / ห้องครอบครัว"/></label>
+<label>ประเภทเตียง<input required maxLength={60} value={roomDetails.bedType} onChange={e=>updateRoom('bedType',e.target.value)} placeholder="เช่น เตียงคู่ / เตียงเดี่ยว"/></label>
 <label>ขนาดห้อง (ตร.ม.)<input type="number" min="0.01" max="10000" step="0.01" value={roomNumbers.area} onChange={e=>setRoomNumbers(v=>({...v,area:e.target.value}))}/></label>
 <label>จำนวนผู้เข้าพักสูงสุด<input required type="number" min="1" max="100" value={roomNumbers.capacity} onChange={e=>setRoomNumbers(v=>({...v,capacity:e.target.value}))}/></label>
 <label>ราคาต่อคืน (บาท)<input required type="number" min="0" max="1000000" step="0.01" value={roomNumbers.nightlyRate} onChange={e=>setRoomNumbers(v=>({...v,nightlyRate:e.target.value}))}/></label>

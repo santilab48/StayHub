@@ -7,10 +7,13 @@ import type { LocalRecord } from '../../lib/local-db'
 import { getPropertyLink, savePropertyLink, type PropertyLink } from '../../lib/local-db/property-link'
 import { listSyncQueue, pullServerUnits, resolveSyncConflict, syncNow, type SyncOperation } from '../../lib/local-db/sync'
 import { getBillItems, listAllLocal, removeRoom, saveBillDraft, saveMeter, saveRoom } from '../../lib/local-db/offline'
+import { userFacingError } from '../../lib/user-facing-error'
 
 type Room = LocalRecord<'units'>
 type Meter = LocalRecord<'meter_readings'>
 type Bill = LocalRecord<'bills'>
+const queueStatus:Record<string,string>={pending:'รอซิงก์',syncing:'กำลังซิงก์',failed:'ซิงก์ไม่สำเร็จ',conflict:'ข้อมูลขัดแย้ง'}
+const queueItem:Record<string,string>={unit:'ห้องพัก',room:'ห้องพัก',meter_reading:'มิเตอร์',bill:'บิล'}
 
 export default function WorkspacePage() {
   const [workspace, setWorkspace] = useState<DeviceWorkspace | null>(null)
@@ -67,7 +70,7 @@ export default function WorkspacePage() {
         await refresh(found.id)
         setLink(await getPropertyLink(found.id) ?? null)
       }
-    }).catch(failure => setError(String(failure))).finally(() => setLoading(false))
+    }).catch(failure => setError(userFacingError(failure,'เปิดข้อมูลในเครื่องไม่สำเร็จ'))).finally(() => setLoading(false))
     return () => {
       window.removeEventListener('online', status)
       window.removeEventListener('offline', status)
@@ -77,11 +80,11 @@ export default function WorkspacePage() {
   async function loadServerProperties() {
     try {
       const response = await fetch('/api/v2/sync/properties', { credentials: 'same-origin' })
-      if (!response.ok) throw new Error('กรุณาเข้าสู่ระบบ Staging ก่อนเชื่อมที่พัก')
+      if (!response.ok) throw new Error('กรุณาเข้าสู่ระบบก่อนเชื่อมที่พัก')
       const data = await response.json()
       setServerProperties(data.properties)
       setServerAccountId(data.accountId)
-    } catch (failure) { setError(failure instanceof Error ? failure.message : 'โหลดที่พักไม่สำเร็จ') }
+    } catch (failure) { setError(userFacingError(failure,'โหลดที่พักไม่สำเร็จ')) }
   }
 
   async function commit(action: () => Promise<unknown>) {
@@ -96,7 +99,7 @@ export default function WorkspacePage() {
     } catch (failure) {
       setError(failure instanceof DOMException && failure.name === 'QuotaExceededError'
         ? 'พื้นที่จัดเก็บในเครื่องเต็ม กรุณาเพิ่มพื้นที่ว่างแล้วลองอีกครั้ง'
-        : failure instanceof Error ? failure.message : 'บันทึกในเครื่องไม่สำเร็จ')
+        : userFacingError(failure,'บันทึกในเครื่องไม่สำเร็จ'))
     } finally {
       setSaving(false)
     }
@@ -111,7 +114,7 @@ export default function WorkspacePage() {
         {notice && <p role="status">{notice}</p>}
         <section className="card section"><h2>สถานะการซิงก์</h2>
           {!link && <p role="status">ต้องเชื่อมที่พักก่อนซิงก์</p>}
-          <button onClick={() => void loadServerProperties()}>เลือกที่พักจากบัญชี Staging</button>
+          <button onClick={() => void loadServerProperties()}>เลือกที่พักจากบัญชีของคุณ</button>
           {serverProperties.length > 0 && <><select value={selectedProperty} onChange={event => setSelectedProperty(event.target.value)}><option value="">เลือกที่พัก</option>{serverProperties.map(property => <option key={property.id} value={property.id}>{property.name}</option>)}</select><button disabled={!selectedProperty || saving} onClick={() => void commit(async () => {
             if (!serverProperties.some(property => property.id === selectedProperty)) throw new Error('ที่พักไม่อยู่ในบัญชีนี้')
             const checked = await fetch('/api/v2/sync/properties', { credentials: 'same-origin' })
@@ -126,7 +129,7 @@ export default function WorkspacePage() {
           <button disabled={saving || !online || !link} onClick={() => void commit(() => syncNow(workspace.id, async operation => {
             if (!link) throw new Error('ต้องเชื่อมที่พักก่อนซิงก์')
             const checked = await fetch('/api/v2/sync/properties', { credentials: 'same-origin' })
-            if (!checked.ok) throw new Error('กรุณาเข้าสู่ระบบ Staging')
+            if (!checked.ok) throw new Error('กรุณาเข้าสู่ระบบก่อนซิงก์')
             const current = await checked.json()
             if (current.accountId !== link.accountId || !current.properties.some((property: { id: string }) => property.id === link.serverPropertyId)) throw new Error('ไม่มีสิทธิ์ในที่พักที่เชื่อมไว้')
             const response = await fetch('/api/v2/sync', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...operation, propertyId: link.serverPropertyId }) })
@@ -147,14 +150,14 @@ export default function WorkspacePage() {
               const params = new URLSearchParams({ propertyId: link.serverPropertyId })
               if (after) params.set('after', after)
               const response = await fetch('/api/v2/sync?' + params, { credentials: 'same-origin', cache: 'no-store' })
-              if (!response.ok) throw new Error('โหลดห้องพักจาก Server ไม่สำเร็จ')
+              if (!response.ok) throw new Error('โหลดห้องพักออนไลน์ไม่สำเร็จ')
               return response.json()
             })
           }))}>ซิงก์ตอนนี้</button>{' '}
           <button onClick={() => setShowQueue(!showQueue)}>ดูรายการรอซิงก์</button>{' '}
           <button onClick={() => setShowConflicts(!showConflicts)}>ดูข้อขัดแย้ง</button>
-          {showQueue && <ul>{queue.filter(item => item.status !== 'synced' && item.status !== 'conflict').map(item => <li key={item.operationId}>{item.entityType} · {item.status} · {item.error}</li>)}</ul>}
-          {showConflicts && <ul>{queue.filter(item => item.status === 'conflict').map(item => <li key={item.operationId}>{item.entityType} · ข้อมูลในเครื่องและ Server แตกต่างกัน กรุณาตรวจสอบก่อนดำเนินการต่อ <button onClick={() => void commit(() => resolveSyncConflict(workspace.id, item.operationId, 'keep_local'))}>เก็บข้อมูลในเครื่อง</button> <button onClick={() => void commit(() => resolveSyncConflict(workspace.id, item.operationId, 'use_server'))}>ใช้ข้อมูลจาก Server</button> <button onClick={() => void commit(() => resolveSyncConflict(workspace.id, item.operationId, 'cancel'))}>ยกเลิกการซิงก์</button></li>)}</ul>}
+          {showQueue && <ul>{queue.filter(item => item.status !== 'synced' && item.status !== 'conflict').map(item => <li key={item.operationId}>{queueItem[item.entityType]||'รายการข้อมูล'} · {queueStatus[item.status]||'รอตรวจสอบ'}{item.error?' · '+userFacingError(item.error,'โปรดลองซิงก์อีกครั้ง'):''}</li>)}</ul>}
+          {showConflicts && <ul>{queue.filter(item => item.status === 'conflict').map(item => <li key={item.operationId}>{queueItem[item.entityType]||'รายการข้อมูล'} · ข้อมูลในเครื่องและข้อมูลออนไลน์แตกต่างกัน กรุณาตรวจสอบก่อนดำเนินการต่อ <button onClick={() => void commit(() => resolveSyncConflict(workspace.id, item.operationId, 'keep_local'))}>เก็บข้อมูลในเครื่อง</button> <button onClick={() => void commit(() => resolveSyncConflict(workspace.id, item.operationId, 'use_server'))}>ใช้ข้อมูลออนไลน์</button> <button onClick={() => void commit(() => resolveSyncConflict(workspace.id, item.operationId, 'cancel'))}>ยกเลิกการซิงก์</button></li>)}</ul>}
         </section>
         <section className="card section"><h2>ห้องพัก</h2>
           <form onSubmit={event => { event.preventDefault(); void commit(async () => { await saveRoom(workspace.id, roomName, editingRoom ?? undefined); setRoomName(''); setEditingRoom(null) }) }}>
@@ -173,15 +176,15 @@ export default function WorkspacePage() {
           </form>
           {meters.length === 0 ? <p className="muted">ยังไม่มีข้อมูลมิเตอร์ในเครื่อง</p> : <ul>{meters.map(meter => <li key={meter.id}>{rooms.find(room => room.id === meter.unitId)?.name ?? 'ห้องที่ถูกลบ'} · {meter.meter === 'water' ? 'น้ำ' : 'ไฟ'} {meter.reading} · {meter.readOn} · บันทึกในเครื่อง <button disabled={saving} onClick={() => { setEditingMeter(meter); setUnitId(meter.unitId); setMeterType(meter.meter as 'water' | 'electric'); setReading(String(meter.reading)); setReadOn(meter.readOn) }}>แก้ไข</button></li>)}</ul>}
         </section>
-        <section className="card section"><h2>บิลรายเดือนในเครื่อง</h2><p className="muted">รายการเหล่านี้เป็น Draft ยังไม่ได้ส่งให้ผู้เช่าและยังไม่รับชำระเงินจริง</p>
+        <section className="card section"><h2>บิลรายเดือนในเครื่อง</h2><p className="muted">รายการเหล่านี้เป็นฉบับร่าง ยังไม่ได้ส่งให้ผู้เช่าและยังไม่รับชำระเงินจริง</p>
           <form onSubmit={event => { event.preventDefault(); void commit(async () => { await saveBillDraft(workspace.id, billUnit, period, description, amount === '' ? NaN : Math.round(Number(amount) * 100), editingBill ?? undefined); setDescription(''); setAmount(''); setEditingBill(null) }) }}>
             <label>ห้อง <select required value={billUnit} onChange={event => setBillUnit(event.target.value)}><option value="">เลือกห้อง</option>{rooms.map(room => <option key={room.id} value={room.id}>{room.name}</option>)}</select></label>
             <label>รอบบิล <input required type="month" value={period} onChange={event => setPeriod(event.target.value)} /></label>
             <label>รายการ <input required value={description} onChange={event => setDescription(event.target.value)} /></label>
             <label>จำนวนเงิน (บาท) <input required type="number" min="0" step="0.01" value={amount} onChange={event => setAmount(event.target.value)} /></label>
-            <button disabled={saving || rooms.length === 0}>{editingBill ? 'บันทึก Draft' : 'สร้าง Draft'}</button>
+            <button disabled={saving || rooms.length === 0}>{editingBill ? 'บันทึกฉบับร่าง' : 'สร้างฉบับร่าง'}</button>
           </form>
-          {bills.length === 0 ? <p className="muted">ยังไม่มีบิลในเครื่อง</p> : <ul>{bills.map(bill => <li key={bill.id}>{rooms.find(room => room.id === bill.unitId)?.name ?? 'ห้องที่ถูกลบ'} · {bill.period} · {billDescriptions[bill.id]} · {(bill.totalMinor / 100).toFixed(2)} บาท · Draft บันทึกในเครื่อง <button disabled={saving} onClick={() => { setEditingBill(bill); setBillUnit(bill.unitId); setPeriod(bill.period); setDescription(billDescriptions[bill.id] ?? ''); setAmount((bill.totalMinor / 100).toFixed(2)) }}>แก้ไข</button></li>)}</ul>}
+          {bills.length === 0 ? <p className="muted">ยังไม่มีบิลในเครื่อง</p> : <ul>{bills.map(bill => <li key={bill.id}>{rooms.find(room => room.id === bill.unitId)?.name ?? 'ห้องที่ถูกลบ'} · {bill.period} · {billDescriptions[bill.id]} · {(bill.totalMinor / 100).toFixed(2)} บาท · ฉบับร่างที่บันทึกในเครื่อง <button disabled={saving} onClick={() => { setEditingBill(bill); setBillUnit(bill.unitId); setPeriod(bill.period); setDescription(billDescriptions[bill.id] ?? ''); setAmount((bill.totalMinor / 100).toFixed(2)) }}>แก้ไข</button></li>)}</ul>}
         </section>
       </>}
   </main>

@@ -6,6 +6,7 @@ import dashboardStyles from './dashboard.module.css'
 import GuesthouseDashboard from './guesthouse-dashboard'
 import RoomOverview,{type OverviewRoom} from './room-overview'
 import SharedAdLayout from '../components/ads/SharedAdLayout'
+import {userFacingError} from '../../lib/user-facing-error'
 type Property={id:string;name:string;property_type:string;role:string}
 type OnboardingScreen='loading'|'choose'|'auth'|'dashboard'|'unavailable'
 const EMAIL_KEY='stayhub_owner_remembered_email_v1'
@@ -26,7 +27,7 @@ async function api(action:string,body?:Record<string,unknown>){
   const response=await fetch('/api/v2/'+action,{method:body?'POST':'GET',credentials:'same-origin',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,cache:'no-store'})
   const data=await response.json()
   if(!response.ok){
-    const error=new Error(data.error||'Request failed') as Error&{status?:number}
+    const error=new Error(userFacingError(data.error)) as Error&{status?:number}
     error.status=response.status
     throw error
   }

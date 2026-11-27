@@ -1,5 +1,7 @@
 'use client'
 import dashboardStyles from '../dashboard.module.css'
+import {recordStatusLabel} from '../../../lib/record-status-label'
+import {userFacingError} from '../../../lib/user-facing-error'
 import {FormEvent,useCallback,useEffect,useState} from 'react'
 type Property={id:string;name:string;role:string}
 type Stay={property_id:string;property_name:string;unit_id:string;unit_name:string}
@@ -8,7 +10,7 @@ type Repair={id:string;unit_name:string;unit_id:string;title:string;detail:strin
 async function api<T>(path:string,body?:Record<string,unknown>):Promise<T>{
  const res=await fetch(path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined})
  const data=await res.json()
- if(!res.ok)throw Error(data.error||'ไม่สามารถทำรายการได้')
+ if(!res.ok)throw Error(userFacingError(data.error))
  return data as T
 }
 const step:Record<string,{label:string;next:string}>={submitted:{label:'รับงาน',next:'accepted'},scheduled:{label:'เริ่มซ่อม',next:'in_progress'},in_progress:{label:'ทำเสร็จ',next:'completed'},completed:{label:'ปิดงาน',next:'closed'}}
@@ -92,7 +94,7 @@ export default function CloudRepairs(){
    <section className="card section"><h2>รายการแจ้งซ่อม ({list.filter(r=>!focusId||r.unit_id===focusId).length})</h2>{focusId&&<a className="btn secondary" href="/cloud/repairs">ดูงานซ่อมทุกห้อง</a>}
     {!list.some(r=>!focusId||r.unit_id===focusId)?<p>ยังไม่มีรายการ</p>:<div className="list">{list.filter(r=>!focusId||r.unit_id===focusId).map(r=><div className="card section" key={r.id}>
      <div className="row"><div><strong>{r.unit_name} · {r.title}</strong><p className="muted">{r.detail}</p></div>
-      <span className="pill">{r.status}</span></div>
+      <span className="pill">{recordStatusLabel(r.status)}</span></div>
      {r.appointment_at&&<p>นัดหมาย: {new Date(r.appointment_at).toLocaleString('th-TH')} {r.appointment_reply==='confirmed'?'· ผู้พักยืนยันแล้ว':r.appointment_reply==='change_requested'?'· ขอเปลี่ยนเวลา':''}</p>}
      {owner&&r.status==='accepted'&&<form className="flow" onSubmit={e=>{e.preventDefault();if(appointment)void run({action:'schedule',id:r.id,appointmentAt:new Date(appointment).toISOString()})}}>
       <label>วันเวลานัด<input type="datetime-local" required value={appointment} onChange={e=>setAppointment(e.target.value)}/></label>

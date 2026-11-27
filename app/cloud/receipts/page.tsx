@@ -1,12 +1,13 @@
 'use client'
 import dashboardStyles from '../dashboard.module.css'
 import {useEffect,useState} from 'react'
+import {userFacingError} from '../../../lib/user-facing-error'
 type Property={id:string;name:string;role:string}
 type Bill={id:string;property_id:string;unit_name:string;period:string;total:string;paid:string;outstanding:string;status:string}
 async function get<T>(path:string):Promise<T>{
  const r=await fetch(path,{credentials:'same-origin',cache:'no-store'})
  const value=await r.json()
- if(!r.ok)throw Error(value.error||'ไม่สามารถโหลดข้อมูลได้')
+ if(!r.ok)throw Error(userFacingError(value.error,'โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่'))
  return value as T
 }
 export default function Receipts(){
@@ -36,7 +37,7 @@ export default function Receipts(){
  return <main className={dashboardStyles.detail}><div className={dashboardStyles.detailInner}>
   <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/cloud?tab=finance">StayHub <span>Cloud</span></a><a className={dashboardStyles.back} href="/cloud?tab=finance">กลับหน้าจัดการ</a></header>
   <h1>ใบเสร็จที่ชำระครบ · StayHub Cloud</h1>
-  <p className="muted">ใช้ข้อมูลที่ชำระจริงบน PostgreSQL ไม่สร้างใบเสร็จสำหรับยอดที่ยังค้าง</p>
+  <p className="muted">แสดงเฉพาะบิลที่ชำระครบแล้ว ไม่ออกใบเสร็จสำหรับยอดที่ยังค้าง</p>
   
   {error&&<p role="alert" style={{color:'crimson'}}>{error}</p>}
   <section className="card section">

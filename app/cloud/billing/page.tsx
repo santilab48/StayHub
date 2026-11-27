@@ -2,6 +2,7 @@
 import {cents,meterCharge} from '../../../lib/db/billing-calculation'
 import dashboardStyles from '../dashboard.module.css'
 import {FormEvent,useCallback,useEffect,useRef,useState} from 'react'
+import {userFacingError} from '../../../lib/user-facing-error'
 
 type Property={id:string;name:string;role:string}
 type Lease={id:string;unit_id:string;unit_name:string;monthly_rent:string;status:string;source?:string;water?:string;electric?:string;service?:string;water_meter?:string;electric_meter?:string}
@@ -15,11 +16,11 @@ type Summary={billCount:number;billedTotal:string;paidTotal:string;outstandingTo
 async function request<T>(path:string,body?:Record<string,unknown>,key?:string):Promise<T>{
   const response=await fetch(path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:body?{'Content-Type':'application/json',...(key?{'Idempotency-Key':key}:{})}:{},body:body?JSON.stringify(body):undefined})
   const result=await response.json()
-  if(!response.ok)throw Error(({'Invalid meter input':'ข้อมูลมิเตอร์หรือเดือนออกบิลไม่ถูกต้อง','Invalid bill request or Idempotency-Key':'ข้อมูลออกบิลไม่ถูกต้อง',duplicate_month:'ห้องนี้มีบิลเดือนนี้แล้ว',duplicate_reading:'บันทึกมิเตอร์ประเภทนี้ในเดือนนี้แล้ว',initial_reading_required:'กรุณากรอกเลขมิเตอร์ตั้งต้นเดือนแรก',initial_reading_only_for_first_month:'มีเลขเดือนก่อนแล้ว ไม่ต้องกรอกเลขตั้งต้น',reading_decreased_or_overflow:'เลขมิเตอร์ปัจจุบันต้องไม่น้อยกว่าเลขเดิม',meter_readings_required:'กรุณาบันทึกมิเตอร์น้ำและไฟที่มีอัตราเรียกเก็บก่อนออกบิล',overlapping_contracts:'มีสัญญาห้องซ้อนกันในเดือนนี้ กรุณาตรวจสอบสัญญา',lease_outside_period:'สัญญาไม่ครอบคลุมเดือนที่เลือก',payment_exceeds_bill:'ยอดรับเงินเกินยอดค้าง'} as Record<string,string>)[result.error]||result.error||'ไม่สามารถทำรายการได้')
+  if(!response.ok)throw Error(({'Invalid meter input':'ข้อมูลมิเตอร์หรือเดือนออกบิลไม่ถูกต้อง','Invalid bill request or Idempotency-Key':'ข้อมูลออกบิลไม่ถูกต้อง',duplicate_month:'ห้องนี้มีบิลเดือนนี้แล้ว',duplicate_reading:'บันทึกมิเตอร์ประเภทนี้ในเดือนนี้แล้ว',initial_reading_required:'กรุณากรอกเลขมิเตอร์ตั้งต้นเดือนแรก',initial_reading_only_for_first_month:'มีเลขเดือนก่อนแล้ว ไม่ต้องกรอกเลขตั้งต้น',reading_decreased_or_overflow:'เลขมิเตอร์ปัจจุบันต้องไม่น้อยกว่าเลขเดิม',meter_readings_required:'กรุณาบันทึกมิเตอร์น้ำและไฟที่มีอัตราเรียกเก็บก่อนออกบิล',overlapping_contracts:'มีสัญญาห้องซ้อนกันในเดือนนี้ กรุณาตรวจสอบสัญญา',lease_outside_period:'สัญญาไม่ครอบคลุมเดือนที่เลือก',payment_exceeds_bill:'ยอดรับเงินเกินยอดค้าง'} as Record<string,string>)[result.error]||userFacingError(result.error))
   return result as T
 }
 const money=(value:string|number|undefined)=>Number(value||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2})
-const statusText=(v:string)=>({unpaid:'ยังไม่ชำระ',partial:'ชำระบางส่วน',paid:'ชำระครบ',void:'ยกเลิก'} as Record<string,string>)[v]||v
+const statusText=(v:string)=>({unpaid:'ยังไม่ชำระ',partial:'ชำระบางส่วน',paid:'ชำระครบ',void:'ยกเลิก'} as Record<string,string>)[v]||'รอตรวจสอบสถานะ'
 const currentPeriod=()=>new Date(Date.now()+7*3600000).toISOString().slice(0,7)
 
 export default function CloudBillingPage(){
