@@ -50,3 +50,14 @@ Repository นี้เป็น Public ห้ามบันทึกอีเ�
 - อัปเดตทะเบียนเมื่อเปลี่ยนทีม เจ้าของโดเมน ผู้ดูแล หรือบริการ และตรวจสิทธิ์ทุกครั้งก่อนส่งต่องาน
 
 การเพิ่มเอกสารนี้ไม่อนุญาตให้ Deploy หรือแก้ไข Production โดยอัตโนมัติ
+
+
+## สรุปบัญชีและทีมสำหรับกันลืม (ตรวจ 27 พฤศจิกายน 2026)
+| บริการ | บัญชี / ทีม / โครงการ |
+|---|---|
+| GitHub | santilab48 — StayHub; อีเมลบัญชีงานดูจากประวัติ commit 35f94909 |
+| Railway | Workspace: tepakorn san's Projects; Project: radiant-manifestation; Test: stayhub-billing-test; อีเมลเข้าสู่ระบบยังไม่ยืนยัน |
+| Neon | Organization: Chaiwat; Project: stayhub-db; Free plan; อีเมล Admin ตรงกับอีเมลบัญชีงาน GitHub ใน commit ข้างต้น (ตรวจจาก Neon project owner และ project members) |
+
+ลิงก์ตรวจสอบอีเมลบัญชีงานที่บันทึกอยู่แล้วในประวัติ GitHub: https://github.com/santilab48/StayHub/commit/35f94909b060aa28aef6fd0159f07bf2ebb34dd4.patch
+ไม่บันทึกรหัสผ่านหรือ secrets; ไม่ถือว่าอีเมลผู้เขียน commit เป็นหลักฐานการเข้าสู่ระบบ GitHub โดยอัตโนมัติ
