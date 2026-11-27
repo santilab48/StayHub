@@ -1,4 +1,5 @@
 'use client'
+import PropertyGuide from './property-guide'
 import {FormEvent,useEffect,useState} from 'react'
 import {accommodationTypes,isAccommodationType,type AccommodationType} from '../../lib/accommodation-types'
 import authStyles from './auth.module.css'
@@ -215,6 +216,7 @@ export default function CloudOwnerPage(){
               </form>
             </>}
           </section>
+          <div className={dashboardStyles.full}><PropertyGuide key={managedProperty?.property_type||type} propertyType={managedProperty?.property_type||type}/></div>
           {managedId&&<div className={dashboardStyles.full}><RoomOverview rooms={roomOverview} loading={roomOverviewLoading} error={roomOverviewError} hrefFor={id=>'/cloud/rooms?unitId='+encodeURIComponent(id)}/></div>}
         </div>
         <div hidden={dashboardTab!=='residents'} className={dashboardStyles.grid}><section className="card section"><h2>ห้องพักและผู้พัก</h2><p className="muted">เพิ่มห้อง ดูสถานะห้อง ย้ายห้อง และจัดการย้ายออก ผ่านฐานข้อมูล Cloud</p><a className="btn" href="/cloud/rooms">จัดการห้องพัก</a></section><section className="card section"><h2>จัดการสัญญาเช่า</h2><p className="muted">ผูกผู้เช่าที่อนุมัติแล้วเข้ากับสัญญาเช่า ก่อนจดมิเตอร์และออกบิล</p><a className="btn" href="/cloud/leases">เปิดจัดการสัญญาเช่า</a></section><div className={dashboardStyles.full}><section className="card section"><h2>QR เชิญผู้เช่า</h2>
