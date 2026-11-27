@@ -264,3 +264,5 @@
  .ownerAuthShell .ownerAuthSubmit,.ownerAuthShell .ownerAuthHomeLink,.ownerAuthShell input{transition:none}
  .ownerAuthSubmit:hover:not(:disabled){transform:none}
 }
+
+@media(max-width:700px){.btn{min-height:44px}}

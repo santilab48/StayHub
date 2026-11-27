@@ -3,12 +3,16 @@ import assert from 'node:assert/strict'
 import {randomBytes} from 'node:crypto'
 import {chromium} from 'playwright'
 import {PDFDocument} from 'pdf-lib'
+import {mkdirSync} from 'node:fs'
 
 const base=process.env.P26_E2E_BASE,raw=process.env.DATABASE_URL
 if(process.env.CI!=='true'||base!=='http://127.0.0.1:3000'||!raw||new URL(raw).hostname!=='127.0.0.1'||new URL(raw).pathname!=='/stayhub_p26_ci')throw Error('Isolated localhost CI only')
 const browser=await chromium.launch({headless:true,...(process.env.STAYHUB_CHROMIUM_PATH?{executablePath:process.env.STAYHUB_CHROMIUM_PATH}:{})})
 const owner=await browser.newContext({baseURL:base}),tenant=await browser.newContext({baseURL:base,viewport:{width:390,height:844}})
 const tag=randomBytes(5).toString('hex')
+const mobilePhase=process.env.P3_MOBILE_PHASE
+if(mobilePhase&& !['before','after'].includes(mobilePhase))throw Error('Invalid mobile audit phase')
+if(mobilePhase)mkdirSync('docs/screenshots/mobile-final-audit',{recursive:true})
 const post=async(ctx,path,data)=>{const r=await ctx.request.post(path,{data,headers:{origin:base}});assert.equal(r.status(),201,`${path}: ${await r.text()}`);return r.json()}
 try{
  await post(owner,'/api/v2/register',{email:`tenant-ui-owner-${tag}@example.invalid`,password:'CI-tenant-ui-123456'})
@@ -44,13 +48,14 @@ try{
   }
   await page.getByRole('heading',{name:label,exact:true}).waitFor()
   assert.equal(await page.locator('nav[aria-label="เมนูผู้เช่า"] a[aria-current="page"]').textContent(),label)
-  for(const width of [360,390,768,1280,1920]){
+  for(const width of mobilePhase?[320,360,375,390,430]:[360,390,768,1280,1920]){
    await page.setViewportSize({width,height:844})
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,`${key} ${width}: overflow`)
    const clipped=await page.locator('h1,h2,form button').evaluateAll(nodes=>nodes.filter(x=>x.getBoundingClientRect().width>0&&x.scrollWidth>x.clientWidth+2).map(x=>x.textContent?.trim()))
    assert.deepEqual(clipped,[],`${key} ${width}: clipped heading or button`)
   }
   await page.setViewportSize({width:390,height:844})
+  if(mobilePhase)await page.screenshot({path:`docs/screenshots/mobile-final-audit/${mobilePhase}-tenant-${key}-390.png`,fullPage:true})
   if(key==='billing'){
    await page.getByText('ยังไม่มีรายการ').waitFor()
    assert.equal(await page.getByRole('button',{name:'ก่อนหน้า'}).isDisabled(),true)

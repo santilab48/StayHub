@@ -21,7 +21,7 @@
 .calendar .stayBar{background:#218775}
 .legend{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:12px;color:#52667d;margin-bottom:12px}.legend span{display:flex;align-items:center;gap:6px}.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}.legendBooked{background:#4278b8}.legendStay{background:#218775}.legendToday{background:#ffdfb9}.legend small{margin-left:auto}
 .selection{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:12px;padding:12px;background:#edf4fa;border-radius:12px;font-size:13px}.selection button{margin-left:auto}
-@media(max-width:720px){.calendar .roomColumn,.calendar .roomHead{width:74px;min-width:74px}.calendar .dateColumn{width:40px}.legend small{margin-left:0;width:100%}.selection button{margin-left:0}}
+@media(max-width:720px){.calendar .roomColumn,.calendar .roomHead{width:74px;min-width:74px}.calendar .dateColumn{width:45px}.legend small{margin-left:0;width:100%}.selection button{margin-left:0}.actions button{min-width:44px}}
 
 /* Shared StayHub owner theme: layout/header/tabs use dashboard.module.css. */
 .heading h1{font-size:clamp(25px,4vw,34px);line-height:1.35}.heading p,.muted,.booking p,.booking small,.metric span,.metric small,.footer,.eyebrow{color:#aabbd0}
