@@ -54,15 +54,17 @@ export default function GuesthouseDashboard({property,onLogout,logoutBusy,logout
  const [staySearch,setStaySearch]=useState('')
  const [stayDate,setStayDate]=useState('')
  const [roomDetails,setRoomDetails]=useState<RoomDetails>(defaultRoomDetails)
+ const [roomNumbers,setRoomNumbers]=useState({area:'',capacity:'',nightlyRate:'',weekendRate:''})
  const [editRoomId,setEditRoomId]=useState('')
  const [roomActive,setRoomActive]=useState(true)
  const updateRoom=<K extends keyof RoomDetails>(key:K,value:RoomDetails[K])=>setRoomDetails(v=>({...v,[key]:value}))
- function resetRoom(){setEditRoomId('');setRoomName('');setRoomDetails(defaultRoomDetails);setRoomActive(true)}
- function editRoom(r:Room){setEditRoomId(r.id);setRoomName(r.name);setRoomDetails(r.room_details||{...defaultRoomDetails,capacity:r.capacity||2});setRoomActive(r.active);document.getElementById('guesthouse-room-form')?.scrollIntoView({behavior:'smooth'})}
+ function resetRoom(){setEditRoomId('');setRoomName('');setRoomDetails(defaultRoomDetails);setRoomNumbers({area:'',capacity:'',nightlyRate:'',weekendRate:''});setRoomActive(true)}
+ function editRoom(r:Room){const details=r.room_details||{...defaultRoomDetails,capacity:r.capacity||2};setEditRoomId(r.id);setRoomName(r.name);setRoomDetails(details);setRoomNumbers({area:details.area===null?'':String(details.area),capacity:String(details.capacity),nightlyRate:String(details.nightlyRate),weekendRate:details.weekendRate===null?'':String(details.weekendRate)});setRoomActive(r.active);document.getElementById('guesthouse-room-form')?.scrollIntoView({behavior:'smooth'})}
  const [guest,setGuest]=useState<BookingDetails>({guestName:'',phone:'',email:'',adults:1,children:0,checkInTime:'14:00',checkOutTime:'12:00',nightlyRate:0,source:'direct',notes:''})
+ const [guestNumbers,setGuestNumbers]=useState({adults:'',children:'',nightlyRate:''})
  const updateGuest=<K extends keyof BookingDetails>(key:K,value:BookingDetails[K])=>setGuest(v=>({...v,[key]:value}))
  const nights=arrival&&departure?Math.max(0,Math.round((Date.parse(departure)-Date.parse(arrival))/86400000)):0
- const total=Math.round(guest.nightlyRate*100)*nights/100
+ const total=Math.round(Number(guestNumbers.nightlyRate)*100)*nights/100
  const pendingKey=useRef<{payload:string;key:string}|null>(null)
  const load=useCallback(async()=>{
   const q='?propertyId='+encodeURIComponent(property.id)
@@ -84,8 +86,8 @@ export default function GuesthouseDashboard({property,onLogout,logoutBusy,logout
  const metrics=[{label:'ห้องว่าง',value:available.length,kind:'green'},{label:'กำลังเข้าพัก',value:occupied.length,kind:'blue'},{label:'เช็กอินวันนี้',value:arrivals.length,kind:'orange'},{label:'เช็กเอาต์วันนี้ / เกินกำหนด',value:departures.length,kind:'plain'}]
  const roomStatus=(r:Room)=>!r.active?'ปิดใช้งาน':r.blocked?'ปิดซ่อม':r.occupants?'เข้าพัก':r.reserved?'จองแล้ว':'ว่าง'
  const roomTone=(r:Room)=>!r.active||r.blocked?'blocked':r.occupants?'occupied':r.reserved?'reserved':'available'
- function chooseRoom(id:string){setUnitId(id);const rate=rooms.find(r=>r.id===id)?.room_details?.nightlyRate;if(rate!==undefined)updateGuest('nightlyRate',rate)}
- function saveRoom(e:FormEvent){e.preventDefault();setError('');setNotice('');const name=roomName.trim(),details=parseRoomDetails(roomDetails)
+ function chooseRoom(id:string){setUnitId(id);const rate=rooms.find(r=>r.id===id)?.room_details?.nightlyRate;if(rate!==undefined)setGuestNumbers(v=>({...v,nightlyRate:String(rate)}))}
+ function saveRoom(e:FormEvent){e.preventDefault();setError('');setNotice('');const name=roomName.trim(),details=parseRoomDetails({...roomDetails,area:roomNumbers.area===''?null:Number(roomNumbers.area),capacity:Number(roomNumbers.capacity),nightlyRate:Number(roomNumbers.nightlyRate),weekendRate:roomNumbers.weekendRate===''?null:Number(roomNumbers.weekendRate)})
   if(!name||!details){setError('กรุณาตรวจสอบรายละเอียดห้อง');return}
   if(preview){
    if(rooms.some(r=>r.name===name&&r.id!==editRoomId)){setError('ชื่อห้องซ้ำ');return}
@@ -99,10 +101,11 @@ export default function GuesthouseDashboard({property,onLogout,logoutBusy,logout
   void act(async()=>{await request('guesthouse-room-save',{propertyId:property.id,name,details,active:roomActive,...(editRoomId?{unitId:editRoomId}:{})});resetRoom();setNotice('บันทึกข้อมูลห้องแล้ว')})
  }
  function createBooking(e:FormEvent){e.preventDefault();
+  const bookingDetails={...guest,adults:Number(guestNumbers.adults),children:Number(guestNumbers.children),nightlyRate:Number(guestNumbers.nightlyRate)}
   if(preview){
    if(busy||loading)return
    setError('');setNotice('')
-   const parsed=parseBookingDetails(guest,nights),room=rooms.find(r=>r.id===unitId&&r.active)
+   const parsed=parseBookingDetails(bookingDetails,nights),room=rooms.find(r=>r.id===unitId&&r.active)
    if(!parsed||!room||arrival<today()||departure<=arrival){setError('กรุณาตรวจสอบข้อมูลผู้จอง ห้องพัก วันที่และราคา');return}
    if(room.blocked){setError('ห้องไม่พร้อมให้จอง');return}
    if(bookings.some(b=>b.unit_id===unitId&&['confirmed','checked_in'].includes(b.status)&&dateOnly(b.arrival_date)<departure&&dateOnly(b.departure_date)>arrival)){setError('ห้องนี้ถูกจองในช่วงวันที่เลือกแล้ว กรุณาเลือกห้องหรือวันใหม่');return}
@@ -110,12 +113,12 @@ export default function GuesthouseDashboard({property,onLogout,logoutBusy,logout
    const details={...parsed.details,phone:'',email:'',notes:''}
    const next:Booking[]=[...bookings,{id:crypto.randomUUID(),unit_id:room.id,unit_name:room.name,arrival_date:arrival,departure_date:departure,status:'confirmed',total_amount:String(parsed.total),booking_details:details}]
    try{localStorage.setItem(PREVIEW_BOOKINGS_KEY,JSON.stringify(next))}catch{setError('ไม่สามารถบันทึกข้อมูลตัวอย่างในเบราว์เซอร์ได้');return}
-   setBookings(next);setMonth(monthStart(arrival));setGuest(v=>({...v,guestName:'',phone:'',email:'',notes:''}));setNotice('บันทึกการจองตัวอย่างแล้ว · ดูรายการในปฏิทินได้');document.getElementById('guesthouse-booking-form')?.previousElementSibling?.scrollIntoView({behavior:'smooth',block:'start'});return
+   setBookings(next);setMonth(monthStart(arrival));setGuest(v=>({...v,guestName:'',phone:'',email:'',notes:''}));setGuestNumbers({adults:'',children:'',nightlyRate:''});setNotice('บันทึกการจองตัวอย่างแล้ว · ดูรายการในปฏิทินได้');document.getElementById('guesthouse-booking-form')?.previousElementSibling?.scrollIntoView({behavior:'smooth',block:'start'});return
   }
   void act(async()=>{
-  const body={action:'create',propertyId:property.id,unitId,arrival,departure,details:guest}
+  const body={action:'create',propertyId:property.id,unitId,arrival,departure,details:bookingDetails}
   const payload=JSON.stringify(body);if(pendingKey.current?.payload!==payload)pendingKey.current={payload,key:crypto.randomUUID()}
-  await request('reservations',body,pendingKey.current.key);pendingKey.current=null;setGuest(v=>({...v,guestName:'',phone:'',email:'',notes:''}));setNotice('บันทึกการจองแล้ว')
+  await request('reservations',body,pendingKey.current.key);pendingKey.current=null;setGuest(v=>({...v,guestName:'',phone:'',email:'',notes:''}));setGuestNumbers({adults:'',children:'',nightlyRate:''});setNotice('บันทึกการจองแล้ว')
  })}
  async function settleBooking(id:string){
   if(!preview){await load();return}
@@ -158,8 +161,8 @@ export default function GuesthouseDashboard({property,onLogout,logoutBusy,logout
 <label>เบอร์โทรศัพท์<input type="tel" maxLength={40} value={guest.phone} onChange={e=>updateGuest('phone',e.target.value)} placeholder="เบอร์ติดต่อ"/></label>
 <label>อีเมล<input type="email" maxLength={254} value={guest.email} onChange={e=>updateGuest('email',e.target.value)} placeholder="ไม่บังคับ"/></label>
 <label>ช่องทางการจอง<select value={guest.source} onChange={e=>updateGuest('source',e.target.value)}>{bookingSources.map((v,i)=><option key={v} value={v}>{['Walk-in','โทรศัพท์','จองตรง','Agoda','Booking.com','อื่นๆ'][i]}</option>)}</select></label>
-<label>ผู้ใหญ่<input required type="number" min={1} max={100} value={guest.adults} onChange={e=>updateGuest('adults',Number(e.target.value))}/></label>
-<label>เด็ก<input required type="number" min={0} max={100} value={guest.children} onChange={e=>updateGuest('children',Number(e.target.value))}/></label>
+<label>ผู้ใหญ่<input required type="number" min={1} max={100} value={guestNumbers.adults} onChange={e=>setGuestNumbers(v=>({...v,adults:e.target.value}))}/></label>
+<label>เด็ก<input required type="number" min={0} max={100} value={guestNumbers.children} onChange={e=>setGuestNumbers(v=>({...v,children:e.target.value}))}/></label>
 <h3 className={styles.formSection}>รายละเอียดการเข้าพัก</h3>
 <label>ห้อง<select required value={unitId} onChange={e=>chooseRoom(e.target.value)}><option value="">เลือกห้อง</option>{active.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}</select></label>
 <label>จำนวนคืน<input readOnly value={nights} /></label>
@@ -168,7 +171,7 @@ export default function GuesthouseDashboard({property,onLogout,logoutBusy,logout
 <label>วันเช็กเอาต์<input required type="date" min={arrival?shift(arrival,1):now} value={departure} onChange={e=>setDeparture(e.target.value)}/></label>
 <label>เวลาเช็กเอาต์<input required type="time" value={guest.checkOutTime} onChange={e=>updateGuest('checkOutTime',e.target.value)}/></label>
 <h3 className={styles.formSection}>ราคาและหมายเหตุ</h3>
-<label>ราคาต่อคืน (บาท)<input required type="number" min={0} max={100000000} step="0.01" value={guest.nightlyRate} onChange={e=>updateGuest('nightlyRate',Number(e.target.value))}/></label>
+<label>ราคาต่อคืน (บาท)<input required type="number" min={0} max={100000000} step="0.01" value={guestNumbers.nightlyRate} onChange={e=>setGuestNumbers(v=>({...v,nightlyRate:e.target.value}))}/></label>
 <label>ยอดรวม (บาท)<input readOnly value={money(total)}/></label>
 <label className={styles.formSection}>หมายเหตุ<textarea maxLength={1000} rows={3} value={guest.notes} onChange={e=>updateGuest('notes',e.target.value)}/></label>
 <button disabled={loading||busy||!unitId||!guest.guestName.trim()||nights<1||nights>365||total>100000000} type="submit">บันทึกการจอง</button></form></section><section className={styles.panel}><h2>รายการจอง</h2>{bookingList(bookings)}</section></>}
@@ -177,10 +180,10 @@ export default function GuesthouseDashboard({property,onLogout,logoutBusy,logout
 <label>ชั้น<input maxLength={30} value={roomDetails.floor} onChange={e=>updateRoom('floor',e.target.value)} placeholder="1"/></label>
 <label>ประเภทห้อง<input required maxLength={60} value={roomDetails.roomType} onChange={e=>updateRoom('roomType',e.target.value)} placeholder="Standard / Deluxe / Family"/></label>
 <label>ประเภทเตียง<input required maxLength={60} value={roomDetails.bedType} onChange={e=>updateRoom('bedType',e.target.value)} placeholder="Double / Twin / King"/></label>
-<label>ขนาดห้อง (ตร.ม.)<input type="number" min="0.01" max="10000" step="0.01" value={roomDetails.area??''} onChange={e=>updateRoom('area',e.target.value===''?null:Number(e.target.value))}/></label>
-<label>จำนวนผู้เข้าพักสูงสุด<input required type="number" min="1" max="100" value={roomDetails.capacity} onChange={e=>updateRoom('capacity',Number(e.target.value))}/></label>
-<label>ราคาต่อคืน (บาท)<input required type="number" min="0" max="1000000" step="0.01" value={roomDetails.nightlyRate} onChange={e=>updateRoom('nightlyRate',Number(e.target.value))}/></label>
-<label>ราคาวันหยุด (บาท)<input type="number" min="0" max="1000000" step="0.01" value={roomDetails.weekendRate??''} onChange={e=>updateRoom('weekendRate',e.target.value===''?null:Number(e.target.value))}/></label>
+<label>ขนาดห้อง (ตร.ม.)<input type="number" min="0.01" max="10000" step="0.01" value={roomNumbers.area} onChange={e=>setRoomNumbers(v=>({...v,area:e.target.value}))}/></label>
+<label>จำนวนผู้เข้าพักสูงสุด<input required type="number" min="1" max="100" value={roomNumbers.capacity} onChange={e=>setRoomNumbers(v=>({...v,capacity:e.target.value}))}/></label>
+<label>ราคาต่อคืน (บาท)<input required type="number" min="0" max="1000000" step="0.01" value={roomNumbers.nightlyRate} onChange={e=>setRoomNumbers(v=>({...v,nightlyRate:e.target.value}))}/></label>
+<label>ราคาวันหยุด (บาท)<input type="number" min="0" max="1000000" step="0.01" value={roomNumbers.weekendRate} onChange={e=>setRoomNumbers(v=>({...v,weekendRate:e.target.value}))}/></label>
 <fieldset className={styles.formSection}><legend>สิ่งอำนวยความสะดวก</legend><div className={styles.amenities}>{roomAmenities.map(a=><label key={a}><input type="checkbox" checked={roomDetails.amenities.includes(a)} onChange={e=>updateRoom('amenities',e.target.checked?[...roomDetails.amenities,a]:roomDetails.amenities.filter(v=>v!==a))}/>{a}</label>)}</div></fieldset>
 <label className={styles.formSection}>ลิงก์รูปภาพห้องพัก (HTTPS)<input type="url" maxLength={500} value={roomDetails.photoUrl} onChange={e=>updateRoom('photoUrl',e.target.value)} placeholder="https://..."/></label>
 <label className={styles.formSection}>รายละเอียดเพิ่มเติม<textarea rows={3} maxLength={1000} value={roomDetails.description} onChange={e=>updateRoom('description',e.target.value)}/></label>

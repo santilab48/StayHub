@@ -5,7 +5,7 @@ type Property={id:string;name:string;role:string}
 type Stay={id:string;property_id:string;unit_id:string;property_name:string;unit_name:string}
 type Unit={id:string;name:string}
 type Item={id:string;unit_id?:string;title?:string;body?:string;description?:string;pinned?:boolean;carrier?:string;tracking?:string;status?:string;plate?:string;vehicle_type?:string;name?:string;phone?:string;active?:boolean;driver_id?:string;account_id?:string;note?:string;expires_at?:string;created_at?:string;received_at?:string;requested_at?:string}
-type Settings={water_rate:string;electric_rate:string;due_day:number;late_fee:string}
+type Settings={water_rate:string;electric_rate:string;due_day:string;late_fee:string}
 type Kind='announcements'|'parcels'|'vehicles'|'drivers'|'rides'|'documents'|'settings'
 const labels:Record<Kind,string>={announcements:'ประกาศ',parcels:'พัสดุ',vehicles:'รถของห้อง',drivers:'คนขับ',rides:'เรียกรถ',documents:'เอกสารข้อความ',settings:'ตั้งราคา'}
 const kinds=Object.keys(labels) as Kind[]
@@ -27,7 +27,7 @@ export default function OperationsPage(){
  const [unitId,setUnitId]=useState('')
  const [fields,setFields]=useState<Record<string,string>>({})
  const [pinned,setPinned]=useState(false)
- const [settings,setSettings]=useState<Settings>({water_rate:'0',electric_rate:'0',due_day:5,late_fee:'0'})
+ const [settings,setSettings]=useState<Settings>({water_rate:'',electric_rate:'',due_day:'',late_fee:''})
  const [busy,setBusy]=useState(false)
  const [error,setError]=useState('')
  const [notice,setNotice]=useState('')
@@ -46,8 +46,8 @@ export default function OperationsPage(){
   setOwner(value.owner);setItems(value.items);setReadyKey(p+':'+k)
   if(k==='settings'&&value.items[0]){
    const s=value.items[0] as unknown as Settings
-   setSettings({water_rate:String(s.water_rate),electric_rate:String(s.electric_rate),due_day:Number(s.due_day),late_fee:String(s.late_fee)})
-  }else if(k==='settings')setSettings({water_rate:'0',electric_rate:'0',due_day:5,late_fee:'0'})
+   setSettings({water_rate:String(s.water_rate),electric_rate:String(s.electric_rate),due_day:String(s.due_day),late_fee:String(s.late_fee)})
+  }else if(k==='settings')setSettings({water_rate:'',electric_rate:'',due_day:'',late_fee:''})
   }finally{if(seq===loadSequence.current)setLoading(false)}
  },[])
  useEffect(()=>{
@@ -138,10 +138,10 @@ export default function OperationsPage(){
      {input('note','รายละเอียดการเดินทาง',false)}</>}
     {kind==='documents'&&<>{input('title','หัวข้อเอกสาร')}<label>ข้อความที่ผู้พักเห็น<textarea maxLength={4000} value={fields.description||''} onChange={e=>update('description',e.target.value)}/></label>
      <p className="muted">รองรับข้อความเท่านั้น ไม่รับอัปโหลดเอกสารส่วนบุคคลก่อนมี Storage ที่ตรวจสิทธิ์ครบ</p></>}
-    {kind==='settings'&&<><label>ค่าน้ำ/หน่วย<input type="number" min="0" step="0.01" value={settings.water_rate} onChange={e=>setSettings(s=>({...s,water_rate:e.target.value}))}/></label>
-     <label>ค่าไฟ/หน่วย<input type="number" min="0" step="0.01" value={settings.electric_rate} onChange={e=>setSettings(s=>({...s,electric_rate:e.target.value}))}/></label>
-     <label>วันครบกำหนด<input type="number" min="1" max="28" value={settings.due_day} onChange={e=>setSettings(s=>({...s,due_day:Number(e.target.value)}))}/></label>
-     <label>ค่าปรับ<input type="number" min="0" step="0.01" value={settings.late_fee} onChange={e=>setSettings(s=>({...s,late_fee:e.target.value}))}/></label>
+    {kind==='settings'&&<><label>ค่าน้ำ/หน่วย<input type="number" min="0" step="0.01" required value={settings.water_rate} onChange={e=>setSettings(s=>({...s,water_rate:e.target.value}))}/></label>
+     <label>ค่าไฟ/หน่วย<input type="number" min="0" step="0.01" required value={settings.electric_rate} onChange={e=>setSettings(s=>({...s,electric_rate:e.target.value}))}/></label>
+     <label>วันครบกำหนด<input type="number" min="1" max="28" required value={settings.due_day} onChange={e=>setSettings(s=>({...s,due_day:e.target.value}))}/></label>
+     <label>ค่าปรับ<input type="number" min="0" step="0.01" required value={settings.late_fee} onChange={e=>setSettings(s=>({...s,late_fee:e.target.value}))}/></label>
      <p className="muted">ค่าที่ตั้งนี้เป็นค่าเริ่มต้นเพื่อดูแลหอพัก ขณะนี้ API บิลใช้ค่าอัตราจากแต่ละครั้งที่บันทึกมิเตอร์</p></>}
     <button type="submit" className="btn" disabled={busy||(!unitId&&['parcels','vehicles','rides','documents'].includes(kind))}>{busy?'กำลังบันทึก...':'บันทึก '+labels[kind]}</button>
    </form>}

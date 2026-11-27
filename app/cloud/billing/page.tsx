@@ -28,7 +28,7 @@ export default function CloudBillingPage(){
   const [leases,setLeases]=useState<Lease[]>([])
   const [leaseId,setLeaseId]=useState('')
   const [period,setPeriod]=useState(currentPeriod)
-  const [otherAmount,setOtherAmount]=useState('0.00')
+  const [otherAmount,setOtherAmount]=useState('')
   const [otherLabel,setOtherLabel]=useState('ค่าอื่น ๆ')
   const [meterState,setMeterState]=useState<MeterState|null>(null)
   const [meterError,setMeterError]=useState('')
