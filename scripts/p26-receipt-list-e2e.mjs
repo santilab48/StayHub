@@ -41,10 +41,13 @@ try{
   const receiptLink=page.getByRole('link',{name:'ดูใบเสร็จ',exact:true})
   await receiptLink.waitFor()
   assert.equal(await receiptLink.getAttribute('href'),'/cloud/receipts/'+encodeURIComponent(bill.id)+'?propertyId='+encodeURIComponent(propertyId))
+  assert.equal(await page.locator('main').getByRole('alert').count(),0,'Receipt list must have no application error')
+  assert.equal(await page.getByText('ไม่มีใบเสร็จในหน้านี้').count(),0)
   await receiptLink.click()
   await page.getByRole('button',{name:'พิมพ์ใบเสร็จ',exact:true}).waitFor()
-  assert.equal(await page.getByRole('alert').count(),0)
-  assert.equal(await page.getByText('ไม่มีใบเสร็จในหน้านี้').count(),0)
+  assert.equal(await page.locator('main').getByRole('alert').count(),0,'Receipt page must have no application error')
+  await page.locator('#stayhub-receipt-document').getByText('A101',{exact:true}).waitFor()
+  assert.equal(await page.locator('#stayhub-receipt-document').getByText('1,000.00 บาท',{exact:true}).count()>0,true)
  }finally{await browser.close()}
  console.log('PASS owner receipt list with '+(missing?'18':'19')+' migrations: unpaid/partial hidden, paid balance from PostgreSQL shown in Chromium')
 }finally{await sql.end()}
