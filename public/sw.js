@@ -1,6 +1,6 @@
 // Cache only the local workspace shell and its static code. Authenticated pages and API responses are never cached.
-const CACHE_NAME = 'stayhub-local-shell-v2'
-const PUBLIC_ASSETS = ['/icons/stayhub.svg', '/manifest.webmanifest']
+const CACHE_NAME = 'stayhub-local-shell-v3'
+const PUBLIC_ASSETS = ['/icons/stayhub-v3-192.png', '/icons/stayhub-v3-512.png', '/icons/stayhub-v3-apple-180.png', '/manifest.webmanifest']
 const LOCAL_PAGES = ['/workspace', '/workspace/backup', '/start']
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(PUBLIC_ASSETS)))

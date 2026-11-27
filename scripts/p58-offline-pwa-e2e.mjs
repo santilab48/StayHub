@@ -12,7 +12,7 @@ if(process.env.CI!=='true'||base!=='http://127.0.0.1:3000'||
    new URL(db).pathname!=='/stayhub_p26_ci')
   throw new Error('REFUSED: P5.8 requires isolated localhost CI PostgreSQL')
 
-const browser=await chromium.launch({headless:true})
+const browser=await chromium.launch({headless:true,...(process.env.STAYHUB_CHROMIUM_PATH?{executablePath:process.env.STAYHUB_CHROMIUM_PATH}:{})})
 const context=await browser.newContext({baseURL:base,serviceWorkers:'allow'})
 const room='Offline-room-'+randomBytes(5).toString('hex')
 let page=await context.newPage()
@@ -72,7 +72,7 @@ try {
   await page.reload()
   await page.getByRole('heading',{name:'ห้องพัก'}).waitFor()
   assert.equal(await page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),true)
-  await page.waitForFunction(async ()=>await caches.has('stayhub-local-shell-v2'))
+  await page.waitForFunction(async ()=>await caches.has('stayhub-local-shell-v3'))
   const manifest=await page.request.get('/manifest.webmanifest')
   assert.equal(manifest.status(),200)
   const json=await manifest.json()

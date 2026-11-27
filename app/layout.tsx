@@ -3,7 +3,7 @@ import {adsenseClientId,validAdsenseSlot} from '../lib/ad-config'
 export const metadata = {
   title: 'StayHub',
   description: 'ระบบจัดการที่พักและบิลค่าเช่าในแอปเดียว',
-  icons: { icon: '/icons/stayhub.svg', shortcut: '/icons/stayhub.svg' },
+  icons: { icon: '/icons/stayhub-v3-192.png', shortcut: '/icons/stayhub-v3-192.png', apple: '/icons/stayhub-v3-apple-180.png' },
 }
 export const dynamic='force-dynamic'
 export default function RootLayout({children}:{children:React.ReactNode}){

@@ -59,7 +59,7 @@ export default function JoinClient({token}:{token:string}){
   }
   return <main className={tenant.tenantRoot} style={{minHeight:'100dvh',display:'grid',placeItems:'center',padding:20,background:'#f4f7fb'}}>
     <div style={{width:'100%',maxWidth:390,textAlign:'center',background:'#fff',borderRadius:24,padding:'38px 24px',boxShadow:'0 12px 36px #16203318'}}>
-      <img src="/icons/stayhub.svg" alt="StayHub" width="96" height="96" style={{display:'block',margin:'0 auto 20px'}}/>
+      <img src="/icons/stayhub-v3-192.png" alt="StayHub" width="96" height="96" style={{display:'block',margin:'0 auto 20px'}}/>
       {!installed? validInvite===false?<p role="alert">QR ไม่ถูกต้อง กรุณาขอ QR ใหม่จากที่พัก</p>:installPrompt?
         <button className="btn" style={{width:'100%',minHeight:52}} onClick={async()=>{await installPrompt.prompt();await installPrompt.userChoice;setInstallPrompt(null)}}>ติดตั้งแอป</button>:
         <p>Android: เลือก “ติดตั้งแอป” จากเมนูเบราว์เซอร์<br/>iPhone: เปิดใน Safari แล้วเลือก แชร์ → เพิ่มไปยังหน้าจอโฮม</p>
