@@ -127,6 +127,8 @@ jobs:
         run: |
           npm install --no-save playwright
           npx playwright install --with-deps chromium
+      - name: Test all four property guides and accordion at five mobile widths
+        run: node scripts/p26-property-guide-browser-e2e.mjs
       - name: Test paid receipt list against PostgreSQL and Chromium
         run: node scripts/p26-receipt-list-e2e.mjs
       - name: Test room contract monthly billing in real Chromium
