@@ -26,6 +26,8 @@ export default function RoomsPage(){
  const [targetUnit,setTargetUnit]=useState('')
  const [blockUnit,setBlockUnit]=useState('')
  const [until,setUntil]=useState('')
+ const [focusId,setFocusId]=useState('')
+ useEffect(()=>{setFocusId(new URLSearchParams(window.location.search).get('unitId')||'')},[])
  const load=useCallback(async(id:string)=>{
   if(!id){setRooms([]);setStays([]);setBlocks([]);return}
   const [r,s,b]=await Promise.all([
@@ -66,30 +68,34 @@ export default function RoomsPage(){
   await request('/api/v2/block-room',{propertyId,unitId:blockUnit,reason:'maintenance',endsAt:new Date(until).toISOString()})
   setUntil('');setNotice('ปิดห้องซ่อมบำรุงแล้ว')
  })}
- const activeStays=stays.filter(s=>!s.ends_at||new Date(s.ends_at)>new Date())
+ const focusedRoom=rooms.find(r=>r.id===focusId)
+ useEffect(()=>{if(focusedRoom)setBlockUnit(focusedRoom.id)},[focusedRoom?.id])
+ const shownRooms=focusedRoom?[focusedRoom]:rooms
+ const shownStays=focusedRoom?stays.filter(s=>s.unit_id===focusedRoom.id):stays
+ const activeStays=shownStays.filter(s=>!s.ends_at||new Date(s.ends_at)>new Date())
  const options=rooms.filter(r=>r.active)
  return <main className={dashboardStyles.detail}><div className={dashboardStyles.detailInner}>
   <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/cloud?tab=residents">StayHub <span>Cloud</span></a><a className={dashboardStyles.back} href="/cloud?tab=residents">กลับหน้าจัดการ</a></header>
-  <h1>ห้องพักและผู้พัก · StayHub Cloud</h1>
+  <h1>{focusedRoom?'จัดการห้อง '+focusedRoom.name:'ห้องพักและผู้พัก · StayHub Cloud'}</h1>{focusedRoom&&<p><a className="btn secondary" href="/cloud/rooms">ดูทุกห้อง</a> <a className="btn" href={'/cloud/repairs?unitId='+encodeURIComponent(focusedRoom.id)}>งานแจ้งซ่อมห้องนี้</a></p>}
   <p className="muted">ข้อมูลจาก PostgreSQL/Neon ชุดเดียวกับระบบ QR และระบบบิล</p>
   
   {error&&<p role="alert" className="card section" style={{color:'crimson'}}>{error}</p>}
   {notice&&<p role="status" className="card section">{notice}</p>}
   {propertyId&&<>
-   <section className="card section"><h2>เพิ่มห้องพัก</h2>
+   {!focusedRoom&&<section className="card section"><h2>เพิ่มห้องพัก</h2>
     <form className="flow" onSubmit={create}><label>ชื่อ / เลขห้อง
      <input maxLength={80} required value={name} onChange={e=>setName(e.target.value)} placeholder="เช่น A101"/></label>
      <button type="submit" className="btn" disabled={busy||!name.trim()}>{busy?'กำลังบันทึก...':'+ เพิ่มห้อง'}</button></form>
     <small className="muted">เลขห้องต้องไม่ซ้ำในที่พักเดียวกัน</small>
-   </section>
-   <section className="card section"><h2>ห้องทั้งหมด ({rooms.length})</h2>
-    {!rooms.length?<p>ยังไม่มีห้องพัก</p>:<div className="list">{rooms.map(r=><div className="row" key={r.id}><div>
+   </section>}
+   <section className="card section"><h2>{focusedRoom?'รายละเอียดห้อง':'ห้องทั้งหมด'} ({shownRooms.length})</h2>
+    {!shownRooms.length?<p>ยังไม่มีห้องพัก</p>:<div className="list">{shownRooms.map(r=><div className="row" key={r.id}><div>
      <strong>{r.name}</strong>
      <p className="muted">ผู้พัก {r.occupants}/{r.capacity} · {r.blocked?'ปิดปรับปรุง':r.cleaning?'รอทำความสะอาด':r.occupants?'มีผู้เข้าพัก':'ว่าง'}</p>
     </div><div className="flow"><span className="pill">{r.active?'ใช้งาน':'ปิด'}</span><a className="btn secondary" href={'/cloud/leases?unitId='+encodeURIComponent(r.id)}>สัญญาเช่า</a></div></div>)}</div>}
    </section>
    <section className="card section"><h2>ผู้เข้าพักและประวัติ</h2>
-    {!stays.length?<p>ยังไม่มีผู้เข้าพัก <a href="/cloud?tab=residents">ไปสร้าง QR เชิญและอนุมัติผู้เช่า</a></p>:<div className="list">{stays.map(s=><div key={s.stay_id} className="row">
+    {!shownStays.length?<p>ยังไม่มีผู้เข้าพัก <a href="/cloud?tab=residents">ไปสร้าง QR เชิญและอนุมัติผู้เช่า</a></p>:<div className="list">{shownStays.map(s=><div key={s.stay_id} className="row">
      <div><strong>{s.email}</strong><p className="muted">{s.unit_name} · {s.ends_at?'ย้ายออกแล้ว':'เข้าพัก'} · {String(s.starts_at).slice(0,10)}</p></div>
      {!s.ends_at&&<button type="button" className="btn secondary" disabled={busy} onClick={()=>{if(window.confirm('ยืนยันย้ายออก? หากมีสัญญาเช่าอยู่ต้องยุติสัญญาก่อน'))void act(async()=>{await request('/api/v2/checkout',{propertyId,stayId:s.stay_id});setNotice('บันทึกย้ายออกแล้ว')})}}>ย้ายออก</button>}
     </div>)}</div>}
@@ -107,7 +113,7 @@ export default function RoomsPage(){
      <label>ปิดถึง<input type="datetime-local" required value={until} onChange={e=>setUntil(e.target.value)}/></label>
      <button type="submit" className="btn secondary" disabled={busy||!blockUnit||!until}>ปิดห้อง</button>
     </form>
-    {blocks.map(b=><div className="row" key={b.id}><span>{rooms.find(r=>r.id===b.unit_id)?.name||'ห้อง'} · ปิดถึง {new Date(b.ends_at).toLocaleString('th-TH')}</span>
+    {blocks.filter(b=>!focusedRoom||b.unit_id===focusedRoom.id).map(b=><div className="row" key={b.id}><span>{rooms.find(r=>r.id===b.unit_id)?.name||'ห้อง'} · ปิดถึง {new Date(b.ends_at).toLocaleString('th-TH')}</span>
      <button type="button" className="btn secondary" disabled={busy} onClick={()=>void act(async()=>{await request('/api/v2/unblock-room',{propertyId,blockId:b.id});setNotice('เปิดห้องแล้ว')})}>เปิดห้อง</button></div>)}
    </section>
    <section className="card section"><h2>การเงิน</h2><p><a className="btn" href="/cloud/leases">จัดการสัญญาเช่า</a> <a className="btn secondary" href="/cloud/billing">มิเตอร์และทำบิล</a></p></section>

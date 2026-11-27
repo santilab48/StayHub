@@ -18,6 +18,8 @@ export default function CloudRepairs(){
  const [propertyId,setPropertyId]=useState('')
  const [units,setUnits]=useState<Unit[]>([])
  const [unitId,setUnitId]=useState('')
+ const [focusId,setFocusId]=useState('')
+ useEffect(()=>{setFocusId(new URLSearchParams(window.location.search).get('unitId')||'')},[])
  const [list,setList]=useState<Repair[]>([])
  const [owner,setOwner]=useState(false)
  const [title,setTitle]=useState('')
@@ -48,14 +50,14 @@ export default function CloudRepairs(){
   if(!propertyId){setUnits([]);setUnitId('');return}
   const isOwner=owners.some(x=>x.id===propertyId)
   if(isOwner)void api<{items:Unit[]}>('/api/v2/units?propertyId='+encodeURIComponent(propertyId))
-   .then(r=>{if(active){setUnits(r.items);setUnitId(r.items[0]?.id||'')}})
+   .then(r=>{if(active){setUnits(r.items);setUnitId(r.items.find(u=>u.id===focusId)?.id||r.items[0]?.id||'')}})
    .catch(e=>{if(active)setError(e instanceof Error?e.message:'โหลดห้องไม่สำเร็จ')})
   else{
    const mine=stays.filter(x=>x.property_id===propertyId).map(x=>({id:x.unit_id,name:x.unit_name}))
    setUnits(mine);setUnitId(mine[0]?.id||'')
   }
   return()=>{active=false}
- },[propertyId,owners,stays])
+ },[propertyId,owners,stays,focusId])
  async function run(body:Record<string,unknown>){
   if(busy)return
   setBusy(true);setNotice('');setError('')
@@ -87,8 +89,8 @@ export default function CloudRepairs(){
      <button type="submit" className="btn" disabled={busy||!unitId||!title.trim()||!detail.trim()}>ส่งแจ้งซ่อม</button>
     </form>
    </section>}
-   <section className="card section"><h2>รายการแจ้งซ่อม ({list.length})</h2>
-    {!list.length?<p>ยังไม่มีรายการ</p>:<div className="list">{list.map(r=><div className="card section" key={r.id}>
+   <section className="card section"><h2>รายการแจ้งซ่อม ({list.filter(r=>!focusId||r.unit_id===focusId).length})</h2>{focusId&&<a className="btn secondary" href="/cloud/repairs">ดูงานซ่อมทุกห้อง</a>}
+    {!list.some(r=>!focusId||r.unit_id===focusId)?<p>ยังไม่มีรายการ</p>:<div className="list">{list.filter(r=>!focusId||r.unit_id===focusId).map(r=><div className="card section" key={r.id}>
      <div className="row"><div><strong>{r.unit_name} · {r.title}</strong><p className="muted">{r.detail}</p></div>
       <span className="pill">{r.status}</span></div>
      {r.appointment_at&&<p>นัดหมาย: {new Date(r.appointment_at).toLocaleString('th-TH')} {r.appointment_reply==='confirmed'?'· ผู้พักยืนยันแล้ว':r.appointment_reply==='change_requested'?'· ขอเปลี่ยนเวลา':''}</p>}

@@ -4,6 +4,7 @@ import {accommodationTypes,isAccommodationType,type AccommodationType} from '../
 import authStyles from './auth.module.css'
 import dashboardStyles from './dashboard.module.css'
 import GuesthouseDashboard from './guesthouse-dashboard'
+import RoomOverview,{type OverviewRoom} from './room-overview'
 import SharedAdLayout from '../components/ads/SharedAdLayout'
 type Property={id:string;name:string;property_type:string;role:string}
 type OnboardingScreen='loading'|'choose'|'auth'|'dashboard'|'unavailable'
@@ -134,6 +135,10 @@ export default function CloudOwnerPage(){
   async function loadInvites(id:string){const r=await fetch('/api/v2/invites?propertyId='+encodeURIComponent(id),{cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error);setInvites(data.items)}
   const managedProperty=properties.find(p=>p.role==='owner')||properties.find(p=>p.role==='admin')
   const managedId=managedProperty?.id||''
+  const [roomOverview,setRoomOverview]=useState<OverviewRoom[]>([])
+  const [roomOverviewLoading,setRoomOverviewLoading]=useState(false)
+  const [roomOverviewError,setRoomOverviewError]=useState(false)
+  useEffect(()=>{let active=true;setRoomOverview([]);setRoomOverviewError(false);if(!managedId||managedProperty?.property_type!=='apartment'||dashboardTab!=='property'){setRoomOverviewLoading(false);return}setRoomOverviewLoading(true);void api('occupancy?propertyId='+encodeURIComponent(managedId)).then(r=>{if(active)setRoomOverview(r.items)}).catch(()=>{if(active)setRoomOverviewError(true)}).finally(()=>{if(active)setRoomOverviewLoading(false)});return()=>{active=false}},[managedId,managedProperty?.property_type,dashboardTab])
   useEffect(()=>{
     let active=true
     setSelected(managedId);setQrUnit('');setInvite(null);setUnits([]);setInvites([]);setRequests([]);setApproveUnit('')
@@ -209,6 +214,7 @@ export default function CloudOwnerPage(){
               </form>
             </>}
           </section>
+          {managedId&&<div className={dashboardStyles.full}><RoomOverview rooms={roomOverview} loading={roomOverviewLoading} error={roomOverviewError} hrefFor={id=>'/cloud/rooms?unitId='+encodeURIComponent(id)}/></div>}
         </div>
         <div hidden={dashboardTab!=='residents'} className={dashboardStyles.grid}><section className="card section"><h2>ห้องพักและผู้พัก</h2><p className="muted">เพิ่มห้อง ดูสถานะห้อง ย้ายห้อง และจัดการย้ายออก ผ่านฐานข้อมูล Cloud</p><a className="btn" href="/cloud/rooms">จัดการห้องพัก</a></section><section className="card section"><h2>จัดการสัญญาเช่า</h2><p className="muted">ผูกผู้เช่าที่อนุมัติแล้วเข้ากับสัญญาเช่า ก่อนจดมิเตอร์และออกบิล</p><a className="btn" href="/cloud/leases">เปิดจัดการสัญญาเช่า</a></section><div className={dashboardStyles.full}><section className="card section"><h2>QR เชิญผู้เช่า</h2>
         <p className="muted">สร้าง QR เฉพาะห้อง ผู้เช่าสแกนแล้วระบบจำห้องที่เชิญให้อัตโนมัติ</p>
