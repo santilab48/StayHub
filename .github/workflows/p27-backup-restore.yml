@@ -1,0 +1,76 @@
+name: StayHub P2.7 Backup and Restore Rehearsal
+
+on:
+  push:
+    branches: ['feat/stayhub-p26-readiness']
+    paths:
+      - 'scripts/p27-ci-restore-smoke.mjs'
+      - 'scripts/p27-ci-compare-restored.mjs'
+      - '.github/workflows/p27-backup-restore.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  restore-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: stayhub_p26_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d stayhub_p26_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/stayhub_p26_ci
+      P27_RESTORE_TARGET_URL: postgresql://postgres:postgres@127.0.0.1:5432/stayhub_p27_restore
+      P27_DISPOSABLE_RESTORE: 'YES'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install Node dependencies
+        run: npm install --no-audit --no-fund
+      - name: Ensure PostgreSQL dump/restore clients are available
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v pg_dump >/dev/null || ! command -v pg_restore >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql-client
+          fi
+          pg_dump --version
+          pg_restore --version
+      - name: Create isolated empty restore destination
+        shell: bash
+        run: |
+          PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 \
+            -c 'CREATE DATABASE stayhub_p27_restore'
+      - name: Apply all reviewed migrations to disposable source
+        run: node scripts/p26-ci-migrate.mjs
+      - name: Dump, restore, and compare all tables, constraints and migrations
+        run: node scripts/p27-ci-restore-smoke.mjs
+      - name: Verify source and restore match across 20 tables and finances
+        run: node scripts/p27-ci-compare-restored.mjs
+      - name: Prove mismatch fails closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -d stayhub_p27_restore \
+            -v ON_ERROR_STOP=1 -c "INSERT INTO stayhub.accounts(email) VALUES ('p27-mismatch@example.invalid')"
+          if node scripts/p27-ci-compare-restored.mjs > /tmp/p27-negative.log 2>&1; then
+            echo 'ERROR: mismatch was not detected'
+            exit 1
+          fi
+          grep -q 'REFUSED: restored database is not identical' /tmp/p27-negative.log
+          echo 'PASS comparator rejects a tampered destination'

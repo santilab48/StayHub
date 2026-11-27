@@ -1,80 +1,47 @@
-name: StayHub Build & Deploy
+name: StayHub P1 build and security check (no deploy)
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'feat/**']
+  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  build-and-deploy:
+  validate:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      NEXT_PUBLIC_SUPABASE_URL: https://exqsiwvmjyzkkydfdhby.supabase.co
-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ssBp33CUhUN0K5JNjy-71g_MXBtoNIx
+      # Dummy public configuration for compile checks; never points to production.
+      NEXT_PUBLIC_SUPABASE_URL: https://build-only.invalid
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: build-only-placeholder
       NEXT_TELEMETRY_DISABLED: 1
-      VERCEL_ORG_ID: team_im6lPMQPPf2OuqAs2PhhNgMu
-      VERCEL_PROJECT_ID: prj_53TSCPBI8dRI463Lw8YegwuOl1BR
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Upload source snapshot
-        uses: actions/upload-artifact@v4
-        with:
-          name: stayhub-source
-          path: |
-            app
-            components
-            lib
-            package.json
-            package-lock.json
-            tsconfig.json
-            next.config.*
-            middleware.*
-            proxy.*
-            public
-          if-no-files-found: ignore
-          include-hidden-files: true
-          retention-days: 1
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 24
-
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-
-      - name: Type check and production build
+      - name: Routing and architecture structure test
+        run: npm run test:structure
+      - name: Railway staging migration contract check
+        run: npm run test:migration
+      - name: Identity and QR property isolation contract check
+        run: npm run test:id-binding
+      - name: Railway Local-First sync contract
+        run: node scripts/test-local-sync-contract.mjs
+      - name: IndexedDB v3 persistence, migration and sync tests
+        run: npx tsx --test tests/local-db.test.ts tests/p2b-sync.test.ts
+      - name: Encrypted P5.9 backup and restore regression
+        run: npx tsx --test tests/p59-backup.test.ts
+      - name: Static P1 audit
+        run: npm run audit:p1
+      - name: Type check
+        run: npm run typecheck
+      - name: Production build (no deploy)
         run: npm run build
-
-      - name: Deployment status
-        run: |
-          if [ -z "$VERCEL_TOKEN" ]; then
-            echo "Build passed. Production deploy skipped because VERCEL_TOKEN is not configured."
-          else
-            echo "Build passed. Production deploy is enabled."
-          fi
-
-      - name: Link Vercel project
-        if: ${{ env.VERCEL_TOKEN != '' }}
-        run: |
-          mkdir -p .vercel
-          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > .vercel/project.json
-
-      - name: Pull Vercel production environment
-        if: ${{ env.VERCEL_TOKEN != '' }}
-        run: npx --yes vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
-
-      - name: Build with Vercel production environment
-        if: ${{ env.VERCEL_TOKEN != '' }}
-        run: npx --yes vercel@latest build --prod --token="$VERCEL_TOKEN"
-
-      - name: Deploy production
-        if: ${{ env.VERCEL_TOKEN != '' }}
-        run: npx --yes vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"

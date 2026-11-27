@@ -1,0 +1,176 @@
+# StayHub P1 database migration audit
+
+วันที่ตรวจ 23 พฤศจิกายน 2026 (Asia/Bangkok)
+
+## 1. Repository และขอบเขตหลักฐาน
+
+- Branch `feat/stayhub-p26-readiness` มี local และ remote HEAD ตรงกันที่ `af268700d9c5a8faaf89a5b65c6ae613119fb8ff` ตอนเริ่มตรวจ หลัง fetch และ fast-forward แบบไม่ทับงานเดิม
+- Working tree สะอาดก่อนสร้างรายงานนี้
+- งานนี้อ่าน repository และลอง HTTP GET ไปยัง health endpoint เท่านั้น ไม่มี SQL ต่อ Production เพราะเครื่องงานไม่มีการเชื่อมต่อฐานข้อมูลหรือเครื่องมือ Railway/Neon ที่ใช้งานได้
+- `https://stayhub-production-ac298aeb.up.railway.app/api/health/db/transport` และ Staging endpoint เดียวกันตอบ `CONNECT tunnel failed, response 403` จาก proxy จึงไม่มีผล health สด
+
+## 2. Railway PostgreSQL Production inventory
+
+**BLOCKED — ยังตรวจฐาน `Postgres-PDqf` สดไม่ได้** ไม่มี `DATABASE_URL`, Railway connection binding, CLI หรือ `psql` ในเครื่องงาน และเครือข่ายไม่ให้เข้าถึงบริการเป้าหมาย จึงยังยืนยันชื่อฐาน, role, server version, table inventory, row count, migration ledger และการเชื่อมต่อของ Production app ณ เวลาตรวจไม่ได้
+
+เอกสารเดิม `docs/P27D_RAILWAY_PRODUCTION_EMPTY_DATA_EVIDENCE.md` บันทึกผล SQL ที่ผู้ใช้เคยส่งเมื่อ 22 พฤศจิกายน 2026 ว่า Railway Production มี 20 ตาราง, migration 11 รายการ และข้อมูลธุรกิจ 19 ตารางเป็นศูนย์ ณ เวลานั้น ผลดังกล่าวเป็นหลักฐานย้อนหลัง ไม่ใช่ row count ปัจจุบัน และไม่ครอบคลุม migration 012–014
+
+## 3. Neon PostgreSQL Production inventory
+
+**BLOCKED — ยังตรวจ Neon Production สดไม่ได้** ไม่มี connection binding หรือ Neon API ที่ใช้ตรวจ project, branch, database, migration ledger, schema หรือ row count ปัจจุบัน
+
+เอกสารเดิม `docs/P28B_NEON_PRODUCTION_VERIFY.md` และ `docs/P28F1_PRODUCTION_PREFLIGHT.md` ระบุ project `late-darkness-78944075`, Production branch `br-snowy-tree-a1kt7omx` และ database `neondb` พร้อมผลเปรียบเทียบในช่วงเวลาที่จัดทำเอกสารนั้น การตรวจครั้งนี้ยังยืนยันตัวตนและสถานะล่าสุดไม่ได้
+
+## 4. Row counts ทุกตาราง
+
+ตารางต่อไปนี้ได้จาก migration 001–014 ใน repository เท่านั้น จำนวนแถวสดของ **ทั้ง Railway Production และ Neon Production เป็น BLOCKED ทุกตาราง**
+
+| ตารางใน schema `stayhub` | Railway Production | Neon Production |
+|---|---|---|
+| accounts | BLOCKED | BLOCKED |
+| announcements | BLOCKED | BLOCKED |
+| auth_attempts | BLOCKED | BLOCKED |
+| billing_bill_items | BLOCKED | BLOCKED |
+| billing_bills | BLOCKED | BLOCKED |
+| billing_meter_readings | BLOCKED | BLOCKED |
+| billing_payments | BLOCKED | BLOCKED |
+| drivers | BLOCKED | BLOCKED |
+| housekeeping_tasks | BLOCKED | BLOCKED |
+| invites | BLOCKED | BLOCKED |
+| join_requests | BLOCKED | BLOCKED |
+| leases | BLOCKED | BLOCKED |
+| local_sync_receipts | BLOCKED | BLOCKED |
+| local_sync_revisions | BLOCKED | BLOCKED |
+| notifications | BLOCKED | BLOCKED |
+| parcels | BLOCKED | BLOCKED |
+| properties | BLOCKED | BLOCKED |
+| property_memberships | BLOCKED | BLOCKED |
+| property_settings | BLOCKED | BLOCKED |
+| repair_requests | BLOCKED | BLOCKED |
+| reservations | BLOCKED | BLOCKED |
+| ride_requests | BLOCKED | BLOCKED |
+| room_documents | BLOCKED | BLOCKED |
+| sessions | BLOCKED | BLOCKED |
+| stay_events | BLOCKED | BLOCKED |
+| stays | BLOCKED | BLOCKED |
+| unit_blocks | BLOCKED | BLOCKED |
+| units | BLOCKED | BLOCKED |
+| vehicles | BLOCKED | BLOCKED |
+| schema_migrations (ledger) | BLOCKED | BLOCKED |
+
+บัญชี ห้องพัก ผู้เช่าที่ผูกกับ `stays` และ `property_memberships`, สัญญา, มิเตอร์, บิล, รายการบิล และการชำระเงินจึงยังไม่สามารถกำหนดปริมาณข้อมูลที่จะย้ายจากผลตรวจปัจจุบันได้
+
+## 5. Schema และ migration comparison
+
+Repository มี migration `001`–`014` ครบตามลำดับไฟล์ รายการ 001–011 สร้างฐานหลัก, สิทธิ์, การพักและ billing; 012 เพิ่ม operational modules; 013 เพิ่ม repair workflow; 014 เพิ่ม `local_sync_receipts` และ `local_sync_revisions` สำหรับ Sync บน Staging Migration 014 มี foreign key ไปยัง `properties` และ `accounts`, primary key ของ `operation_id`, unique key ของ revision ตาม property/entity และ check constraints
+
+**BLOCKED — ยังเปรียบเทียบ schema, index, constraint, foreign key และ checksum ledger ของฐานจริงไม่ได้** จำนวน migration ที่ติดตั้งจริงบนแต่ละ Production database ยังไม่ทราบ `app/api/health/db/route.ts` คาด 13 รายการสำหรับ provider ทั่วไป และ 14 รายการสำหรับ Neon Staging หรือ isolated CI เท่านั้น เงื่อนไขในโค้ดไม่ใช่หลักฐานว่าฐาน Production ติดตั้งตามนั้น
+
+สำหรับการตรวจซ้ำให้ดึง `stayhub.schema_migrations` พร้อม checksum และ `pg_catalog` ของทั้งสองฐานแบบ read-only โดยตรวจตัวตน project, environment, branch และ database ก่อน เปรียบเทียบตาราง คอลัมน์ ชนิดข้อมูล default, index definition, constraint definition และ foreign key แบบ normalized จึงจะระบุ migration ที่ขาดหรือ schema drift ได้
+
+## 6. Production database connection verification
+
+**BLOCKED — ไม่สามารถยืนยันค่า `DATABASE_URL` หรือปลายทางที่ Production app ใช้จริง** เครื่องงานไม่มี binding ของ Railway Production และไม่สามารถอ่าน Railway variables หรือ health endpoint ได้
+
+การอ่านโค้ด `lib/db/postgres.ts` ยืนยันได้เพียงกติกาเลือก connection string ถ้า `STAYHUB_DB_PROVIDER=neon-production` จะใช้ `STAYHUB_NEON_PRODUCTION_URL` ภายใต้ Railway Production identity guard; ถ้า `neon-staging` จะใช้ Staging URL; กรณีอื่นใช้ `DATABASE_URL` การมีชื่อตัวแปรหรือค่าเริ่มต้นในโค้ดไม่พิสูจน์ค่าที่ Production ตั้งอยู่จริง เอกสาร `docs/P28F1_PRODUCTION_PREFLIGHT.md` ก็ระบุว่าการยืนยันปลายทาง `DATABASE_URL` ถูกบล็อกในครั้งก่อน
+
+## 7. API dependency inventory
+
+- เส้นทาง `app/api/v2/[action]`, `bills`, `leases`, `meter-readings`, `operations`, `repairs`, `reservations` และ `sync` ใช้ `lib/db/postgres.ts` รวมถึง session ที่ `lib/cloud-identity.ts` ผ่าน `postgresQuery` หรือ transaction ดังนั้นปลายทางจริงขึ้นกับ provider variables ของ runtime
+- Sync API ที่ `app/api/v2/sync` จำกัดเส้นทาง production โดย environment guard และต้องอาศัย migration 014 บน Staging สำหรับ receipt/revision
+- `lib/db/neon.ts` เป็น helper ที่อ่าน `DATABASE_URL` โดยตรง แต่การค้นหา import ใน `app` และ `lib` ไม่พบ caller ปัจจุบัน จึงยังไม่ใช่หลักฐานว่า API สดใช้ helper นี้
+- `lib/supabase-browser.ts`, `lib/supabase.ts`, `lib/server-auth.ts` และหลาย component ใน `components/` ยังมีการใช้งาน Supabase Auth, table, storage หรือ RPC โดยตรง เช่น `FinanceRateSettingsForm.tsx` และ `finalize-contract-client.ts` งานย้ายฐานข้อมูลต้อง inventory callsite เหล่านี้แยกจาก PostgreSQL API ก่อนเปลี่ยน provider
+- ยังไม่สามารถยืนยัน traffic หรือ dependency ของ Production app runtime จากผลตรวจนี้
+
+## 8. UI/UX preservation
+
+รายงานนี้ไม่มีการแก้ไฟล์ UI, layout, style, route, component, business logic, migration, CI หรือการตั้งค่าระบบ จึงไม่เปลี่ยนหน้าตาหรือพฤติกรรม UI/UX จาก commit ที่ตรวจ
+
+## 9. Blockers และ risks
+
+1. ไม่มี read-only access ที่ยืนยันตัวตนไปยัง Railway Production และ Neon Production ในเครื่องงานนี้; proxy ตอบ `403` ต่อ health endpoints
+2. ไม่มีหลักฐานสดของ row count และ schema parity; ผลในเอกสารเก่าอาจเปลี่ยนแล้ว ห้ามสรุปว่าฐานใดว่างหรือพร้อมย้าย
+3. Production provider variables และปลายทาง `DATABASE_URL` ยังยืนยันไม่ได้
+4. Migration 012–014 เพิ่มตาราง/ข้อกำหนดจากหลักฐานเก่าที่มีเพียง 001–011; สถานะการติดตั้งจริงไม่ทราบ
+5. Supabase callsite ใน frontend และ auth/storage ยังต้องตรวจครบก่อนออกแบบการย้ายข้อมูลและการคงฟังก์ชันเดิม
+
+## 10. งานจำเป็นสำหรับ P2
+
+- จัดช่องทาง read-only ที่ตรวจ environment, Neon branch และ database identity ได้ โดยไม่พิมพ์ secret ลง log หรือรายงาน
+- เก็บ exact `COUNT(*)` ของทุกตารางและ checksum migration ledger ของทั้งสอง Production database ณ เวลาเดียวกัน พร้อม schema/index/constraint/foreign key inventory จาก `pg_catalog`
+- ยืนยันปลายทางจริงของ Production app และตัวแปร provider ด้วย metadata ที่ไม่เปิดเผยค่า secret และ probe จาก runtime ที่ผูกกับ environment จริง
+- เทียบข้อมูลบัญชี ที่พัก ห้อง ผู้พัก สัญญา มิเตอร์ บิล และการชำระเงิน รวมถึง dependency ของ Supabase Auth, storage และ RPC ก่อนกำหนดวิธีย้าย
+- ระบุ migration ที่ขาดจากผลเทียบจริง แล้วออกแบบแผน copy, verification, rollback และการรักษา UI/ฟังก์ชันเดิมในงาน P2 ที่ได้รับมอบหมายภายหลัง
+
+P1 รอบนี้ยังไม่ผ่านเกณฑ์ตรวจฐานต้นทางและปลายทางครบ เพราะข้อจำกัดการเข้าถึงข้างต้น ไม่มีการเขียนฐานข้อมูล รัน migration เปลี่ยน environment variable หรือ deploy
+
+---
+
+## P1.1 — Live connector verification (2026-11-23, Asia/Bangkok)
+
+This section supersedes the earlier **BLOCKED** classification specifically for **Neon Production**. The P1 audit above describes a different workspace that lacked database connectors. The new findings below came from the authenticated Neon and Railway connectors using read-only calls; no UI, migrations, runtime configuration or deployment was changed.
+
+**Neon Production identity VERIFIED:** project `late-darkness-78944075`, branch `br-snowy-tree-a1kt7omx` (default, production), database `neondb`, SQL role `neondb_owner`.
+
+**Neon exact COUNT(*) VERIFIED:** 28 base tables in schema `stayhub`, 13 applied migration ledger entries (001–013); migration 014 is not installed on Neon Production. The nonzero table counts are `accounts=1`, `auth_attempts=1`, `invites=1`, `properties=1`, `property_memberships=1`, `sessions=1`, `units=1`, `schema_migrations=13`. Every other table of the 28 (20 tables) has exactly zero rows, including all billing and payment tables. There are **seven business/operational tables with one row each** plus the migration ledger. These counts are live, not `pg_stat` estimates.
+
+**Railway Production service VERIFIED via connector:** project `a8a5a434-4d18-438f-b4ea-ece072094595`, environment `c9c4b13a-9041-4ae6-bd50-2d02b546b053`. App `StayHub` (service `3af8aa8a-2678-47f5-bdf2-aea4fa78c17a`) is online, deployed commit `fedc125761369ad61f874c754ae23ac049266b7a`. Railway database `Postgres-PDqf` (service `5aa5ca84-dc09-4448-8177-860bcab4ea43`) is online with its existing mounted production volume. The production app's current deployment logs state `Production DB environment and identity verified (no credentials disclosed)` and `Neon production migration history verified; no migration executed`. Thus the deployed **pre-deploy migration hook** selected and verified Neon Production. The connector returns runtime variable **names only**, not values, so the actual running app pool's destination is not independently established by this evidence; do not equate deployment-hook evidence with all live API connections.
+
+**Railway Production SQL STILL BLOCKED:** Railway's connected OAuth tooling lists services, variable names, logs and deployments, but does not expose a direct production SQL query/psql action or unredacted connection parameters. Exact Railway table counts, schema/index parity, migration ledger and data equality remain unverified. Previous Railway row-count evidence is historical, not current.
+
+**Migration difference:** repository contains 001–014; Neon Production ledger contains 001–013 (13), while `014_local_sync.sql` is not yet applied there. Railway's ledger remains unknown; do not infer it from app health or CI.
+
+**Decision: P1 PARTIAL / migration cutover BLOCKED** until exact Railway Production inventory and server destination verification can be obtained through an approved, authenticated read-only route. Do not delete/overwrite either database. No data copy, production environment change, migration or deploy occurred in this P1.1 update.
+
+## P1.2 — Additional verified metadata and Railway access boundary
+
+Read-only Neon Production SQL directly confirmed **240 columns**, **85 indexes**, **401 table constraints** (as exposed by `information_schema.table_constraints`, including 74 foreign keys), and extensions `btree_gist 1.8`, `pgcrypto 1.4`, `plpgsql 1.0`. This is the live Neon schema; it does **not** establish parity with Railway.
+
+The already-existing repository script `scripts/p27-readonly-inventory.mjs` has a Railway Production environment/DB identity guard, starts a `REPEATABLE READ READ ONLY` transaction, and returns exact table counts, migration filename/checksums, installed extensions and billing aggregates **without exporting customer records**. It can provide the missing Railway evidence in an approved trusted production execution context; do not insert it into the app's production pre-deploy hook.
+
+The connected Railway API exposes service inventory, deployment status/logs and variable **names** but no direct SQL execution and no value for the existing `DATABASE_URL`. No runnable environment fork or existing Railway cloud-agent task was found. Thus this session cannot independently execute `scripts/p27-readonly-inventory.mjs` against the production Railway database. The historical 2026-11-22 empty-table observation cannot substitute for a current count.
+
+**P1.2 result: Neon inspected; Railway exact database parity remains BLOCKED.** Do not promote code, run schema migrations, perform data transfer, change variables, deploy or decommission Neon until the actual Railway production database has been inventoried and the source/target data discrepancy is resolved.
+
+## P1.3 — Railway Production live psql evidence (user-supplied session, 2026-11-23)
+
+A direct Railway SSH session to production service `Postgres-PDqf` established a TLS 1.3 psql connection (PostgreSQL client 18.6). Within `BEGIN TRANSACTION READ ONLY`, `current_database() = railway` and `current_user = postgres`. The live `stayhub.schema_migrations` query returned exactly **11 migration records, 001–011**. Their filename/checksum pairs match those independently observed on Neon Production for 001–011. Repository contains migrations 001–014; Railway is missing **012–014** as of this inspection, while Neon Production has 001–013 and is missing 014.
+
+**Railway live row counts and live schema inventory remain BLOCKED.** The bulk row-count SQL provided to the operator failed with a syntax error near `[1]` (invalid array subscript syntax on the provided expression), aborting its read-only transaction. The later column/index/constraint query was not executed because that transaction was already aborted. The operator issued `ROLLBACK`, successfully ending the failed transaction. No data changes were made, and no row-count result may be inferred from this failure. Historical Railway empty-table evidence is not a current count.
+
+The SSH session was executed by the operator, not via this assistant's Railway connector. Database connection is proved by the operator's captured terminal output; application runtime `DATABASE_URL` remains unreadable through OAuth-linked variables, and the deployment-hook logs separately indicate Neon Production use. **P1 status remains PARTIAL / Cutover BLOCKED**, pending Railway exact counts/schema comparison and safe migration/data-transfer planning. No UI or backend files were modified in this P1.3 documentation update.
+
+## P1.4 — Railway exact per-table counts verified (2026-11-23)
+
+The operator used authenticated Railway SSH to the Production PostgreSQL service and executed an exact `COUNT(*)` per `stayhub` table via `psql`'s `\\gexec` facility. This is fresh, real Production data, not an estimate.
+
+Railway Production has exactly **20 StayHub tables**, **11 recorded migrations** (001–011), and **zero business rows in all 19 business tables**:
+
+| Table | Exact Railway Production COUNT(*) |
+|---|---:|
+| accounts | 0 |
+| auth_attempts | 0 |
+| billing_bill_items | 0 |
+| billing_bills | 0 |
+| billing_meter_readings | 0 |
+| billing_payments | 0 |
+| housekeeping_tasks | 0 |
+| invites | 0 |
+| join_requests | 0 |
+| leases | 0 |
+| notifications | 0 |
+| properties | 0 |
+| property_memberships | 0 |
+| reservations | 0 |
+| schema_migrations | 11 |
+| sessions | 0 |
+| stay_events | 0 |
+| stays | 0 |
+| unit_blocks | 0 |
+| units | 0 |
+
+Compare to the authenticated, directly queried Neon Production: 28 tables, 13 migration records (001–013), seven non-migration tables containing a single row each: `accounts`, `auth_attempts`, `invites`, `properties`, `property_memberships`, `sessions`, `units`. Neon has no billing bill or payment rows.
+
+**P1.4 conclusion:** Railway is demonstrably empty of business rows, while Neon is not; Production cutover without verified migration of those seven tables would lose user/account/property/unit continuity. Railway needs the reviewed 012–013 schema steps before transferring related operational data; migration 014 remains staging-only by its SQL comment and current API gating, so do not automatically apply it to Production. Exact cross-database indexes/constraints/columns and application runtime target remain unverified. P2 requires backup/restore verification and an ordered migration plan; P1 is now substantially more complete, but **full schema parity and Production runtime provider remain BLOCKED**.
+
+This update only documents observed evidence. No UI/UX, logic, schema, database data, environment variables or deployment was changed.

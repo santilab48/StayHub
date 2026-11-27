@@ -7,12 +7,12 @@ export default function AdminShell({slug,title,children}:{slug:string,title:stri
  const r=tenantRoutes(slug)
  const pathname=usePathname()
  const nav=[
-  ['สิ่งที่ต้องทำ',r.adminTodo,'✓'],
-  ['ทำบิล',r.adminBillingTab,'฿'],
-  ['การเงิน',r.adminFinance,'▤'],
-  ['สัญญา',r.adminContractsTab,'✍️'],
-  ['ผู้เช่า',r.adminResidentsTab,'👥'],
-  ['ทั่วไป',r.adminGeneralTab,'⚙️']
+  ['สิ่งที่ต้องทำ','/cloud','✓'],
+  ['ทำบิล','/cloud/billing','฿'],
+  ['การเงิน','/cloud/billing','▤'],
+  ['สัญญา','/cloud/leases','✍️'],
+  ['ผู้เช่า','/cloud/rooms','👥'],
+  ['ทั่วไป','/cloud','⚙️']
  ]
  const active=(href:string)=>href===r.adminTodo?pathname===r.adminTodo:pathname===href||pathname.startsWith(`${href}/`)
  return <main className="wrap adminAppShell">

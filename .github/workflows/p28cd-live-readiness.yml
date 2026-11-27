@@ -1,0 +1,54 @@
+name: StayHub P2.8-C/D Neon staging backend readiness
+
+on:
+  push:
+    branches: ['feat/stayhub-p26-readiness']
+    paths:
+      - '.github/workflows/p28cd-live-readiness.yml'
+      - 'scripts/p28cd-neon-live-readiness.mjs'
+      - 'app/api/health/db/transport/route.ts'
+      - 'lib/db/postgres.ts'
+      - 'scripts/test-p28cd-neon-transport.mjs'
+      - 'scripts/migrate-production.mjs'
+      - 'scripts/test-p28e-cutover-preflight.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stayhub-p28cd-live-readiness
+  cancel-in-progress: false
+
+jobs:
+  live-readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      P26_NEON_LIVE_E2E_BASE: https://stayhub-fsd-staging.up.railway.app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify Neon transport configuration
+        run: node scripts/test-p28cd-neon-transport.mjs
+      - name: Verify production cutover preflight guards
+        run: |
+          npm install --ignore-scripts --no-save --package-lock=false
+          node scripts/test-p28e-cutover-preflight.mjs
+      - name: Wait for staging TLS probe from this branch
+        shell: bash
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error --max-time 10 \
+                "$P26_NEON_LIVE_E2E_BASE/api/health/db/transport" \
+                | node -e "let s='';process.stdin.on('data',x=>s+=x);process.stdin.on('end',()=>{try{if(JSON.parse(s).tls!==true)process.exit(1)}catch{process.exit(1)}})"; then
+              exit 0
+            fi
+            sleep 6
+          done
+          echo 'Staging TLS probe did not become ready' >&2
+          exit 1
+      - name: Auth, rate limit, QR, lease, meter, bill and payments E2E
+        run: node scripts/p28cd-neon-live-readiness.mjs

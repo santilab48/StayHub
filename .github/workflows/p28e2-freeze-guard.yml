@@ -1,0 +1,55 @@
+name: StayHub P2.8-E2 freeze guard review
+
+on:
+  push:
+    branches: ['feat/stayhub-p26-readiness']
+    paths:
+      - 'middleware.ts'
+      - 'lib/db/postgres.ts'
+      - 'app/api/health/db/freeze/route.ts'
+      - 'scripts/test-p28e2-write-freeze.mjs'
+      - '.github/workflows/p28e2-freeze-guard.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate maintenance and pool contracts
+        run: node scripts/test-p28e2-write-freeze.mjs
+      - name: Install dependencies
+        run: npm install --ignore-scripts --no-save --package-lock=false
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
+        run: npm run build
+      - name: Exercise frozen HTTP gate on isolated CI server
+        shell: bash
+        run: |
+          STAYHUB_WRITE_FREEZE=YES PORT=3100 npm run start > /tmp/stayhub-freeze-ci.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 30); do
+            if curl --silent --output /dev/null http://127.0.0.1:3100/; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo 'CI HTTP server did not start'
+            exit 1
+          fi
+          for method in GET POST; do
+            status=$(curl -s -o /tmp/freeze-response.json -w '%{http_code}' -X "$method" http://127.0.0.1:3100/api/ci-noop)
+            test "$status" = '503'
+            node -e "const d=require('/tmp/freeze-response.json');if(d.status!=='maintenance')process.exit(1)"
+          done
+          status=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3100/api/health/db/freeze)
+          test "$status" = '404'

@@ -1,0 +1,152 @@
+name: StayHub P2.6 isolated Auth and QR HTTP E2E
+
+on:
+  push:
+    branches: ['feat/stayhub-p26-readiness']
+    paths:
+      - 'app/**'
+      - 'lib/**'
+      - 'db/migrations/**'
+      - 'scripts/p26-*.mjs'
+      - 'scripts/p53-browser-e2e.mjs'
+      - 'scripts/p57-receipt-browser-e2e.mjs'
+      - 'scripts/p58-offline-pwa-e2e.mjs'
+      - 'scripts/p59-ci-postgres-restore.sh'
+      - 'scripts/p60-membership-http-e2e.mjs'
+      - 'scripts/p60-membership-provision.mjs'
+      - 'scripts/p61-membership-browser-e2e.mjs'
+      - 'scripts/p63-platform-admin-http-e2e.mjs'
+      - 'scripts/p64-platform-admin-provision.mjs'
+      - 'scripts/p64-platform-admin-provision-e2e.mjs'
+      - 'scripts/check-membership-production.mjs'
+      - 'scripts/migrate-production.mjs'
+      - 'neon/membership/**'
+      - 'tests/p2b-sync.test.ts'
+      - '.github/workflows/p26-isolated-http-e2e.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'lib/**'
+      - 'db/migrations/**'
+      - 'scripts/p26-*.mjs'
+      - 'scripts/p53-browser-e2e.mjs'
+      - 'scripts/p57-receipt-browser-e2e.mjs'
+      - 'scripts/p58-offline-pwa-e2e.mjs'
+      - 'scripts/p59-ci-postgres-restore.sh'
+      - 'scripts/p60-membership-http-e2e.mjs'
+      - 'scripts/p60-membership-provision.mjs'
+      - 'scripts/p61-membership-browser-e2e.mjs'
+      - 'scripts/p63-platform-admin-http-e2e.mjs'
+      - 'scripts/p64-platform-admin-provision.mjs'
+      - 'scripts/p64-platform-admin-provision-e2e.mjs'
+      - 'scripts/check-membership-production.mjs'
+      - 'scripts/migrate-production.mjs'
+      - 'neon/membership/**'
+      - 'tests/p2b-sync.test.ts'
+      - '.github/workflows/p26-isolated-http-e2e.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stayhub-p26-isolated-e2e
+  cancel-in-progress: true
+
+jobs:
+  isolated-http-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: stayhub_p26_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d stayhub_p26_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/stayhub_p26_ci
+      RAILWAY_ENVIRONMENT_NAME: staging
+      RAILWAY_ENVIRONMENT_ID: ced39691-4fe7-4707-bba7-6d0e801f1ff8
+      STAYHUB_ENABLE_TEST_SIGNUP: '1'
+      STAYHUB_LOCAL_SYNC_TEST: '1'
+      P26_E2E_BASE: http://127.0.0.1:3000
+      STAYHUB_MEMBERSHIP_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/stayhub_membership_ci
+      NEXT_PUBLIC_SUPABASE_URL: https://build-only.invalid
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: build-only-placeholder
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --no-audit --no-fund
+      - name: Apply all migrations to isolated local CI database only
+        run: node scripts/p26-ci-migrate.mjs
+      - name: Create separate membership PostgreSQL test database (Neon stand-in)
+        run: |
+          PGPASSWORD=postgres createdb -h 127.0.0.1 -U postgres stayhub_membership_ci
+          PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 -d stayhub_membership_ci -f neon/membership/001_membership.sql
+          PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 -d stayhub_membership_ci -f neon/membership/002_platform_admins.sql
+          PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 -d stayhub_membership_ci -f neon/membership/003_platform_admin_audit.sql
+          PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 -d stayhub_membership_ci -f neon/membership/004_platform_admin_approvers.sql
+      - name: Boot localhost Next.js with disposable CI Postgres only
+        shell: bash
+        run: |
+          npm run dev -- --hostname 127.0.0.1 --port 3000 > /tmp/stayhub-p26-next.log 2>&1 &
+          echo $! > /tmp/stayhub-p26-next.pid
+          for i in $(seq 1 45); do
+            if curl --silent --fail http://127.0.0.1:3000/api/health/db >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          tail -100 /tmp/stayhub-p26-next.log
+          exit 1
+      - name: Test registration, session, QR and authorization over HTTP
+        run: node scripts/p26-http-e2e.mjs
+      - name: Test QR device pending approval isolation and revocation
+        run: node scripts/p26-tenant-device-http-e2e.mjs
+      - name: Test contract bill, PDF, receipt and tenant isolation
+        run: node scripts/p26-tenant-contract-billing-e2e.mjs
+      - name: Test separate Neon membership integration and scoped entitlements
+        run: node scripts/p60-membership-http-e2e.mjs
+      - name: Test server-authorized Platform Admin membership directory and revocation
+        run: node scripts/p63-platform-admin-http-e2e.mjs
+      - name: Test dual-signed operator grant and revoke with immutable audit
+        run: node scripts/p64-platform-admin-provision-e2e.mjs
+      - name: Verify isolated membership DB identity and reader schema preflight
+        run: node scripts/check-membership-production.mjs
+      - name: Install Chromium for isolated browser E2E
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Test all four property guides and accordion at five mobile widths
+        run: node scripts/p26-property-guide-browser-e2e.mjs
+      - name: Test paid receipt list against PostgreSQL and Chromium
+        run: node scripts/p26-receipt-list-e2e.mjs
+      - name: Test room contract monthly billing in real Chromium
+        run: node scripts/p26-room-billing-browser-e2e.mjs
+      - name: Test tenant install and standalone approval flow in mobile Chromium
+        run: node scripts/p26-tenant-pwa-browser-e2e.mjs
+      - name: Test six tenant tiles and original contract at 390px
+        run: node scripts/p26-tenant-billing-ui-e2e.mjs
+      - name: Test member status page in real Chromium
+        run: node scripts/p61-membership-browser-e2e.mjs
+      - name: Test two independent browser contexts with offline conflict
+        run: node scripts/p53-browser-e2e.mjs
+      - name: Test paid receipt access and Chromium printed PDF
+        run: node scripts/p57-receipt-browser-e2e.mjs
+      - name: Test installed PWA offline reload and IndexedDB persistence
+        run: node scripts/p58-offline-pwa-e2e.mjs
+      - name: Drill logical PostgreSQL backup and restore on disposable CI database
+        run: bash scripts/p59-ci-postgres-restore.sh
+      - name: Print web logs on failure
+        if: failure()
+        run: tail -120 /tmp/stayhub-p26-next.log || true

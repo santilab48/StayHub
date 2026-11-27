@@ -1,11 +1,4 @@
-import AdminShell from '../../../../../components/AdminShell'
-import FinanceTabs from '../../../../../components/FinanceTabs'
-import MeterEntryWorkspace from '../../../../../components/MeterEntryWorkspace'
-
-export default async function Page({params}:{params:Promise<{tenantSlug:string}>}){
-  const {tenantSlug}=await params
-  return <AdminShell slug={tenantSlug} title="บันทึกน้ำ / ไฟ">
-    <FinanceTabs slug={tenantSlug}/>
-    <MeterEntryWorkspace/>
-  </AdminShell>
-}
+import {redirect} from 'next/navigation'
+// Legacy page used an unconnected Supabase screen. Route owners to the
+// authenticated PostgreSQL-backed Cloud workflow instead of inert controls.
+export default function Page(){redirect('/cloud/billing')}

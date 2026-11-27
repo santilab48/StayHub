@@ -1,1 +1,2 @@
-export default function Page(){return <main className="wrap"><a href="/">← กลับ</a><div className="card" style={{marginTop:18}}><h1>แจ้งซ่อม</h1><p className="muted">เลือกประเภทปัญหา แนบรูป เลือกเวลาสะดวก และติดตามสถานะงาน</p></div></main>}
+import {redirect} from 'next/navigation'
+export default function Page(){redirect('/my')}

@@ -1,0 +1,43 @@
+name: StayHub P2.7 Read-only inventory contract
+
+on:
+  push:
+    branches: ['feat/stayhub-p26-readiness']
+    paths:
+      - 'scripts/p27-readonly-inventory.mjs'
+      - 'scripts/p27-test-readonly-inventory.mjs'
+      - '.github/workflows/p27-inventory-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inventory-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: railway
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d railway"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      P27_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/railway
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install packages
+        run: npm install --no-audit --no-fund
+      - name: Verify inventory with disposable CI PostgreSQL
+        run: node scripts/p27-test-readonly-inventory.mjs

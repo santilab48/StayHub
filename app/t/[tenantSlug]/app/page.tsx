@@ -1,3 +1,3 @@
-import TenantShell from '../../../../components/TenantShell'
-import { tenantRoutes } from '../../../../lib/routes'
-export default async function Page({params}:{params:Promise<{tenantSlug:string}>}){const {tenantSlug}=await params;const r=tenantRoutes(tenantSlug);const items=[['🏠','ห้องของฉัน','ข้อมูลห้อง • สัญญา • เงินประกัน',r.room],['💳','บิล & ชำระ','ค่าเช่า • น้ำไฟ • สลิป • ใบเสร็จ',r.billing],['🔧','แจ้งซ่อม','แจ้งปัญหา • นัดหมาย • ติดตาม',r.repair],['📦','บริการ','พัสดุ • รถรับจ้าง • Grab',r.services],['📢','ข่าวสาร','ประกาศ • กฎ • แจ้งเตือน',r.news]];return <TenantShell slug={tenantSlug} title="หน้าหลัก"><div className="grid">{items.map(([i,t,d,h])=><a className="card tile" href={h} key={t}><span className="icon">{i}</span><div><h3>{t}</h3><div className="muted">{d}</div></div></a>)}</div></TenantShell>}
+import {redirect} from 'next/navigation'
+// Resident dashboard is available at /my with Neon Cloud session checks.
+export default function Page(){redirect('/my')}

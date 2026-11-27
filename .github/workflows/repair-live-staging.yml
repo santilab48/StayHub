@@ -1,0 +1,28 @@
+name: StayHub Repair Live Staging E2E
+on:
+  push:
+    branches: ['feat/stayhub-p26-readiness']
+    paths:
+      - 'app/api/v2/repairs/**'
+      - 'db/migrations/013_repair_workflow.sql'
+      - 'scripts/repair-live-staging-e2e.mjs'
+      - '.github/workflows/repair-live-staging.yml'
+permissions:
+  contents: read
+concurrency:
+  group: stayhub-repair-live
+  cancel-in-progress: true
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Exercise approved staging only
+        run: node scripts/repair-live-staging-e2e.mjs
+        env:
+          CI: 'true'
+          STAYHUB_REPAIR_TEST_BASE: https://stayhub-fsd-staging.up.railway.app

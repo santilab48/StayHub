@@ -1,0 +1,3652 @@
+[
+  {
+    "where": "apartment:overview",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:ที่พัก",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:ห้องพักและผู้เช่า",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:การเงิน",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:งานบริการ",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:สมาชิก",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:overview",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:ที่พัก",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:ห้องพักและผู้เช่า",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:การเงิน",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:งานบริการ",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:สมาชิก",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:overview",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:ที่พัก",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:ห้องพักและผู้เช่า",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:การเงิน",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:งานบริการ",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:สมาชิก",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:overview",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:ที่พัก",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:ห้องพักและผู้เช่า",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:การเงิน",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:งานบริการ",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:สมาชิก",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:overview",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:ที่พัก",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:ห้องพักและผู้เช่า",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      },
+      {
+        "text": "สร้าง QR ประจำห้อง",
+        "width": 310,
+        "height": 43
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:การเงิน",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:งานบริการ",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "apartment:สมาชิก",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:overview",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:ภาพรวม",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:การจอง",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      },
+      {
+        "text": "‹",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "›",
+        "width": 37,
+        "height": 44
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:จัดการห้องพัก",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:เช็กอิน / เช็กเอาต์",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:รับเงิน / ใบเสร็จ",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:รายงาน",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:ตั้งค่าที่พัก",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:overview",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:ภาพรวม",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:การจอง",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      },
+      {
+        "text": "‹",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "›",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:จัดการห้องพัก",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:เช็กอิน / เช็กเอาต์",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:รับเงิน / ใบเสร็จ",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:รายงาน",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:ตั้งค่าที่พัก",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:overview",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:ภาพรวม",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:การจอง",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      },
+      {
+        "text": "‹",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "›",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:จัดการห้องพัก",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:เช็กอิน / เช็กเอาต์",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:รับเงิน / ใบเสร็จ",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:รายงาน",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:ตั้งค่าที่พัก",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:overview",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:ภาพรวม",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:การจอง",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      },
+      {
+        "text": "‹",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "›",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:จัดการห้องพัก",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:เช็กอิน / เช็กเอาต์",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:รับเงิน / ใบเสร็จ",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:รายงาน",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:ตั้งค่าที่พัก",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:overview",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:ภาพรวม",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:การจอง",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      },
+      {
+        "text": "‹",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "›",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-08",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-08",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-08",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-08",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-08",
+        "width": 39,
+        "height": 47
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:จัดการห้องพัก",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:เช็กอิน / เช็กเอาต์",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:รับเงิน / ใบเสร็จ",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:รายงาน",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "guesthouse:ตั้งค่าที่พัก",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:overview",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:ภาพรวม",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:การจอง",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      },
+      {
+        "text": "‹",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "›",
+        "width": 37,
+        "height": 44
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:จัดการห้องพัก",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:เช็กอิน / เช็กเอาต์",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:รับเงิน / ใบเสร็จ",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:รายงาน",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:ตั้งค่าที่พัก",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:overview",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:ภาพรวม",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:การจอง",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      },
+      {
+        "text": "‹",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "›",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:จัดการห้องพัก",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:เช็กอิน / เช็กเอาต์",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:รับเงิน / ใบเสร็จ",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:รายงาน",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:ตั้งค่าที่พัก",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:overview",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:ภาพรวม",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:การจอง",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      },
+      {
+        "text": "‹",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "›",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:จัดการห้องพัก",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:เช็กอิน / เช็กเอาต์",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:รับเงิน / ใบเสร็จ",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:รายงาน",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:ตั้งค่าที่พัก",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:overview",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:ภาพรวม",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:การจอง",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      },
+      {
+        "text": "‹",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "›",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:จัดการห้องพัก",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:เช็กอิน / เช็กเอาต์",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:รับเงิน / ใบเสร็จ",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:รายงาน",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:ตั้งค่าที่พัก",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:overview",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:ภาพรวม",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:การจอง",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      },
+      {
+        "text": "‹",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "›",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-08",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-08",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-08",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-08",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-08",
+        "width": 39,
+        "height": 47
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:จัดการห้องพัก",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:เช็กอิน / เช็กเอาต์",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:รับเงิน / ใบเสร็จ",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:รายงาน",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "daily:ตั้งค่าที่พัก",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:overview",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:ภาพรวม",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:การจอง",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      },
+      {
+        "text": "‹",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "›",
+        "width": 37,
+        "height": 44
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:จัดการห้องพัก",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:เช็กอิน / เช็กเอาต์",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:รับเงิน / ใบเสร็จ",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:รายงาน",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:ตั้งค่าที่พัก",
+    "width": 320,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:overview",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:ภาพรวม",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:การจอง",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      },
+      {
+        "text": "‹",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "›",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:จัดการห้องพัก",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:เช็กอิน / เช็กเอาต์",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:รับเงิน / ใบเสร็จ",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:รายงาน",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:ตั้งค่าที่พัก",
+    "width": 360,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:overview",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:ภาพรวม",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:การจอง",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      },
+      {
+        "text": "‹",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "›",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:จัดการห้องพัก",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:เช็กอิน / เช็กเอาต์",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:รับเงิน / ใบเสร็จ",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:รายงาน",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:ตั้งค่าที่พัก",
+    "width": 375,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:overview",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:ภาพรวม",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:การจอง",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      },
+      {
+        "text": "‹",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "›",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:จัดการห้องพัก",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:เช็กอิน / เช็กเอาต์",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:รับเงิน / ใบเสร็จ",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:รายงาน",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:ตั้งค่าที่พัก",
+    "width": 390,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:overview",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:ภาพรวม",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:การจอง",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      },
+      {
+        "text": "‹",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "›",
+        "width": 37,
+        "height": 44
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A101 วันที่ 2026-11-08",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A102 วันที่ 2026-11-08",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A103 วันที่ 2026-11-08",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A104 วันที่ 2026-11-08",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-01",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-02",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-03",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-04",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-05",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-06",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-07",
+        "width": 39,
+        "height": 47
+      },
+      {
+        "text": "เลือกห้อง A105 วันที่ 2026-11-08",
+        "width": 39,
+        "height": 47
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:จัดการห้องพัก",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:เช็กอิน / เช็กเอาต์",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:รับเงิน / ใบเสร็จ",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:รายงาน",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  },
+  {
+    "where": "homestay:ตั้งค่าที่พัก",
+    "width": 430,
+    "overflow": false,
+    "small": [
+      {
+        "text": "ออกจากระบบ",
+        "width": 106,
+        "height": 42
+      }
+    ],
+    "clipped": []
+  }
+]
