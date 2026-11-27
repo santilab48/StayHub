@@ -266,3 +266,19 @@
 }
 
 @media(max-width:700px){.btn{min-height:44px}}
+
+/* Receipt content fits the printable area selected in the native print dialog. */
+@media print{
+ .receiptPrintPage{width:100%!important;min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;background:#fff!important;color:#000!important;color-scheme:light}
+ .receiptPrintPage>div{width:100%!important;max-width:none!important;min-width:0!important;margin:0!important;padding:0!important}
+ .receiptPrintPage>div>:not(#stayhub-receipt-document){display:none!important}
+ #stayhub-receipt-document{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important;padding:3mm!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#fff!important;color:#000!important;box-sizing:border-box;overflow:visible!important;overflow-wrap:anywhere;break-after:auto}
+ #stayhub-receipt-document .noPrint{display:none!important}
+ #stayhub-receipt-document .infoRow{display:flex;flex-wrap:wrap;align-items:baseline;gap:1mm;min-width:0;padding:2mm 0;break-inside:avoid;overflow-wrap:anywhere}
+ #stayhub-receipt-document .infoRow>*{min-width:0;max-width:100%;overflow-wrap:anywhere;white-space:normal}
+ #stayhub-receipt-document .infoRow>strong:last-child{margin-left:auto;text-align:right}
+ #stayhub-receipt-document img,#stayhub-receipt-document svg,#stayhub-receipt-document table{max-width:100%!important;height:auto!important}
+ #stayhub-receipt-document table{width:100%!important;table-layout:fixed}
+ #stayhub-receipt-document th,#stayhub-receipt-document td{min-width:0;overflow-wrap:anywhere;word-break:normal}
+ #stayhub-receipt-document p,#stayhub-receipt-document h1,#stayhub-receipt-document h2,#stayhub-receipt-document h3{overflow-wrap:anywhere;break-after:auto}
+}

@@ -44,7 +44,7 @@ export default function Receipts(){
    <h2>รายการชำระครบ</h2>
    {!paid.length?<p>ไม่มีใบเสร็จในหน้านี้</p>:<div className="list">{paid.map(b=><div className="row" key={b.id}>
     <div><strong>{b.unit_name} · {String(b.period).slice(0,7)}</strong><p className="muted">{Number(b.total).toLocaleString('th-TH')} บาท · ชำระครบ</p></div>
-    <a className="btn" href={'/cloud/receipts/'+encodeURIComponent(b.id)+'?propertyId='+encodeURIComponent(b.property_id)}>ดู / พิมพ์ PDF</a>
+    <a className="btn" href={'/cloud/receipts/'+encodeURIComponent(b.id)+'?propertyId='+encodeURIComponent(b.property_id)}>ดูใบเสร็จ</a>
    </div>)}</div>}
    <div className="flow section"><button type="button" className="btn secondary" disabled={page===1} onClick={()=>setPage(p=>p-1)}>ก่อนหน้า</button><span>หน้า {page}</span><button type="button" className="btn secondary" disabled={!more} onClick={()=>setPage(p=>p+1)}>ถัดไป</button></div>
   </section>

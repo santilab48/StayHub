@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict'
 import {randomBytes} from 'node:crypto'
+import {mkdirSync,writeFileSync} from 'node:fs'
 import {chromium} from 'playwright'
 import {PDFDocument} from 'pdf-lib'
 
@@ -97,6 +98,13 @@ try{
   assert.equal(reservations.items.find(x=>x.id===activeBooking.id)?.status,'checked_in')
   await page.locator('nav[aria-label^="หมวดจัดการ"]').getByRole('button',{name:'รับเงิน / ใบเสร็จ'}).click()
   await page.getByRole('button',{name:/A102.*Checked In Guest/}).click()
+  if(process.env.UI_AUDIT_PRINT==='true'){
+   for(let i=0;i<12;i++){
+    await page.getByRole('button',{name:'+ เพิ่มรายการ'}).click()
+    await page.getByRole('textbox',{name:'รายการ'}).nth(i).fill(`ค่าบริการทดสอบรายการที่ ${i+1} รายละเอียดภาษาไทยยาวเพื่อทดสอบการตัดบรรทัด`)
+    await page.getByRole('spinbutton',{name:'จำนวนเงิน'}).nth(i).fill('12.34')
+   }
+  }
   await page.getByRole('checkbox',{name:/ยืนยันรับเงินและปิดการเข้าพัก/}).check()
   await page.getByRole('button',{name:'รับเงินและปิดการเข้าพัก'}).click()
   await page.getByRole('heading',{name:'ตัวอย่างบิลเงินสด'}).waitFor()
@@ -137,26 +145,32 @@ try{
   assert.equal(await page.getByPlaceholder('ชื่อผู้จอง หรือ เลขห้อง').inputValue(),'')
   await nav.getByRole('button',{name:'รับเงิน / ใบเสร็จ'}).click()
   await page.getByRole('button',{name:'เปิด / พิมพ์ซ้ำ'}).click()
-  for(const paper of ['A4','A5','80mm','58mm'])await page.getByRole('combobox',{name:'ขนาดกระดาษ'}).selectOption(paper)
+  assert.equal(await page.getByRole('combobox',{name:'ขนาดกระดาษ'}).count(),0)
   await page.getByRole('button',{name:'ปิด',exact:true}).click()
   await page.getByRole('button',{name:'เปิด / พิมพ์ซ้ำ'}).click()
   await page.getByRole('heading',{name:'ตัวอย่างบิลเงินสด'}).waitFor()
   if(process.env.UI_AUDIT_PRINT==='true'){
+   mkdirSync('docs/print-samples/p43',{recursive:true})
    for(const [paper,expectedWidth] of [['A4',595.28],['A5',419.53],['80mm',226.77],['58mm',164.41]]){
-    await page.getByRole('combobox',{name:'ขนาดกระดาษ'}).selectOption(paper)
     await page.evaluate(()=>{window.__auditPrint=null})
-    await page.getByRole('button',{name:'พิมพ์บิล',exact:true}).click()
+    await page.getByRole('button',{name:'พิมพ์ใบเสร็จ',exact:true}).click()
     await page.waitForFunction(()=>Boolean(window.__auditPrint))
     const html=await page.evaluate(()=>window.__auditPrint)
     const printPage=await context.newPage()
     await printPage.setContent(html)
-    const pdf=await PDFDocument.load(await printPage.pdf({preferCSSPageSize:true,printBackground:true}))
+    await printPage.emulateMedia({media:'print'})
+    await printPage.setViewportSize({width:Math.round(({A4:210,A5:148,'80mm':80,'58mm':58})[paper]*96/25.4),height:900})
+    const bytes=await printPage.pdf({...(paper.endsWith('mm')?{width:paper,height:'150mm'}:{format:paper}),printBackground:true})
+    const pdf=await PDFDocument.load(bytes)
     const actualWidth=pdf.getPage(0).getWidth()
     assert.ok(Math.abs(actualWidth-expectedWidth)<2,`${paper}: expected ${expectedWidth}pt, got ${actualWidth}pt`)
     assert.equal(await printPage.locator('main').getByText('Checked In Guest').count()>0,true)
     assert.equal(await printPage.locator('main').evaluate(el=>el.scrollWidth<=el.clientWidth+1),true,`${paper}: receipt content overflow`)
+    assert.ok(pdf.getPageCount()>=1)
+    const sample={guesthouse:'A5',daily:'80mm',homestay:'58mm'}[type]
+    if(paper===sample)writeFileSync(`docs/print-samples/p43/${type}-${paper}.pdf`,bytes)
     await printPage.close()
-    console.log(`PASS cash print ${paper}: ${Math.round(actualWidth)}pt PDF`)
+    console.log(`PASS ${type} cash print ${paper}: ${Math.round(actualWidth)}pt PDF, ${pdf.getPageCount()} page(s)`)
    }
   }
   for(const width of [360,390,768,1280,1920]){

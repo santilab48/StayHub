@@ -22,13 +22,13 @@ export default function ReceiptView(){
   return()=>{active=false}
  },[params.billId])
  const paid=bill?.bill.status==='paid'&&Number(bill?.outstanding||NaN)===0
- return <main className={dashboardStyles.detail}><div className={dashboardStyles.detailInner}>
-  <style>{'@media print{body{background:white!important}.noPrint{display:none!important}.receiptPaper{border:0!important;box-shadow:none!important}.wrap{max-width:none!important;margin:0!important;padding:0!important}}'}</style>
+ return <main className={dashboardStyles.detail+' receiptPrintPage'}><div className={dashboardStyles.detailInner}>
+
   <header className={dashboardStyles.detailHeader}><a className={dashboardStyles.detailBrand} href="/cloud?tab=finance">StayHub <span>Cloud</span></a><a className={dashboardStyles.back} href="/cloud/receipts">ใบเสร็จทั้งหมด</a></header>
   {error&&<p role="alert" className="card">{error}</p>}
   {!bill&&!error&&<p role="status">กำลังตรวจสอบยอดรับชำระ...</p>}
   {bill&&!paid&&<section className="card"><h1>ยังไม่สามารถออกใบเสร็จได้</h1><p>สถานะบิลยังไม่ชำระครบ</p></section>}
-  {bill&&paid&&<section className="card receiptPaper" style={{padding:36}}>
+  {bill&&paid&&<section id="stayhub-receipt-document" className="card receiptPaper" style={{padding:36}}>
    <h1 style={{textAlign:'center'}}>ใบรับชำระเงิน</h1>
    <p style={{textAlign:'center'}}>StayHub · เอกสารยืนยันรายการชำระ ไม่ใช่ใบกำกับภาษี</p>
    <div className="infoRow"><span>เลขอ้างอิงบิล</span><strong>{bill.bill.id}</strong></div>
@@ -46,7 +46,7 @@ export default function ReceiptView(){
     <h3>รายการรับชำระ</h3>
     {bill.payments.map(p=><p key={p.id}>{new Date(p.confirmed_at).toLocaleString('th-TH')} · {p.method==='cash'?'เงินสด':'โอน'} · {money(p.amount)} บาท</p>)}
    </>:null}
-   <div className="noPrint"><button type="button" className="btn" onClick={()=>window.print()}>พิมพ์ / บันทึกเป็น PDF</button></div>
+   <div className="noPrint"><button type="button" className="btn" onClick={()=>window.print()}>พิมพ์ใบเสร็จ</button></div>
   </section>}
  </div></main>
 }
