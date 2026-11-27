@@ -111,7 +111,7 @@ try {
   await billing.getByLabel('รอบบิล').fill('2026-11')
   await billing.getByLabel('รายการ').fill('Offline draft')
   await billing.getByLabel('จำนวนเงิน (บาท)').fill('123.45')
-  await billing.getByRole('button',{name:'สร้าง Draft'}).click()
+  await billing.getByRole('button',{name:'สร้างฉบับร่าง',exact:true}).click()
   await billing.locator('li').filter({hasText:'Offline draft'}).waitFor()
   await assertContents()
   console.log('PASS offline room, water meter and bill draft persist in IndexedDB queue')

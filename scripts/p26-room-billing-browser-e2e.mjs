@@ -42,7 +42,7 @@ try{
  await sql.query(`CREATE TRIGGER ci_invoice_storage_failure BEFORE INSERT ON stayhub.billing_invoice_documents
    FOR EACH ROW EXECUTE FUNCTION stayhub.ci_reject_invoice()`)
  await page.getByRole('button',{name:'ยืนยันออกบิล'}).click()
- await page.getByText('Billing service unavailable',{exact:true}).first().waitFor()
+ await page.getByText('บริการบิลไม่พร้อมใช้งาน กรุณาลองใหม่',{exact:true}).first().waitFor()
  assert.equal((await sql.query('SELECT count(*)::int AS n FROM stayhub.billing_bills WHERE property_id=$1',[propertyId])).rows[0].n,0)
  assert.equal((await sql.query('SELECT count(*)::int AS n FROM stayhub.billing_meter_readings WHERE property_id=$1',[propertyId])).rows[0].n,2)
  await sql.query('DROP TRIGGER ci_invoice_storage_failure ON stayhub.billing_invoice_documents')
@@ -76,7 +76,7 @@ try{
  await page.getByLabel('จำนวนเงิน (บาท)',{exact:true}).fill('3350')
  await page.getByRole('button',{name:'ยืนยันรับเงิน'}).click()
  await page.locator('#bill-detail').getByText('ชำระครบ',{exact:false}).first().waitFor()
- await page.getByRole('link',{name:'ใบเสร็จ / พิมพ์ PDF'}).click()
+ await page.getByRole('link',{name:'ดูใบเสร็จ',exact:true}).click()
  await page.getByRole('heading',{name:'ใบรับชำระเงิน'}).waitFor()
  const paid=await sql.query('SELECT status FROM stayhub.billing_bills WHERE id=$1',[bill]);assert.equal(paid.rows[0].status,'paid')
  console.log('PASS partial and full payment from UI, paid receipt')

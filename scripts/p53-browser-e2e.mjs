@@ -44,7 +44,7 @@ async function setupBrowser(page,owner,serverPropertyId) {
   await page.getByLabel('ชื่อที่พัก').fill(`Device ${owner}`)
   await page.getByRole('button',{name:'สร้างพื้นที่และเริ่มใช้งาน'}).click()
   await page.waitForURL('**/workspace')
-  await page.getByRole('button',{name:'เลือกที่พักจากบัญชี Staging'}).click()
+  await page.getByRole('button',{name:'เลือกที่พักจากบัญชีของคุณ',exact:true}).click()
   const propertySelect=page.locator('section').filter({
     has:page.getByRole('heading',{name:'สถานะการซิงก์'})
   }).locator('select')
